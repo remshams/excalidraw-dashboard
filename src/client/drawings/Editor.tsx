@@ -3,6 +3,7 @@ import "@excalidraw/excalidraw/index.css";
 import { useEffect, useRef, useState } from "react";
 import type { Drawing, DrawingSummary } from "../../shared/types.ts";
 import { updateDrawing } from "./api.ts";
+import { storePreview } from "./preview.ts";
 import { createSaveScheduler } from "./save-scheduler.ts";
 
 const SAVE_DELAY_MS = 1000;
@@ -21,17 +22,32 @@ export function Editor({ drawing, onSaved, onError }: EditorProps) {
 	const [initialData] = useState(() =>
 		drawing.scene ? JSON.parse(drawing.scene) : null,
 	);
-	const [scheduler] = useState(() =>
-		createSaveScheduler(
+	const [scheduler] = useState(() => {
+		const saved = (summary: DrawingSummary) =>
+			callbacks.current.onSaved(summary);
+		const failed = (error: unknown) => callbacks.current.onError(error);
+		// The preview follows the scene, so a failed render never loses a change.
+		return createSaveScheduler(
 			(scene) =>
-				updateDrawing(drawing.id, { scene }).then(
-					(summary) => callbacks.current.onSaved(summary),
-					(error: unknown) => callbacks.current.onError(error),
-				),
+				updateDrawing(drawing.id, { scene })
+					.then((summary) => {
+						saved(summary);
+						return storePreview(drawing.id, scene);
+					})
+					.then(saved, failed),
 			SAVE_DELAY_MS,
 			drawing.scene,
-		),
-	);
+		);
+	});
+
+	// Drawings saved before previews existed get one when opened.
+	useEffect(() => {
+		if (!drawing.scene || drawing.hasPreview) return;
+		storePreview(drawing.id, drawing.scene).then(
+			(summary) => callbacks.current.onSaved(summary),
+			(error: unknown) => callbacks.current.onError(error),
+		);
+	}, [drawing]);
 
 	useEffect(() => {
 		const flush = () => scheduler.flush();
