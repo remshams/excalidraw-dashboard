@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { DrawingSummary } from "../../shared/types.ts";
 import { previewUrl } from "./api.ts";
 import { NameField } from "./NameField.tsx";
+import { searchByName } from "./search.ts";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];
@@ -29,7 +30,7 @@ export function DrawingList({
 	const [query, setQuery] = useState("");
 	const close = () => setTask(null);
 	const needle = query.trim();
-	const shown = drawings.filter((drawing) => matches(drawing.name, needle));
+	const shown = searchByName(drawings, needle);
 
 	return (
 		<div className="drawing-list">
@@ -72,11 +73,6 @@ export function DrawingList({
 			)}
 		</div>
 	);
-}
-
-/** Whether a drawing's name contains the search text, ignoring case. */
-function matches(name: string, needle: string) {
-	return name.toLocaleLowerCase().includes(needle.toLocaleLowerCase());
 }
 
 /** A blank sheet that asks for a name and creates the drawing. */
