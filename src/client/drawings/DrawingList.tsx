@@ -1,47 +1,44 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import type { DrawingSummary } from "../../shared/types.ts";
+import { previewUrl } from "./api.ts";
 import { NameField } from "./NameField.tsx";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];
-	selectedId: string | null;
-	onSelect: (id: string) => void;
+	onOpen: (id: string) => void;
 	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
 	onDelete: (id: string) => void;
-	/** Shown at the end of the header, e.g. a button that hides the list. */
-	headerAction?: ReactNode;
 };
 
-type RowTask = "rename" | "delete";
+type CardTask = "rename" | "delete";
 
-/** The row that asks for a new name or a delete confirmation, if any. */
-type OpenTask = { kind: RowTask; id: string } | null;
+/** The card that asks for a new name or a delete confirmation, if any. */
+type OpenTask = { kind: CardTask; id: string } | null;
 
+/** The landing page: every drawing as a sheet with a preview, plus a blank one to start a new drawing. */
 export function DrawingList({
 	drawings,
-	selectedId,
-	onSelect,
+	onOpen,
 	onCreate,
 	onRename,
 	onDelete,
-	headerAction,
 }: DrawingListProps) {
 	const [task, setTask] = useState<OpenTask>(null);
 	const close = () => setTask(null);
 
 	return (
-		<nav className="drawing-list" aria-label="Drawings">
-			<ListHeader onCreate={onCreate} action={headerAction} />
+		<div className="drawing-list">
+			<h1>Drawings</h1>
 			<ul>
+				<NewDrawingCard onCreate={onCreate} />
 				{drawings.map((drawing) => (
-					<DrawingRow
+					<DrawingCard
 						key={drawing.id}
 						drawing={drawing}
-						selected={drawing.id === selectedId}
 						task={task?.id === drawing.id ? task.kind : null}
-						onSelect={() => onSelect(drawing.id)}
+						onOpen={() => onOpen(drawing.id)}
 						onStart={(kind) => setTask({ kind, id: drawing.id })}
 						onRename={(name) => {
 							close();
@@ -55,83 +52,95 @@ export function DrawingList({
 					/>
 				))}
 			</ul>
-		</nav>
+		</div>
 	);
 }
 
-/** The list's heading, with the button and field that create a drawing. */
-type ListHeaderProps = Pick<DrawingListProps, "onCreate"> & {
-	action: ReactNode;
-};
-
-function ListHeader({ onCreate, action }: ListHeaderProps) {
+/** A blank sheet that asks for a name and creates the drawing. */
+function NewDrawingCard({ onCreate }: Pick<DrawingListProps, "onCreate">) {
 	const [creating, setCreating] = useState(false);
+	const sheet = (
+		<span className="sheet blank">
+			<PlusIcon />
+		</span>
+	);
 
 	return (
-		<>
-			<header>
-				<h1>Drawings</h1>
-				<button type="button" className="new" onClick={() => setCreating(true)}>
-					<PlusIcon />
-					New drawing
+		<li className="new">
+			{creating ? (
+				<>
+					{sheet}
+					<NameField
+						label="Name of the new drawing"
+						onSubmit={(name) => {
+							setCreating(false);
+							onCreate(name);
+						}}
+						onCancel={() => setCreating(false)}
+					/>
+				</>
+			) : (
+				<button
+					type="button"
+					className="open"
+					onClick={() => setCreating(true)}
+				>
+					{sheet}
+					<span className="name">New drawing</span>
 				</button>
-				{action}
-			</header>
-			{creating && (
-				<NameField
-					label="Name of the new drawing"
-					onSubmit={(name) => {
-						setCreating(false);
-						onCreate(name);
-					}}
-					onCancel={() => setCreating(false)}
-				/>
 			)}
-		</>
+		</li>
 	);
 }
 
-type DrawingRowProps = {
+type DrawingCardProps = {
 	drawing: DrawingSummary;
-	selected: boolean;
-	/** The question the row asks instead of showing the drawing, if any. */
-	task: RowTask | null;
-	onSelect: () => void;
-	onStart: (task: RowTask) => void;
+	/** The question the card asks below its preview, if any. */
+	task: CardTask | null;
+	onOpen: () => void;
+	onStart: (task: CardTask) => void;
 	onRename: (name: string) => void;
 	onDelete: () => void;
 	onCancel: () => void;
 };
 
-function DrawingRow({
+function DrawingCard({
 	drawing,
-	selected,
 	task,
-	onSelect,
+	onOpen,
 	onStart,
 	onRename,
 	onDelete,
 	onCancel,
-}: DrawingRowProps) {
+}: DrawingCardProps) {
+	const sheet = <Sheet drawing={drawing} />;
+
 	return (
-		<li aria-current={selected}>
+		<li>
 			{task === "rename" ? (
-				<NameField
-					label={`New name for ${drawing.name}`}
-					initialName={drawing.name}
-					onSubmit={onRename}
-					onCancel={onCancel}
-				/>
+				<>
+					{sheet}
+					<NameField
+						label={`New name for ${drawing.name}`}
+						initialName={drawing.name}
+						onSubmit={onRename}
+						onCancel={onCancel}
+					/>
+				</>
 			) : task === "delete" ? (
-				<DeleteConfirmation
-					name={drawing.name}
-					onConfirm={onDelete}
-					onCancel={onCancel}
-				/>
+				<>
+					{sheet}
+					<DeleteConfirmation
+						name={drawing.name}
+						onConfirm={onDelete}
+						onCancel={onCancel}
+					/>
+				</>
 			) : (
 				<DrawingEntry
 					name={drawing.name}
-					onSelect={onSelect}
+					sheet={sheet}
+					onOpen={onOpen}
 					onStart={onStart}
 				/>
 			)}
@@ -139,16 +148,27 @@ function DrawingRow({
 	);
 }
 
-type DrawingEntryProps = Pick<DrawingRowProps, "onSelect" | "onStart"> & {
+/** The drawing's preview on a sheet of paper; blank until a preview exists. */
+function Sheet({ drawing }: { drawing: DrawingSummary }) {
+	return (
+		<span className="sheet">
+			{drawing.hasPreview && <img src={previewUrl(drawing)} alt="" />}
+		</span>
+	);
+}
+
+type DrawingEntryProps = Pick<DrawingCardProps, "onOpen" | "onStart"> & {
 	name: string;
+	sheet: ReactNode;
 };
 
-/** A drawing's name, with its rename and delete actions. */
-function DrawingEntry({ name, onSelect, onStart }: DrawingEntryProps) {
+/** The sheet and name that open the drawing, with its rename and delete actions. */
+function DrawingEntry({ name, sheet, onOpen, onStart }: DrawingEntryProps) {
 	return (
 		<>
-			<button type="button" className="name" onClick={onSelect}>
-				<span>{name}</span>
+			<button type="button" className="open" onClick={onOpen}>
+				{sheet}
+				<span className="name">{name}</span>
 			</button>
 			<span className="actions">
 				<button

@@ -5,36 +5,37 @@ import type { DrawingSummary } from "../../shared/types.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
 const drawings: DrawingSummary[] = [
-	{ id: "1", name: "Plan", createdAt: "", updatedAt: "" },
-	{ id: "2", name: "Roadmap", createdAt: "", updatedAt: "" },
+	{ id: "1", name: "Plan", createdAt: "", updatedAt: "t1", hasPreview: true },
+	{ id: "2", name: "Roadmap", createdAt: "", updatedAt: "", hasPreview: false },
 ];
 
 function setup() {
 	const props = {
-		onSelect: vi.fn(),
+		onOpen: vi.fn(),
 		onCreate: vi.fn(),
 		onRename: vi.fn(),
 		onDelete: vi.fn(),
 	};
-	render(<DrawingList drawings={drawings} selectedId="2" {...props} />);
+	render(<DrawingList drawings={drawings} {...props} />);
 	return { ...props, user: userEvent.setup() };
 }
 
 describe("DrawingList", () => {
-	it("marks the selected drawing", () => {
-		setup();
-
-		const items = screen.getAllByRole("listitem");
-		expect(items[0]).toHaveAttribute("aria-current", "false");
-		expect(items[1]).toHaveAttribute("aria-current", "true");
-	});
-
-	it("selects a drawing by its name", async () => {
-		const { user, onSelect } = setup();
+	it("opens a drawing from its card", async () => {
+		const { user, onOpen } = setup();
 
 		await user.click(screen.getByRole("button", { name: "Plan" }));
 
-		expect(onSelect).toHaveBeenCalledWith("1");
+		expect(onOpen).toHaveBeenCalledWith("1");
+	});
+
+	it("shows the preview of drawings that have one", () => {
+		setup();
+
+		// Previews are decorative: the drawing's name labels each card.
+		expect(
+			screen.getAllByRole("presentation").map((img) => img.getAttribute("src")),
+		).toEqual(["/api/drawings/1/preview?v=t1"]);
 	});
 
 	it("creates a drawing with the entered name", async () => {
