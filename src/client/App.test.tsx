@@ -62,6 +62,68 @@ describe("App", () => {
 		expect(await screen.findByText("Editing Plan")).toBeInTheDocument();
 	});
 
+	it("switches to another drawing through the quick switcher", async () => {
+		window.location.hash = "#1";
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(screen.getByRole("button", { name: /Switch drawing/ }));
+		await user.type(
+			screen.getByRole("combobox", { name: "Find or create a drawing" }),
+			"road{Enter}",
+		);
+
+		expect(await screen.findByText("Editing Roadmap")).toBeInTheDocument();
+		expect(window.location.hash).toBe("#2");
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
+	it("toggles the quick switcher with Ctrl+K while a drawing is open", async () => {
+		window.location.hash = "#1";
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.keyboard("{Control>}k{/Control}");
+		expect(
+			screen.getByRole("dialog", { name: "Switch drawing" }),
+		).toBeVisible();
+
+		await user.keyboard("{Meta>}k{/Meta}");
+		expect(screen.queryByRole("dialog")).toBeNull();
+		expect(
+			screen.getByRole("button", { name: /Switch drawing/ }),
+		).toBeVisible();
+	});
+
+	it("creates and opens a drawing from the quick switcher", async () => {
+		window.location.hash = "#1";
+		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
+		vi.mocked(api.getDrawing).mockImplementation(async (id) =>
+			drawing(id, id === "3" ? "Ideas" : "Plan"),
+		);
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.keyboard("{Control>}k{/Control}");
+		await user.keyboard("Ideas{Enter}");
+
+		expect(await screen.findByText("Editing Ideas")).toBeInTheDocument();
+		expect(api.createDrawing).toHaveBeenCalledWith("Ideas");
+	});
+
+	it("leaves Ctrl+K alone on the landing page", async () => {
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByRole("button", { name: "Plan" });
+
+		await user.keyboard("{Control>}k{/Control}");
+
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
 	it("opens a created drawing and lists it in name order", async () => {
 		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
 		vi.mocked(api.getDrawing).mockResolvedValue(drawing("3", "Ideas"));
