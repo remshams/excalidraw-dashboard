@@ -1,0 +1,24 @@
+{
+	"$schema": "./node_modules/fallow/schema.json",
+	"entry": ["src/client/main.tsx", "src/server/index.ts"],
+	"health": {
+		"maxCrap": 12,
+		"ignore": ["**/*.test.{ts,tsx}", "src/client/test-setup.ts"]
+	},
+	"boundaries": {
+		"zones": [
+			{ "name": "shared", "patterns": ["src/shared/**/*.ts"] },
+			{ "name": "server", "patterns": ["src/server/**/*.ts"] },
+			{ "name": "client", "patterns": ["src/client/**/*.{ts,tsx}"] }
+		],
+		"rules": [
+			{ "from": "shared", "allow": [] },
+			{ "from": "server", "allow": ["shared"] },
+			{ "from": "client", "allow": ["shared"] }
+		]
+	},
+	"mutation": {
+		"runner": "vitest",
+		"concurrency": 4
+	}
+}

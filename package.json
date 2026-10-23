@@ -1,0 +1,54 @@
+{
+	"name": "excalidraw-drawings",
+	"private": true,
+	"description": "A self-hosted Excalidraw with a list of drawings stored in SQLite.",
+	"type": "module",
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"dev": "concurrently -n server,web -c blue,green \"pnpm dev:server\" \"pnpm dev:web\"",
+		"dev:server": "node --watch src/server/index.ts",
+		"dev:web": "vite",
+		"build": "vite build",
+		"start": "NODE_ENV=production node src/server/index.ts",
+		"test": "vitest run",
+		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"coverage": "rm -rf coverage && vitest run --coverage",
+		"fallow:dead-code": "fallow dead-code --fail-on-issues",
+		"fallow:dupes": "fallow dupes --fail-on-issues",
+		"fallow:architecture": "fallow architecture --fail-on-issues",
+		"fallow:health": "fallow health --coverage coverage",
+		"fallow": "pnpm coverage && pnpm fallow:dead-code && pnpm fallow:dupes && pnpm fallow:architecture && pnpm fallow:health",
+		"mutation": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=diff.mnemonicPrefix GIT_CONFIG_VALUE_0=false fallow mutation --changed-since \"${MUTATION_BASE:-origin/main}\" --min-score 80",
+		"mutation:all": "fallow mutation --all",
+		"check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build && pnpm fallow"
+	},
+	"dependencies": {
+		"@excalidraw/excalidraw": "^0.18.1",
+		"@hono/node-server": "^2.1.5",
+		"hono": "^4.13.13",
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.6.2",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/react": "^16.3.3",
+		"@testing-library/user-event": "^14.6.8",
+		"@types/node": "^26.6.5",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"@vitejs/plugin-react": "^6.1.2",
+		"@vitest/coverage-v8": "5.0.5",
+		"concurrently": "^10.0.6",
+		"fallow": "3.35.0",
+		"jsdom": "^30.1.3",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.5",
+		"vitest": "5.0.5"
+	}
+}
