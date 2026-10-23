@@ -3,7 +3,7 @@ import "@excalidraw/excalidraw/index.css";
 import { useEffect, useRef, useState } from "react";
 import type { Drawing, DrawingSummary } from "../../shared/types.ts";
 import { updateDrawing } from "./api.ts";
-import { storePreview } from "./preview.ts";
+import { storeMissingPreview, storePreview } from "./preview.ts";
 import { createSaveScheduler } from "./save-scheduler.ts";
 
 const SAVE_DELAY_MS = 1000;
@@ -45,8 +45,7 @@ export function Editor({ drawing, onSaved, onError }: EditorProps) {
 
 	// Drawings saved before previews existed get one when opened.
 	useEffect(() => {
-		if (!drawing.scene || drawing.hasPreview) return;
-		storePreview(drawing.id, drawing.scene).then(
+		storeMissingPreview(drawing)?.then(
 			(summary) => callbacks.current.onSaved(summary),
 			(error: unknown) => callbacks.current.onError(error),
 		);
