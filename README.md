@@ -1,4 +1,4 @@
-# excalidraw-drawings
+# excalidraw-dashboard
 
 A self-hosted Excalidraw with a sidebar of named drawings. Drawings autosave to a
 SQLite database on the server, so there is no manual export or import.
