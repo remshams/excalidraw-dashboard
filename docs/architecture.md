@@ -29,17 +29,22 @@ their dependency rules.
 - `use-drawings.ts` loads the list and applies create, rename and delete.
 - `use-drawing.ts` loads the selected drawing with its scene.
 - `use-hash-id.ts` keeps the open drawing ID in the URL hash.
+- `search.ts` filters drawings by name for the landing page and the quick
+  switcher.
 - `DrawingList.tsx` renders the landing page: a card per drawing with its
   preview, and a blank card that starts a new one. A search field filters the
-  cards by name. Creating, renaming and
-  deleting happen inline: names through `NameField.tsx`, deletion after a
-  confirmation in the card.
+  cards by name. Creating, renaming and deleting happen inline: names through
+  `NameField.tsx`, deletion after a confirmation in the card.
+- `QuickSwitcher.tsx` searches all drawings from the editor, most recent first,
+  and opens one or creates one from the typed name. `use-switcher-shortcut.ts`
+  toggles it with Ctrl+K or Cmd+K, ahead of Excalidraw's own use of the key.
 - `Editor.tsx` embeds Excalidraw and saves changes through `save-scheduler.ts`.
 - `preview.ts` renders a saved scene as a PNG with Excalidraw's `exportToBlob`
   and uploads it, or removes the preview when nothing is drawn.
 
 `App.tsx` shows the landing page while no drawing is open, and otherwise the
-editor below a bar that leads back. It also shows request errors. `styles.css` holds the
+editor below a bar that leads back to the list or opens the quick switcher. It
+also shows request errors. `styles.css` holds the
 look: colors from open-color, the palette Excalidraw draws with, and Excalidraw's
 bundled fonts, Excalifont for drawing names and Assistant for controls.
 
