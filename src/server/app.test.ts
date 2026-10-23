@@ -37,7 +37,11 @@ describe("drawings API", () => {
 		const response = await send("POST", "/drawings", { name: " Plan " });
 
 		expect(response.status).toBe(201);
-		expect(await response.json()).toMatchObject({ name: "Plan", scene: null });
+		expect(await response.json()).toMatchObject({
+			name: "Plan",
+			scene: null,
+			hasPreview: false,
+		});
 	});
 
 	it("names a drawing Untitled when the name is blank", async () => {
