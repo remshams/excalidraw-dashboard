@@ -1,7 +1,7 @@
 import { exportToBlob } from "@excalidraw/excalidraw";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
-import type { DrawingSummary } from "../../shared/types.ts";
+import type { Drawing, DrawingSummary } from "../../shared/types.ts";
 import { deletePreview, savePreview } from "./api.ts";
 
 /** Longest side of a preview in pixels, enough for a card on a high-density screen. */
@@ -29,4 +29,12 @@ export async function storePreview(
 		mimeType: "image/png",
 	});
 	return savePreview(id, png);
+}
+
+/** Stores a preview for a drawing saved before previews existed, or returns null. */
+export function storeMissingPreview(
+	drawing: Drawing,
+): Promise<DrawingSummary> | null {
+	if (!drawing.scene || drawing.hasPreview) return null;
+	return storePreview(drawing.id, drawing.scene);
 }
