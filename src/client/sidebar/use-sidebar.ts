@@ -31,7 +31,11 @@ export function useSidebar() {
 	const drag = useRef<{ x: number; width: number } | null>(null);
 
 	useEffect(() => {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		} catch {
+			// Storage is blocked or full; the sidebar still works for this session.
+		}
 	}, [state]);
 
 	const setWidth = (width: number) =>
