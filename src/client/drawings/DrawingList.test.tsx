@@ -38,6 +38,32 @@ describe("DrawingList", () => {
 		).toEqual(["/api/drawings/1/preview?v=t1"]);
 	});
 
+	it("shows only the drawings whose name contains the search text", async () => {
+		const { user } = setup();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search drawings" }),
+			" ROAD ",
+		);
+
+		expect(screen.queryByRole("button", { name: "Plan" })).toBeNull();
+		expect(screen.getByRole("button", { name: "Roadmap" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "New drawing" }),
+		).toBeInTheDocument();
+	});
+
+	it("says so when no drawing matches the search", async () => {
+		const { user } = setup();
+		expect(screen.queryByText(/No drawing is called/)).toBeNull();
+
+		await user.type(screen.getByRole("searchbox"), "Garden");
+
+		expect(
+			screen.getByText("No drawing is called “Garden”."),
+		).toBeInTheDocument();
+	});
+
 	it("creates a drawing with the entered name", async () => {
 		const { user, onCreate } = setup();
 		expect(screen.queryByRole("textbox")).toBeNull();

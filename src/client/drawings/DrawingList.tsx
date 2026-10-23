@@ -26,14 +26,29 @@ export function DrawingList({
 	onDelete,
 }: DrawingListProps) {
 	const [task, setTask] = useState<OpenTask>(null);
+	const [query, setQuery] = useState("");
 	const close = () => setTask(null);
+	const needle = query.trim();
+	const shown = drawings.filter((drawing) => matches(drawing.name, needle));
 
 	return (
 		<div className="drawing-list">
-			<h1>Drawings</h1>
+			<header>
+				<h1>Drawings</h1>
+				<label className="search">
+					<SearchIcon />
+					<input
+						type="search"
+						aria-label="Search drawings"
+						placeholder="Search drawings"
+						value={query}
+						onChange={(event) => setQuery(event.target.value)}
+					/>
+				</label>
+			</header>
 			<ul>
 				<NewDrawingCard onCreate={onCreate} />
-				{drawings.map((drawing) => (
+				{shown.map((drawing) => (
 					<DrawingCard
 						key={drawing.id}
 						drawing={drawing}
@@ -52,8 +67,16 @@ export function DrawingList({
 					/>
 				))}
 			</ul>
+			{shown.length === 0 && needle && (
+				<p className="empty">No drawing is called “{needle}”.</p>
+			)}
 		</div>
 	);
+}
+
+/** Whether a drawing's name contains the search text, ignoring case. */
+function matches(name: string, needle: string) {
+	return name.toLocaleLowerCase().includes(needle.toLocaleLowerCase());
 }
 
 /** A blank sheet that asks for a name and creates the drawing. */
@@ -238,6 +261,14 @@ function PlusIcon() {
 	return (
 		<svg aria-hidden="true" {...iconProps}>
 			<path d="M12 5v14M5 12h14" />
+		</svg>
+	);
+}
+
+function SearchIcon() {
+	return (
+		<svg aria-hidden="true" {...iconProps}>
+			<path d="M10.5 4a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM15.5 15.5 20 20" />
 		</svg>
 	);
 }
