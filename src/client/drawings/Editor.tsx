@@ -27,13 +27,16 @@ export function Editor({ drawing, onSaved, onError }: EditorProps) {
 			callbacks.current.onSaved(summary);
 		const failed = (error: unknown) => callbacks.current.onError(error);
 		// The preview follows the scene, so a failed render never loses a change.
+		// The list hears of the save once the preview is stored.
 		return createSaveScheduler(
 			(scene) =>
 				updateDrawing(drawing.id, { scene })
-					.then((summary) => {
-						saved(summary);
-						return storePreview(drawing.id, scene);
-					})
+					.then((summary) =>
+						storePreview(drawing.id, scene).catch((error: unknown) => {
+							failed(error);
+							return summary;
+						}),
+					)
 					.then(saved, failed),
 			SAVE_DELAY_MS,
 			drawing.scene,
