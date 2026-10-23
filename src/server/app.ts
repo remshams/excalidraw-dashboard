@@ -35,7 +35,28 @@ export function createApp(store: DrawingStore, options: AppOptions = {}) {
 		})
 		.delete("/drawings/:id", (c) =>
 			store.delete(c.req.param("id")) ? c.body(null, 204) : c.notFound(),
-		);
+		)
+		.get("/drawings/:id/preview", (c) => {
+			const preview = store.getPreview(c.req.param("id"));
+			if (!preview) return c.notFound();
+			// Clients add the drawing's updatedAt to the URL, so a cached copy stays valid.
+			return c.body(new Uint8Array(preview), 200, {
+				"Content-Type": "image/png",
+				"Cache-Control": "private, max-age=31536000, immutable",
+			});
+		})
+		.put("/drawings/:id/preview", async (c) => {
+			if (c.req.header("Content-Type") !== "image/png") {
+				return c.text("Previews must be PNG images", 415);
+			}
+			const preview = new Uint8Array(await c.req.arrayBuffer());
+			const drawing = store.setPreview(c.req.param("id"), preview);
+			return drawing ? c.json(drawing) : c.notFound();
+		})
+		.delete("/drawings/:id/preview", (c) => {
+			const drawing = store.setPreview(c.req.param("id"), null);
+			return drawing ? c.json(drawing) : c.notFound();
+		});
 
 	// Scenes with embedded images can be large; Hono applies no body limit by default.
 	const app = new Hono().route("/api", api);
