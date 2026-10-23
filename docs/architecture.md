@@ -26,10 +26,13 @@ their dependency rules.
 - `use-drawings.ts` loads the list and applies create, rename and delete.
 - `use-drawing.ts` loads the selected drawing with its scene.
 - `use-hash-id.ts` keeps the selected drawing ID in the URL hash.
-- `DrawingList.tsx` renders the sidebar.
+- `DrawingList.tsx` renders the sidebar. Creating, renaming and deleting happen
+  inline: names through `NameField.tsx`, deletion after a confirmation in the row.
 - `Editor.tsx` embeds Excalidraw and saves changes through `save-scheduler.ts`.
 
-`App.tsx` composes these and shows request errors.
+`App.tsx` composes these and shows request errors. `styles.css` holds the
+look: colors from open-color, the palette Excalidraw draws with, and Excalidraw's
+bundled fonts, Excalifont for drawing names and Assistant for controls.
 
 ## Runtime flow
 
