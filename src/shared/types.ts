@@ -3,6 +3,8 @@ export type DrawingSummary = {
 	name: string;
 	createdAt: string;
 	updatedAt: string;
+	/** Whether `GET /api/drawings/:id/preview` returns a PNG of the scene. */
+	hasPreview: boolean;
 };
 
 export type Drawing = DrawingSummary & {
