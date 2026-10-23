@@ -26,6 +26,14 @@ Start with [the architecture document](docs/architecture.md) for module ownershi
 dependency rules, runtime flow and tests. Update it in the same change when
 modules, dependencies or ownership change.
 
+Keep the architecture document in two formats with the same content:
+`docs/architecture.md` for agents and diffs, and a self-contained
+`docs/architecture.html` for human readers. Update both in the same change. Use
+the `frontend-design` skill when creating or redesigning the HTML version. Keep
+the HTML self-contained so it works offline, with portable source links and no
+machine-specific paths. If `docs/architecture.html` does not exist yet, create it
+in the next change that updates the architecture document.
+
 ## Code organization
 
 - Split code by feature, not by technical layer. Keep a feature's components,
