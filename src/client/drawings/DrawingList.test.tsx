@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "../../shared/types.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
@@ -20,8 +20,6 @@ function setup() {
 	return { ...props, user: userEvent.setup() };
 }
 
-afterEach(() => vi.restoreAllMocks());
-
 describe("DrawingList", () => {
 	it("marks the selected drawing", () => {
 		setup();
@@ -40,54 +38,76 @@ describe("DrawingList", () => {
 	});
 
 	it("creates a drawing with the entered name", async () => {
-		vi.spyOn(window, "prompt").mockReturnValue("Sketch");
 		const { user, onCreate } = setup();
+		expect(screen.queryByRole("textbox")).toBeNull();
 
 		await user.click(screen.getByRole("button", { name: "New drawing" }));
+		await user.type(
+			screen.getByRole("textbox", { name: "Name of the new drawing" }),
+			"Sketch{Enter}",
+		);
 
 		expect(onCreate).toHaveBeenCalledWith("Sketch");
+		expect(screen.queryByRole("textbox")).toBeNull();
 	});
 
-	it("does not create a drawing when the prompt is cancelled", async () => {
-		vi.spyOn(window, "prompt").mockReturnValue(null);
+	it("does not create a drawing when naming is cancelled", async () => {
 		const { user, onCreate } = setup();
 
 		await user.click(screen.getByRole("button", { name: "New drawing" }));
+		await user.type(screen.getByRole("textbox"), "Sketch{Escape}");
 
 		expect(onCreate).not.toHaveBeenCalled();
+		expect(screen.queryByRole("textbox")).toBeNull();
 	});
 
-	it("renames a drawing", async () => {
-		const prompt = vi.spyOn(window, "prompt").mockReturnValue("Ideas");
+	it("renames a drawing in place", async () => {
 		const { user, onRename } = setup();
 
 		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		const field = screen.getByRole("textbox", { name: "New name for Plan" });
+		expect(field).toHaveValue("Plan");
+		await user.clear(field);
+		await user.type(field, "Ideas{Enter}");
 
-		expect(prompt).toHaveBeenCalledWith("New name", "Plan");
 		expect(onRename).toHaveBeenCalledWith("1", "Ideas");
+		expect(screen.getByRole("button", { name: "Plan" })).toBeInTheDocument();
 	});
 
-	it("ignores a blank rename", async () => {
-		vi.spyOn(window, "prompt").mockReturnValue("  ");
-		const { user, onRename } = setup();
+	it("deletes a drawing after confirmation", async () => {
+		const { user, onDelete } = setup();
 
-		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.click(screen.getByRole("button", { name: "Delete Roadmap" }));
+		expect(screen.getByText("Delete “Roadmap”?")).toBeInTheDocument();
+		await user.click(screen.getByRole("button", { name: "Delete" }));
 
-		expect(onRename).not.toHaveBeenCalled();
+		expect(onDelete).toHaveBeenCalledWith("2");
+		expect(screen.queryByText("Delete “Roadmap”?")).toBeNull();
 	});
 
 	it.each([
-		[true, 1],
-		[false, 0],
+		[
+			"the Keep button",
+			(user: ReturnType<typeof userEvent.setup>) =>
+				user.click(screen.getByRole("button", { name: "Keep" })),
+		],
+		[
+			"Escape",
+			(user: ReturnType<typeof userEvent.setup>) => user.keyboard("{Escape}"),
+		],
 	])(
-		"deletes only after confirmation (confirmed: %s)",
-		async (confirmed, calls) => {
-			vi.spyOn(window, "confirm").mockReturnValue(confirmed);
+		"keeps a drawing when deletion is cancelled with %s",
+		async (_, cancel) => {
 			const { user, onDelete } = setup();
 
 			await user.click(screen.getByRole("button", { name: "Delete Roadmap" }));
+			expect(screen.getByRole("button", { name: "Keep" })).toHaveFocus();
+			await cancel(user);
 
-			expect(onDelete).toHaveBeenCalledTimes(calls);
+			expect(onDelete).not.toHaveBeenCalled();
+			expect(
+				screen.getByRole("button", { name: "Roadmap" }),
+			).toBeInTheDocument();
 		},
 	);
 });
