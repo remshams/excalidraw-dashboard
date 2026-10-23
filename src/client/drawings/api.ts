@@ -4,10 +4,14 @@ import type {
 	UpdateDrawingRequest,
 } from "../../shared/types.ts";
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(
+	path: string,
+	init: RequestInit = {},
+	contentType = "application/json",
+): Promise<T> {
 	const response = await fetch(`/api${path}`, {
 		...init,
-		headers: { "Content-Type": "application/json" },
+		headers: { "Content-Type": contentType },
 	});
 	if (!response.ok) {
 		throw new Error(
@@ -35,3 +39,17 @@ export const updateDrawing = (id: string, changes: UpdateDrawingRequest) =>
 
 export const deleteDrawing = (id: string) =>
 	request<void>(`/drawings/${id}`, { method: "DELETE" });
+
+/** URL of the PNG preview. It changes with every update, so browsers can cache it. */
+export const previewUrl = ({ id, updatedAt }: DrawingSummary) =>
+	`/api/drawings/${id}/preview?v=${encodeURIComponent(updatedAt)}`;
+
+export const savePreview = (id: string, png: Blob) =>
+	request<DrawingSummary>(
+		`/drawings/${id}/preview`,
+		{ method: "PUT", body: png },
+		"image/png",
+	);
+
+export const deletePreview = (id: string) =>
+	request<DrawingSummary>(`/drawings/${id}/preview`, { method: "DELETE" });
