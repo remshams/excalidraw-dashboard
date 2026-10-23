@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar.tsx";
 import { DEFAULT_WIDTH, MAX_WIDTH, MIN_WIDTH } from "./use-sidebar.ts";
 
@@ -22,6 +22,7 @@ const handle = () => screen.getByRole("separator", { name: "Resize drawings" });
 const width = () => Number(handle().getAttribute("aria-valuenow"));
 
 beforeEach(() => localStorage.clear());
+afterEach(() => vi.restoreAllMocks());
 
 describe("Sidebar", () => {
 	it("collapses to a rail and opens again, keeping focus on the toggle", async () => {
@@ -118,6 +119,17 @@ describe("Sidebar", () => {
 		setup();
 
 		expect(width()).toBe(DEFAULT_WIDTH);
+	});
+
+	it("keeps working when storage rejects writes", async () => {
+		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+			throw new DOMException("Blocked", "SecurityError");
+		});
+		const { user } = setup();
+		handle().focus();
+		await user.keyboard("{ArrowRight}");
+
+		expect(width()).toBe(DEFAULT_WIDTH + 16);
 	});
 
 	it("clamps a stored width to its limits", () => {
