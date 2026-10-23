@@ -41,14 +41,19 @@ export function App() {
 					/>
 				) : (
 					<p className="placeholder">
-						{selectedId ? "Loading…" : "Select or create a drawing"}
+						{selectedId
+							? "Opening drawing…"
+							: "Open a drawing from the list or start a new one."}
 					</p>
 				)}
 			</main>
 			{error && (
-				<button type="button" className="error" onClick={() => setError(null)}>
-					{error}
-				</button>
+				<div className="error" role="alert">
+					<p>{error}</p>
+					<button type="button" onClick={() => setError(null)}>
+						Dismiss
+					</button>
+				</div>
 			)}
 		</div>
 	);

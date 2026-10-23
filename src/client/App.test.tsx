@@ -37,7 +37,9 @@ describe("App", () => {
 	it("opens the drawing selected in the list", async () => {
 		const user = userEvent.setup();
 		render(<App />);
-		expect(screen.getByText("Select or create a drawing")).toBeInTheDocument();
+		expect(
+			screen.getByText("Open a drawing from the list or start a new one."),
+		).toBeInTheDocument();
 
 		await user.click(await nav().findByRole("button", { name: "Roadmap" }));
 
@@ -49,18 +51,19 @@ describe("App", () => {
 		window.location.hash = "#1";
 		render(<App />);
 
+		expect(screen.getByText("Opening drawing…")).toBeInTheDocument();
 		expect(await screen.findByText("Editing Plan")).toBeInTheDocument();
 	});
 
 	it("adds a created drawing in name order and opens it", async () => {
 		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
 		vi.mocked(api.getDrawing).mockResolvedValue(drawing("3", "Ideas"));
-		vi.spyOn(window, "prompt").mockReturnValue("Ideas");
 		const user = userEvent.setup();
 		render(<App />);
 		await nav().findByRole("button", { name: "Plan" });
 
 		await user.click(nav().getByRole("button", { name: "New drawing" }));
+		await user.type(nav().getByRole("textbox"), "Ideas{Enter}");
 
 		expect(await screen.findByText("Editing Ideas")).toBeInTheDocument();
 		expect(
@@ -76,11 +79,12 @@ describe("App", () => {
 
 	it("shows a renamed drawing under its new name", async () => {
 		vi.mocked(api.updateDrawing).mockResolvedValue(drawing("1", "Sketch"));
-		vi.spyOn(window, "prompt").mockReturnValue("Sketch");
 		const user = userEvent.setup();
 		render(<App />);
 
 		await user.click(await nav().findByRole("button", { name: "Rename Plan" }));
+		await user.clear(nav().getByRole("textbox"));
+		await user.type(nav().getByRole("textbox"), "Sketch{Enter}");
 
 		expect(
 			await nav().findByRole("button", { name: "Sketch" }),
@@ -90,29 +94,31 @@ describe("App", () => {
 
 	it("closes the open drawing when it is deleted", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		vi.spyOn(window, "confirm").mockReturnValue(true);
 		window.location.hash = "#1";
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
 
 		await user.click(nav().getByRole("button", { name: "Delete Plan" }));
+		await user.click(nav().getByRole("button", { name: "Delete" }));
 
 		expect(
-			await screen.findByText("Select or create a drawing"),
+			await screen.findByText(
+				"Open a drawing from the list or start a new one.",
+			),
 		).toBeInTheDocument();
 		expect(nav().queryByRole("button", { name: "Plan" })).toBeNull();
 	});
 
 	it("keeps another open drawing when deleting", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		vi.spyOn(window, "confirm").mockReturnValue(true);
 		window.location.hash = "#1";
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
 
 		await user.click(nav().getByRole("button", { name: "Delete Roadmap" }));
+		await user.click(nav().getByRole("button", { name: "Delete" }));
 
 		await waitFor(() =>
 			expect(nav().queryByRole("button", { name: "Roadmap" })).toBeNull(),
@@ -125,10 +131,9 @@ describe("App", () => {
 		const user = userEvent.setup();
 		render(<App />);
 
-		await user.click(
-			await screen.findByRole("button", { name: "Server down" }),
-		);
+		expect(await screen.findByRole("alert")).toHaveTextContent("Server down");
+		await user.click(screen.getByRole("button", { name: "Dismiss" }));
 
-		expect(screen.queryByText("Server down")).toBeNull();
+		expect(screen.queryByRole("alert")).toBeNull();
 	});
 });
