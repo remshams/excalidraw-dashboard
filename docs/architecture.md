@@ -30,6 +30,12 @@ their dependency rules.
   inline: names through `NameField.tsx`, deletion after a confirmation in the row.
 - `Editor.tsx` embeds Excalidraw and saves changes through `save-scheduler.ts`.
 
+`src/client/sidebar/` holds the sidebar that wraps the drawing list:
+- `use-sidebar.ts` owns its width and collapsed state, saves both in
+  `localStorage`, and handles resizing by pointer and arrow keys.
+- `Sidebar.tsx` renders the resize handle and the collapsed rail. It passes the
+  button that hides it to its content, which `DrawingList` shows in its header.
+
 `App.tsx` composes these and shows request errors. `styles.css` holds the
 look: colors from open-color, the palette Excalidraw draws with, and Excalidraw's
 bundled fonts, Excalifont for drawing names and Assistant for controls.
