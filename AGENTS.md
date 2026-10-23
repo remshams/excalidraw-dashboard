@@ -1,4 +1,4 @@
-# excalidraw-drawings
+# excalidraw-dashboard
 
 A self-hosted Excalidraw with a list of drawings. The React client embeds
 `@excalidraw/excalidraw` and autosaves each drawing to a small Hono server that
