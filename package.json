@@ -1,5 +1,5 @@
 {
-	"name": "excalidraw-drawings",
+	"name": "excalidraw-dashboard",
 	"private": true,
 	"description": "A self-hosted Excalidraw with a list of drawings stored in SQLite.",
 	"type": "module",
