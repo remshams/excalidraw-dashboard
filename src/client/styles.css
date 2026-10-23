@@ -1,6 +1,29 @@
+/* Excalidraw's handwriting, Latin subset. The file name carries a hash, so check
+   it after upgrading @excalidraw/excalidraw. Assistant comes with Excalidraw's CSS. */
+@font-face {
+	font-family: "Drawings Hand";
+	src: url("../../node_modules/@excalidraw/excalidraw/dist/prod/fonts/Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2")
+		format("woff2");
+	font-display: swap;
+}
+
 :root {
-	font-family: system-ui, sans-serif;
-	color-scheme: light dark;
+	/* Colors from open-color, the palette Excalidraw draws with. */
+	--ink: #1e1e1e;
+	--sheet: #ffffff;
+	--desk: #f1f3f5;
+	--graphite: #495057;
+	--marker: #ffec99;
+	--signal: #c92a2a;
+	--focus: #1971c2;
+	--hand: "Drawings Hand", "Comic Sans MS", cursive;
+
+	font-family: Assistant, system-ui, sans-serif;
+	font-size: 100%;
+	line-height: 1.5;
+	color: var(--ink);
+	background: var(--sheet);
+	color-scheme: light;
 }
 
 html,
@@ -10,44 +33,222 @@ body,
 	margin: 0;
 }
 
+button,
+input {
+	font: inherit;
+	color: inherit;
+}
+
+:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+
 .layout {
 	display: grid;
-	grid-template-columns: 240px 1fr;
+	grid-template-columns: 17rem 1fr;
 	height: 100%;
 }
+
+/* Drawing list */
 
 .drawing-list {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
-	padding: 0.75rem;
-	border-right: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+	gap: 0.75rem;
+	padding: 1.25rem 0.75rem;
+	background: var(--desk);
 	overflow-y: auto;
 }
 
+.drawing-list header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding-inline: 0.5rem;
+}
+
+.drawing-list h1 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.drawing-list .new {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+	border: 1px solid #ced4da;
+	border-radius: 0.5rem;
+	background: var(--sheet);
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.drawing-list .new:hover {
+	border-color: var(--graphite);
+}
+
 .drawing-list ul {
-	list-style: none;
+	display: flex;
+	flex-direction: column;
 	margin: 0;
 	padding: 0;
+	list-style: none;
 }
 
 .drawing-list li {
+	position: relative;
 	display: flex;
 	align-items: center;
-	gap: 0.25rem;
+	min-height: 2.75rem;
 }
 
-.drawing-list li button.name {
+.drawing-list .name {
 	flex: 1;
+	min-width: 0;
+	padding: 0.25rem 0.5rem;
+	border: 0;
+	border-radius: 0.375rem;
+	background: none;
+	font-family: var(--hand);
+	font-size: 1.25rem;
+	line-height: 1.4;
 	text-align: left;
+	cursor: pointer;
+}
+
+.drawing-list .name span {
+	position: relative;
+	isolation: isolate;
+	display: inline-block;
+	max-width: 100%;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	vertical-align: bottom;
 }
 
-.drawing-list li[aria-current="true"] button.name {
-	font-weight: 600;
+/* The open drawing gets a highlighter stroke, swept in from the left. */
+.drawing-list li[aria-current="true"] .name span::before {
+	content: "";
+	position: absolute;
+	inset: 40% 0 0.05em;
+	z-index: -1;
+	background:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M2 6C25 2 60 4 98 3l1 12C70 18 35 15 1 18z' fill='%23ffec99'/%3E%3C/svg%3E")
+		center / 100% 100% no-repeat;
+	animation: sweep 320ms ease-out;
 }
+
+@keyframes sweep {
+	from {
+		clip-path: inset(0 100% 0 0);
+	}
+	to {
+		clip-path: inset(0 0 0 0);
+	}
+}
+
+.drawing-list .icon {
+	display: grid;
+	place-items: center;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 0;
+	border-radius: 0.375rem;
+	background: none;
+	color: var(--graphite);
+	cursor: pointer;
+}
+
+.drawing-list .icon:hover {
+	background: #e9ecef;
+	color: var(--ink);
+}
+
+/* Row actions cover the end of the name while the row is pointed at or reached
+   by keyboard, so names use the full width otherwise. */
+.drawing-list .actions {
+	position: absolute;
+	top: 50%;
+	right: 0;
+	display: flex;
+	padding-left: 1.5rem;
+	background: linear-gradient(to right, transparent, var(--desk) 1.25rem);
+	transform: translateY(-50%);
+	visibility: hidden;
+}
+
+.drawing-list li:hover .actions,
+.drawing-list li:focus-within .actions {
+	visibility: visible;
+}
+
+/* Without hover, keep the actions visible beside the name. */
+@media (hover: none) {
+	.drawing-list .actions {
+		position: static;
+		padding-left: 0;
+		background: none;
+		transform: none;
+		visibility: visible;
+	}
+}
+
+.name-field {
+	flex: 1;
+	min-width: 0;
+}
+
+.name-field input {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--graphite);
+	border-radius: 0.375rem;
+	background: var(--sheet);
+	font-family: var(--hand);
+	font-size: 1.25rem;
+	line-height: 1.4;
+}
+
+.confirm {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.5rem;
+	width: 100%;
+	padding: 0.375rem 0.5rem;
+	font-size: 0.875rem;
+}
+
+.confirm p {
+	flex-basis: 100%;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.confirm button {
+	padding: 0.125rem 0.625rem;
+	border: 1px solid #ced4da;
+	border-radius: 0.375rem;
+	background: var(--sheet);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.confirm .danger {
+	border-color: var(--signal);
+	background: var(--signal);
+	color: var(--sheet);
+}
+
+/* Editor */
 
 .editor {
 	position: relative;
@@ -55,18 +256,63 @@ body,
 }
 
 .placeholder {
+	box-sizing: border-box;
 	display: grid;
 	place-items: center;
 	height: 100%;
-	opacity: 0.6;
+	margin: 0;
+	padding: 2rem;
+	color: var(--graphite);
+	font-family: var(--hand);
+	font-size: 1.5rem;
+	text-align: center;
 }
 
 .error {
 	position: fixed;
 	right: 1rem;
 	bottom: 1rem;
-	padding: 0.5rem 0.75rem;
-	border-radius: 0.25rem;
-	background: #c62828;
-	color: white;
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	max-width: min(28rem, calc(100% - 2rem));
+	box-sizing: border-box;
+	padding: 0.625rem 0.625rem 0.625rem 1rem;
+	border-radius: 0.5rem;
+	background: var(--signal);
+	color: var(--sheet);
+}
+
+.error p {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.error button {
+	flex-shrink: 0;
+	padding: 0.25rem 0.625rem;
+	border: 1px solid currentColor;
+	border-radius: 0.375rem;
+	background: none;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* Small screens: the list sits above the canvas. */
+@media (max-width: 40rem) {
+	.layout {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto 1fr;
+	}
+
+	.drawing-list {
+		max-height: 35dvh;
+		padding-block: 0.75rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.drawing-list li[aria-current="true"] .name span::before {
+		animation: none;
+	}
 }
