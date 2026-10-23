@@ -30,7 +30,8 @@ their dependency rules.
 - `use-drawing.ts` loads the selected drawing with its scene.
 - `use-hash-id.ts` keeps the open drawing ID in the URL hash.
 - `DrawingList.tsx` renders the landing page: a card per drawing with its
-  preview, and a blank card that starts a new one. Creating, renaming and
+  preview, and a blank card that starts a new one. A search field filters the
+  cards by name. Creating, renaming and
   deleting happen inline: names through `NameField.tsx`, deletion after a
   confirmation in the card.
 - `Editor.tsx` embeds Excalidraw and saves changes through `save-scheduler.ts`.
