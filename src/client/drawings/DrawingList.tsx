@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 import type { DrawingSummary } from "../../shared/types.ts";
 import { NameField } from "./NameField.tsx";
@@ -9,6 +10,8 @@ type DrawingListProps = {
 	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
 	onDelete: (id: string) => void;
+	/** Shown at the end of the header, e.g. a button that hides the list. */
+	headerAction?: ReactNode;
 };
 
 type RowTask = "rename" | "delete";
@@ -23,13 +26,14 @@ export function DrawingList({
 	onCreate,
 	onRename,
 	onDelete,
+	headerAction,
 }: DrawingListProps) {
 	const [task, setTask] = useState<OpenTask>(null);
 	const close = () => setTask(null);
 
 	return (
 		<nav className="drawing-list" aria-label="Drawings">
-			<ListHeader onCreate={onCreate} />
+			<ListHeader onCreate={onCreate} action={headerAction} />
 			<ul>
 				{drawings.map((drawing) => (
 					<DrawingRow
@@ -56,7 +60,11 @@ export function DrawingList({
 }
 
 /** The list's heading, with the button and field that create a drawing. */
-function ListHeader({ onCreate }: Pick<DrawingListProps, "onCreate">) {
+type ListHeaderProps = Pick<DrawingListProps, "onCreate"> & {
+	action: ReactNode;
+};
+
+function ListHeader({ onCreate, action }: ListHeaderProps) {
 	const [creating, setCreating] = useState(false);
 
 	return (
@@ -67,6 +75,7 @@ function ListHeader({ onCreate }: Pick<DrawingListProps, "onCreate">) {
 					<PlusIcon />
 					New drawing
 				</button>
+				{action}
 			</header>
 			{creating && (
 				<NameField
