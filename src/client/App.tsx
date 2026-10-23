@@ -4,6 +4,7 @@ import { Editor } from "./drawings/Editor.tsx";
 import { useDrawing } from "./drawings/use-drawing.ts";
 import { useDrawings } from "./drawings/use-drawings.ts";
 import { useHashId } from "./drawings/use-hash-id.ts";
+import { Sidebar } from "./sidebar/Sidebar.tsx";
 
 export function App() {
 	const [error, setError] = useState<string | null>(null);
@@ -17,20 +18,25 @@ export function App() {
 
 	return (
 		<div className="layout">
-			<DrawingList
-				drawings={drawings}
-				selectedId={selectedId}
-				onSelect={select}
-				onCreate={(name) =>
-					create(name).then((created) => select(created.id), showError)
-				}
-				onRename={(id, name) => rename(id, name).catch(showError)}
-				onDelete={(id) =>
-					remove(id).then(() => {
-						if (id === selectedId) select(null);
-					}, showError)
-				}
-			/>
+			<Sidebar label="drawings">
+				{(hideButton) => (
+					<DrawingList
+						drawings={drawings}
+						selectedId={selectedId}
+						headerAction={hideButton}
+						onSelect={select}
+						onCreate={(name) =>
+							create(name).then((created) => select(created.id), showError)
+						}
+						onRename={(id, name) => rename(id, name).catch(showError)}
+						onDelete={(id) =>
+							remove(id).then(() => {
+								if (id === selectedId) select(null);
+							}, showError)
+						}
+					/>
+				)}
+			</Sidebar>
 			<main className="editor">
 				{drawing ? (
 					<Editor
