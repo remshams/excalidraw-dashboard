@@ -106,7 +106,7 @@ input {
 	box-shadow: 0 0 0 3px rgb(25 113 194 / 0.15);
 }
 
-.search:has(input:focus) svg {
+.search:focus-within svg {
 	color: var(--focus);
 }
 
@@ -264,6 +264,11 @@ input {
 
 /* Without hover, keep the actions visible beside the name. */
 @media (hover: none) {
+	/* Touch devices rarely have a keyboard for the shortcut. */
+	.editor-bar .switch kbd {
+		display: none;
+	}
+
 	.drawing-list .actions {
 		visibility: visible;
 	}
@@ -363,6 +368,129 @@ input {
 	font-weight: 400;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.editor-bar .switch {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 0.375rem;
+	margin-left: auto;
+	padding: 0.25rem 0.375rem 0.25rem 0.625rem;
+	border: 1px solid #ced4da;
+	border-radius: 0.5rem;
+	background: var(--sheet);
+	color: var(--graphite);
+	font-size: 0.875rem;
+	cursor: pointer;
+}
+
+.editor-bar .switch:hover {
+	border-color: var(--graphite);
+	color: var(--ink);
+}
+
+kbd {
+	padding: 0 0.3125rem;
+	border: 1px solid #dee2e6;
+	border-radius: 0.25rem;
+	background: var(--desk);
+	font-family: inherit;
+	font-size: 0.75rem;
+}
+
+/* Quick switcher */
+
+.switcher-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 20;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	padding: 12vh 1rem 1rem;
+	background: rgb(30 30 30 / 0.25);
+}
+
+.switcher {
+	display: flex;
+	flex-direction: column;
+	width: min(36rem, 100%);
+	max-height: 70vh;
+	overflow: hidden;
+	border: 1px solid #dee2e6;
+	border-radius: 0.75rem;
+	background: var(--sheet);
+	box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.18);
+}
+
+.switcher input {
+	padding: 0.875rem 1rem;
+	border: 0;
+	border-bottom: 1px solid #e9ecef;
+	font-size: 1.0625rem;
+}
+
+.switcher input:focus {
+	outline: none;
+}
+
+.switcher .results {
+	padding: 0.375rem;
+	overflow-y: auto;
+}
+
+.switcher [role="option"] {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.375rem 0.5rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+}
+
+.switcher [aria-selected="true"] {
+	background: #e7f5ff;
+}
+
+.switcher .thumb {
+	display: grid;
+	flex-shrink: 0;
+	place-items: center;
+	width: 4rem;
+	aspect-ratio: 4 / 3;
+	border: 1px solid #dee2e6;
+	border-radius: 2px;
+	background: var(--sheet);
+}
+
+.switcher .thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.switcher .thumb.blank {
+	border: 1.5px dashed #adb5bd;
+	color: var(--graphite);
+	font-size: 1.5rem;
+}
+
+.switcher .name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	font-family: var(--hand);
+	font-size: 1.125rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.switcher .hint {
+	padding: 0 0.375rem;
+	border-radius: 999px;
+	background: var(--marker);
+	font-size: 0.75rem;
 }
 
 .editor {
