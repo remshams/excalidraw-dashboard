@@ -34,6 +34,25 @@ the HTML self-contained so it works offline, with portable source links and no
 machine-specific paths. If `docs/architecture.html` does not exist yet, create it
 in the next change that updates the architecture document.
 
+## Domain language
+
+Describe architecture in Domain-Driven Design terms. This applies to
+architecture documents, ADRs, issues, PR descriptions and explanations of the
+code.
+- Use the project's ubiquitous language: the words the domain uses, such as
+  `drawing` and `scene`. Use the same word in code, docs and conversation, and
+  don't switch between synonyms for one concept.
+- Name the parts of the model by their DDD role. An entity keeps its identity as
+  its data changes. A value object is defined by its values and is immutable. An
+  aggregate is a cluster of objects that changes only through its root.
+- Call stateless domain logic that belongs to no single type a domain service,
+  and code that runs one use case an application service.
+- Call a part of the model with its own language a bounded context. The server
+  code that stores drawings in SQLite is a repository; keep SQL out of the rest
+  of the model.
+- Use these terms to describe the code that exists. Don't add layers, interfaces
+  or folders just to match a DDD pattern; keeping the project small still wins.
+
 ## Code organization
 
 - Split code by feature, not by technical layer. Keep a feature's components,
