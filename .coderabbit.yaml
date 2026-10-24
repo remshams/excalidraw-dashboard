@@ -1,11 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 reviews:
-  # Approve once all review comments are resolved. Merging into main does not
-  # require this approval; "@coderabbitai approve" records it after the review.
-  request_changes_workflow: true
-  # Agents comment as the PR author, so the author must be able to run
-  # "@coderabbitai approve" on their own pull requests.
-  allow_author_approval: true
   auto_review:
     # Agents trigger reviews with "@coderabbitai review" to stay under the rate limit.
     enabled: false
