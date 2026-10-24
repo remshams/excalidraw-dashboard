@@ -129,9 +129,6 @@ publishing it.
 - Do not request another review, except when a fix changes production behavior for
   a Major or Critical finding. Then request one incremental review with
   `@coderabbitai review`.
-- To record CodeRabbit's approval, comment `@coderabbitai approve` once every thread
-  is answered. If a later push or rebase dismisses the approval, comment
-  `@coderabbitai approve` again instead of requesting a review.
 - If CodeRabbit replies that the rate limit is exceeded, wait the stated time, then
   trigger the request again. Count from when its message was posted; the number in
   it does not count down.
