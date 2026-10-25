@@ -10,6 +10,12 @@ Start with a short paragraph explaining the problem, what motivated the change, 
 
 For example, explain that strokes drawn right before switching drawings could be lost, and that the change flushes the pending save on unmount. Avoid opening with a list of files or a chronology of implementation work.
 
+## Visual summary
+
+Follow the opening description with a visual when it shows the change faster than prose: pseudocode, a call tree, a component or file tree, a Mermaid diagram, or a `diff` sketch of one of these. Pick the smallest view that makes the key point clear. Skip this section when a sentence says enough, such as for a documentation fix.
+
+Read the [pull request visuals guide](pull-request-visuals.md) for an example of each type and when to use it.
+
 ## Architecture impact
 
 Use the module names in the [architecture document](architecture.md). Include a table with one row for each affected module. Describe changes to its responsibilities, dependencies, contracts, or communication with other components.
@@ -41,6 +47,15 @@ Choose `small`, `medium`, or `high` and explain the rating in terms of what coul
 - `high` fits a change that could lose drawings, change the stored scene format, or require a difficult rollback.
 
 Name the main failure case, the validation that reduces the risk, and any remaining uncertainty. Explain recovery steps when reverting the commit alone would not restore service or data.
+
+## Evidence
+
+Show concrete before and after evidence that the change works.
+
+- For a visible UI change, add before and after screenshots when the environment can capture them. They are the strongest evidence.
+- Otherwise, show execution output: the test that failed before the change and passes after it, API responses, or log lines. Pseudocode is fine when the full test is long.
+
+For a change with no observable behavior, such as documentation or a refactor, say so and point to the validation below.
 
 ## Validation and CI
 
