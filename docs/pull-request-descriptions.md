@@ -48,6 +48,8 @@ Choose `small`, `medium`, or `high` and explain the rating in terms of what coul
 
 Name the main failure case, the validation that reduces the risk, and any remaining uncertainty. Explain recovery steps when reverting the commit alone would not restore service or data.
 
+End the section with the human review decision, for example "Human review: required, because the change alters the stored scene format." See [Human review label](#human-review-label).
+
 ## Evidence
 
 Show concrete before and after evidence that the change works.
@@ -67,3 +69,19 @@ For each skipped step, name it and explain why it is unnecessary for this PR's s
 Direct the reviewer to the parts that need judgment. Link the relevant files, tests, or ADRs and explain what to verify, such as autosave timing, scene serialization, or API compatibility. Mention test gaps and assumptions that need confirmation.
 
 Keep this specific to the PR. "Check that a pending save is flushed when switching drawings" gives the reviewer a useful question; "review the code carefully" does not.
+
+## Human review label
+
+When you open a PR, decide whether a maintainer has to review it before it merges. If so, add the `human review required` label, for example with `gh pr create --label "human review required"` or `gh pr edit <n> --add-label "human review required"`. The label is not a section of the description. Record the decision and its reason at the end of the Risk section.
+
+Add the label when any of these apply:
+- The risk is `medium` or `high`.
+- The PR changes how drawings are saved, renamed or deleted, or could lose drawing data.
+- The PR changes the stored scene format or the SQLite schema.
+- The PR changes the HTTP API contract shared between client and server.
+- The PR changes dependencies, CI, the quality gates or how the server is built and started.
+- The PR records a new architecture decision or changes module boundaries.
+
+Leave the label off for `small` changes with no behavior change, such as documentation, test-only changes, formatting or refactors that keep the API contract. If you are unsure, add it.
+
+Decide again when the scope changes, and add or remove the label to match.
