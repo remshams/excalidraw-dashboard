@@ -1,7 +1,8 @@
 # Architecture
 
 The application has three modules. The Fallow zones in `.fallowrc.json` enforce
-their dependency rules.
+their dependency rules. A fourth zone, `e2e`, holds the end-to-end tests and may
+import none of them.
 
 | Module        | Owns                                                         | May import |
 | ------------- | ------------------------------------------------------------ | ---------- |
@@ -59,3 +60,18 @@ Vitest runs two projects from `vite.config.ts`:
 
 `pnpm coverage` writes `coverage/coverage-final.json`, which Fallow uses for CRAP
 scores.
+
+Playwright runs the end-to-end tests in `e2e/` against the real application:
+the production build, the Hono server, SQLite and Excalidraw in Chromium.
+- `playwright.config.ts` builds the client and starts the server on port 3101
+  with `DATA_DIR=.e2e-data`. The folder is deleted before each run and kept
+  afterwards for debugging. The tests share this server and run one at a time.
+- `drawings.spec.ts` covers creating, renaming and deleting a drawing, opening
+  one from the URL hash, and a drawing surviving a reload. The reload test reads
+  the saved scene from the API, then selects all shapes in the editor to show the
+  scene was loaded back.
+- `steps.ts` holds the steps, each wrapped in `test.step`, so the report reads as
+  a scenario.
+
+The tests are black-box. The `e2e` Fallow zone may import nothing from `src/`.
+They run with `pnpm e2e` and in the `e2e` CI job, not in `pnpm check`.
