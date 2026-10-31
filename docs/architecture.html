@@ -232,7 +232,7 @@ footer { margin-top: 3rem; font-size: 0.9rem; color: var(--graphite); }
 <ol>
 	<li>The client loads the list (<code>GET /api/drawings</code>) and, if the URL hash names a drawing, its scene (<code>GET /api/drawings/:id</code>).</li>
 	<li><code>Editor</code> mounts Excalidraw with the stored scene. Excalidraw reports every change through <code>onChange</code>.</li>
-	<li>The save scheduler serializes the scene, waits for a one second pause and sends it with <code>PUT /api/drawings/:id</code>. It skips scenes equal to the last saved one. Switching drawings or leaving the page flushes a pending save.</li>
+	<li>The save scheduler serializes the scene, waits for a one second pause and sends it with <code>PUT /api/drawings/:id</code>. It skips scenes equal to the last saved one. Switching drawings or leaving the page flushes a pending save. When the open drawing is deleted, closing it flushes its last edit, which fails; <code>App</code> doesn't show errors for drawings it deleted.</li>
 </ol>
 
 <h2><span>Tests</span></h2>
