@@ -5,10 +5,34 @@ import type { Drawing } from "../shared/types.ts";
 import { App } from "./App.tsx";
 import * as api from "./drawings/api.ts";
 
-vi.mock("./drawings/api.ts");
-vi.mock("./drawings/Editor.tsx", () => ({
-	Editor: ({ drawing }: { drawing: Drawing }) => <p>Editing {drawing.name}</p>,
+/** Lets a test make the editor report a failed save when it closes. */
+const editor = vi.hoisted(() => ({
+	failOnClose: undefined as Error | undefined,
 }));
+
+vi.mock("./drawings/api.ts");
+vi.mock("./drawings/Editor.tsx", async () => {
+	const { useEffect, useRef } = await import("react");
+	return {
+		Editor: ({
+			drawing,
+			onError,
+		}: {
+			drawing: Drawing;
+			onError: (error: unknown) => void;
+		}) => {
+			const report = useRef(onError);
+			report.current = onError;
+			useEffect(
+				() => () => {
+					if (editor.failOnClose) report.current(editor.failOnClose);
+				},
+				[],
+			);
+			return <p>Editing {drawing.name}</p>;
+		},
+	};
+});
 
 const drawing = (id: string, name: string): Drawing => ({
 	id,
@@ -31,7 +55,10 @@ beforeEach(() => {
 	);
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+	editor.failOnClose = undefined;
+	vi.restoreAllMocks();
+});
 
 describe("App", () => {
 	it("opens the drawing selected in the list", async () => {
@@ -108,6 +135,39 @@ describe("App", () => {
 			),
 		).toBeInTheDocument();
 		expect(nav().queryByRole("button", { name: "Plan" })).toBeNull();
+	});
+
+	it("shows no error when the deleted drawing's last save fails", async () => {
+		vi.mocked(api.deleteDrawing).mockResolvedValue();
+		editor.failOnClose = new Error("PUT /drawings/1 failed with 404");
+		window.location.hash = "#1";
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(nav().getByRole("button", { name: "Delete Plan" }));
+		await user.click(nav().getByRole("button", { name: "Delete" }));
+
+		expect(
+			await screen.findByText(
+				"Open a drawing from the list or start a new one.",
+			),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("alert")).toBeNull();
+	});
+
+	it("shows a failed save of a drawing that still exists", async () => {
+		editor.failOnClose = new Error("PUT /drawings/1 failed with 500");
+		window.location.hash = "#1";
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(nav().getByRole("button", { name: "Roadmap" }));
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"PUT /drawings/1 failed with 500",
+		);
 	});
 
 	it("keeps another open drawing when deleting", async () => {

@@ -14,7 +14,8 @@ export function App() {
 
 	const [selectedId, select] = useHashId();
 	const drawing = useDrawing(selectedId, showError);
-	const { drawings, replace, create, rename, remove } = useDrawings(showError);
+	const { drawings, replace, create, rename, remove, wasDeleted } =
+		useDrawings(showError);
 
 	return (
 		<div className="layout">
@@ -43,7 +44,10 @@ export function App() {
 						key={drawing.id}
 						drawing={drawing}
 						onSaved={replace}
-						onError={showError}
+						onError={(cause) => {
+							// Closing a deleted drawing flushes its last edit, which then fails.
+							if (!wasDeleted(drawing.id)) showError(cause);
+						}}
 					/>
 				) : (
 					<p className="placeholder">
