@@ -47,16 +47,21 @@ test("rename a drawing", async ({ page }) => {
 	await expectNotListed(page, name);
 	await reload(page);
 	await expectListed(page, newName);
+	await expectNotListed(page, name);
 });
 
 test("delete a drawing", async ({ page }) => {
+	const kept = uniqueName("Keeper");
 	const name = uniqueName("Scratch");
 
 	await openApp(page);
+	await createDrawing(page, kept);
 	await createDrawing(page, name);
 	await deleteDrawing(page, name);
 	await expectNotListed(page, name);
 	await reload(page);
+	// The list is empty until it loads; the kept drawing shows that it has.
+	await expectListed(page, kept);
 	await expectNotListed(page, name);
 });
 

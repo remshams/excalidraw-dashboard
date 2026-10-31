@@ -113,6 +113,10 @@ export function expectListed(page: Page, name: string): Promise<void> {
 	});
 }
 
+/**
+ * The list starts empty while it loads, so after a reload check that another
+ * drawing is listed first, or this passes too early.
+ */
 export function expectNotListed(page: Page, name: string): Promise<void> {
 	return test.step(`${name} is not in the list`, async () => {
 		await expect(drawingList(page)).toBeVisible();
@@ -180,6 +184,8 @@ function elementTypes(scene: string | null): string[] {
 /**
  * The canvas shows a shape: selecting everything opens Excalidraw's panel for
  * the selected shapes, which it shows only when the scene has elements.
+ * Excalidraw shows this panel only in its desktop layout; a narrow editor, such
+ * as at 800x600, switches to the compact layout without it.
  */
 export function expectShapeShown(page: Page): Promise<void> {
 	return test.step("the rectangle is still there", async () => {
