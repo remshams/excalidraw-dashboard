@@ -24,7 +24,8 @@ import none of them.
 
 `src/client/drawings/` holds the drawings feature:
 - `api.ts` wraps the HTTP API.
-- `use-drawings.ts` loads the list and applies create, rename and delete.
+- `use-drawings.ts` loads the list and applies create, rename and delete. It
+  remembers which drawings it deleted.
 - `use-drawing.ts` loads the selected drawing with its scene.
 - `use-hash-id.ts` keeps the selected drawing ID in the URL hash.
 - `DrawingList.tsx` renders the sidebar. Creating, renaming and deleting happen
@@ -50,8 +51,8 @@ bundled fonts, Excalifont for drawing names and Assistant for controls.
 3. The save scheduler serializes the scene, waits for a one second pause and
    sends it with `PUT /api/drawings/:id`. It skips scenes equal to the last saved
    one. Switching drawings or leaving the page flushes a pending save. When the
-   open drawing is deleted, closing it flushes its last edit, which fails;
-   `App` doesn't show errors for drawings it deleted.
+   open drawing is deleted with an edit pending, closing it flushes that edit,
+   which then fails; `App` doesn't show errors for drawings it deleted.
 
 ## Tests
 
