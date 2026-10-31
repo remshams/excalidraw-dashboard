@@ -106,7 +106,8 @@ test("delete a drawing", async ({ page }) => {
 	await test.step(`${name} is gone and no error is shown`, async () => {
 		await expect(drawingButton(page, name)).toHaveCount(0);
 		await expect(noDrawingOpenHint(page)).toBeVisible();
-		// The closed editor's last save has answered by now; its error would show.
+		// Closing the editor sent its last save, which fails. Nothing waits for that
+		// response; locally it arrives before this check.
 		await expect(errorMessage(page)).toHaveCount(0);
 	});
 
