@@ -9,12 +9,14 @@
 		"zones": [
 			{ "name": "shared", "patterns": ["src/shared/**/*.ts"] },
 			{ "name": "server", "patterns": ["src/server/**/*.ts"] },
-			{ "name": "client", "patterns": ["src/client/**/*.{ts,tsx}"] }
+			{ "name": "client", "patterns": ["src/client/**/*.{ts,tsx}"] },
+			{ "name": "e2e", "patterns": ["e2e/**/*.ts"] }
 		],
 		"rules": [
 			{ "from": "shared", "allow": [] },
 			{ "from": "server", "allow": ["shared"] },
-			{ "from": "client", "allow": ["shared"] }
+			{ "from": "client", "allow": ["shared"] },
+			{ "from": "e2e", "allow": [] }
 		]
 	},
 	"mutation": {
