@@ -4,7 +4,9 @@ import {
 	createDrawingThroughApi,
 	deleteDrawing,
 	drawRectangle,
+	expectEditorClosed,
 	expectListed,
+	expectNoError,
 	expectNotListed,
 	expectOpen,
 	expectRectangleSaved,
@@ -59,6 +61,8 @@ test("delete a drawing", async ({ page }) => {
 	await createDrawing(page, name);
 	await deleteDrawing(page, name);
 	await expectNotListed(page, name);
+	await expectEditorClosed(page);
+	await expectNoError(page);
 	await reload(page);
 	// The list is empty until it loads; the kept drawing shows that it has.
 	await expectListed(page, kept);
