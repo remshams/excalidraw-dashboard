@@ -75,8 +75,11 @@ the production build, the Hono server, SQLite and Excalidraw in Chromium.
   one from the URL hash, and a drawing surviving a reload. The reload test reads
   the saved scene from the API, then selects all shapes in the editor to show the
   scene was loaded back.
-- `steps.ts` holds the steps, each wrapped in `test.step`, so the report reads as
-  a scenario.
+- Each test groups its actions and checks into `test.step` blocks, so the test
+  and its report read as a scenario.
+- `drawings-ui.ts` holds the locators and user actions for the drawings UI, and
+  `drawings-api.ts` creates drawings and reads stored scenes through the HTTP API.
+  Neither defines steps.
 
 The tests are black-box. The `e2e` Fallow zone may import nothing from `src/`.
 They run with `pnpm e2e` and in the `e2e` CI job, not in `pnpm check`.
