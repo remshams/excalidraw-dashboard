@@ -111,7 +111,7 @@ Chromium. Run `pnpm exec playwright install chromium` once before the first run.
 - Group each test's actions and checks into `test.step` blocks written in the
   test itself, named after what the user does or sees, so the test and its report
   read as a scenario.
-- Put repeated actions and locators in plain helpers without `test.step`:
+- Put user actions, shared checks and locators in plain helpers without `test.step`:
   `e2e/drawings-ui.ts` for the UI and `e2e/drawings-api.ts` for the HTTP API.
 - The tests share one server and database and run one at a time. Give every
   drawing a unique name with `uniqueName` from `drawings.spec.ts`, and don't
