@@ -59,6 +59,8 @@ test("delete a drawing", async ({ page }) => {
 	await openApp(page);
 	await createDrawing(page, kept);
 	await createDrawing(page, name);
+	// Delete within the one second save delay, so closing the editor saves the edit.
+	await drawRectangle(page);
 	await deleteDrawing(page, name);
 	await expectNotListed(page, name);
 	await expectEditorClosed(page);
