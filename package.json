@@ -13,6 +13,7 @@
 		"build": "vite build",
 		"start": "NODE_ENV=production node src/server/index.ts",
 		"test": "vitest run",
+		"e2e": "playwright test",
 		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
 		"lint": "biome lint .",
 		"format": "biome format --write .",
@@ -36,6 +37,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.2",
+		"@playwright/test": "^1.64.1",
 		"@testing-library/jest-dom": "^7.0.1",
 		"@testing-library/react": "^16.3.3",
 		"@testing-library/user-event": "^14.6.8",
