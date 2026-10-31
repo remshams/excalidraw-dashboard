@@ -114,7 +114,8 @@ Chromium. Run `pnpm exec playwright install chromium` once before the first run.
 - Put repeated actions and locators in plain helpers without `test.step`:
   `e2e/drawings-ui.ts` for the UI and `e2e/drawings-api.ts` for the HTTP API.
 - The tests share one server and database and run one at a time. Give every
-  drawing a unique name with `uniqueName`, and don't assume the list is empty.
+  drawing a unique name with `uniqueName` from `drawings.spec.ts`, and don't
+  assume the list is empty.
 
 ## GitHub issues
 
