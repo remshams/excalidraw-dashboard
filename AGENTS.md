@@ -90,6 +90,11 @@ Mutation testing is optional locally: `pnpm mutation` checks changed code agains
 the full score. The minimum score lives in the `mutation` script. Raise it as
 coverage improves; do not lower it to pass changes.
 
+Run `pnpm e2e` for the Playwright end-to-end tests. They build the client, start
+the server on port 3101 with a fresh database in `.e2e-data/`, and run in
+Chromium. Run `pnpm exec playwright install chromium` once before the first run.
+`pnpm check` doesn't run them; CI runs them in its own `e2e` job.
+
 ## End-to-end tests
 
 - Write E2E tests as black-box tests. Drive the application only through its
@@ -100,6 +105,13 @@ coverage improves; do not lower it to pass changes.
   components, or inspect internal state from E2E tests. Set up preconditions
   through the public interface where possible. Test harness code that starts real
   external dependencies (servers, databases, proxies) is fine.
+- Keep the tests in `e2e/`. Its Fallow zone may import nothing from `src/`, so
+  `pnpm fallow:architecture` fails on an internal import.
+- Find elements by role and accessible name. Wrap each user action or check in a
+  `test.step` named after what the user does or sees, and keep reusable steps as
+  helpers in `e2e/steps.ts`.
+- The tests share one server and database and run one at a time. Give every
+  drawing a unique name with `uniqueName`, and don't assume the list is empty.
 
 ## GitHub issues
 
