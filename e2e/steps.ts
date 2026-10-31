@@ -148,8 +148,11 @@ function editor(page: Page) {
 /** Draws a rectangle in the middle of the canvas. */
 export function drawRectangle(page: Page): Promise<void> {
 	return test.step("draw a rectangle", async () => {
-		// Excalidraw hides the radio input behind its label, which carries the title.
-		await page.getByTitle(/^Rectangle/).click();
+		// Excalidraw hides the radio input behind its label, so click the label.
+		await page
+			.getByRole("radio", { name: "Rectangle" })
+			.locator("xpath=..")
+			.click();
 		const box = await editor(page).boundingBox();
 		if (!box) throw new Error("The editor is not visible.");
 		const x = box.x + box.width / 2;
