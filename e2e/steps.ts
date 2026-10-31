@@ -57,7 +57,11 @@ export function createDrawing(page: Page, name: string): Promise<string> {
 			.getByRole("textbox", { name: "Name of the new drawing" })
 			.fill(name);
 		await page.keyboard.press("Enter");
-		await expect(page).toHaveURL(/#.+/);
+		// Wait for the new drawing to open; the hash may still name the last one.
+		await expect(drawingRow(page, name)).toHaveAttribute(
+			"aria-current",
+			"true",
+		);
 		return openDrawingId(page);
 	});
 }
