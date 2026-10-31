@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "../../shared/types.ts";
 import {
 	createDrawing,
@@ -13,6 +13,7 @@ const byName = (a: DrawingSummary, b: DrawingSummary) =>
 /** Loads the drawing list and keeps it sorted by name across changes. */
 export function useDrawings(onError: (error: unknown) => void) {
 	const [drawings, setDrawings] = useState<DrawingSummary[]>([]);
+	const deletedIds = useRef(new Set<string>());
 
 	useEffect(() => {
 		listDrawings().then(setDrawings, onError);
@@ -36,8 +37,15 @@ export function useDrawings(onError: (error: unknown) => void) {
 
 	const remove = async (id: string) => {
 		await deleteDrawing(id);
+		deletedIds.current.add(id);
 		setDrawings((list) => list.filter((d) => d.id !== id));
 	};
 
-	return { drawings, replace, create, rename, remove };
+	/** Whether this app deleted the drawing, so later errors about it don't matter. */
+	const wasDeleted = useCallback(
+		(id: string) => deletedIds.current.has(id),
+		[],
+	);
+
+	return { drawings, replace, create, rename, remove, wasDeleted };
 }
