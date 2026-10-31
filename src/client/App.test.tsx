@@ -170,6 +170,54 @@ describe("App", () => {
 		);
 	});
 
+	it("still shows a failed save after another drawing was deleted", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([
+			drawing("1", "Plan"),
+			drawing("2", "Roadmap"),
+			drawing("3", "Ideas"),
+		]);
+		vi.mocked(api.getDrawing).mockImplementation(async (id) =>
+			drawing(id, { "1": "Plan", "3": "Ideas" }[id] ?? "Roadmap"),
+		);
+		vi.mocked(api.deleteDrawing).mockResolvedValue();
+		window.location.hash = "#1";
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(nav().getByRole("button", { name: "Delete Roadmap" }));
+		await user.click(nav().getByRole("button", { name: "Delete" }));
+		await waitFor(() =>
+			expect(nav().queryByRole("button", { name: "Roadmap" })).toBeNull(),
+		);
+		editor.failOnClose = new Error("PUT /drawings/1 failed with 404");
+		await user.click(nav().getByRole("button", { name: "Ideas" }));
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"PUT /drawings/1 failed with 404",
+		);
+	});
+
+	it("still shows a failed save when deleting the drawing failed", async () => {
+		vi.mocked(api.deleteDrawing).mockRejectedValue(
+			new Error("DELETE /drawings/1 failed with 500"),
+		);
+		window.location.hash = "#1";
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(nav().getByRole("button", { name: "Delete Plan" }));
+		await user.click(nav().getByRole("button", { name: "Delete" }));
+		await user.click(await screen.findByRole("button", { name: "Dismiss" }));
+		editor.failOnClose = new Error("PUT /drawings/1 failed with 500");
+		await user.click(nav().getByRole("button", { name: "Roadmap" }));
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"PUT /drawings/1 failed with 500",
+		);
+	});
+
 	it("keeps another open drawing when deleting", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
 		window.location.hash = "#1";
