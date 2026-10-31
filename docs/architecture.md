@@ -61,6 +61,8 @@ Vitest runs two projects from `vite.config.ts`:
 `pnpm coverage` writes `coverage/coverage-final.json`, which Fallow uses for CRAP
 scores.
 
+### End-to-end tests
+
 Playwright runs the end-to-end tests in `e2e/` against the real application:
 the production build, the Hono server, SQLite and Excalidraw in Chromium.
 - `playwright.config.ts` builds the client and starts the server on port 3101
