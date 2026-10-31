@@ -14,7 +14,7 @@
 		"start": "NODE_ENV=production node src/server/index.ts",
 		"test": "vitest run",
 		"e2e": "playwright test",
-		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
+		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json && tsc -p tsconfig.e2e.json",
 		"lint": "biome lint .",
 		"format": "biome format --write .",
 		"format:check": "biome format .",
