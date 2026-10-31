@@ -128,6 +128,25 @@ export function expectNotListed(page: Page, name: string): Promise<void> {
 	});
 }
 
+/** No drawing is open: the editor gave way to the hint to open or create one. */
+export function expectEditorClosed(page: Page): Promise<void> {
+	return test.step("no drawing is open", async () => {
+		await expect(
+			page.getByText("Open a drawing from the list or start a new one."),
+		).toBeVisible();
+	});
+}
+
+/**
+ * No error message is shown. Check it after the step whose requests could fail,
+ * since the message appears once their response arrives.
+ */
+export function expectNoError(page: Page): Promise<void> {
+	return test.step("no error is shown", async () => {
+		await expect(page.getByRole("alert")).toHaveCount(0);
+	});
+}
+
 /** The list marks the drawing as current and the editor shows its tools. */
 export function expectOpen(page: Page, name: string): Promise<void> {
 	return test.step(`${name} is open in the editor`, async () => {
