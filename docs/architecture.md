@@ -49,7 +49,9 @@ bundled fonts, Excalifont for drawing names and Assistant for controls.
    change through `onChange`.
 3. The save scheduler serializes the scene, waits for a one second pause and
    sends it with `PUT /api/drawings/:id`. It skips scenes equal to the last saved
-   one. Switching drawings or leaving the page flushes a pending save.
+   one. Switching drawings or leaving the page flushes a pending save. When the
+   open drawing is deleted, closing it flushes its last edit, which fails;
+   `App` doesn't show errors for drawings it deleted.
 
 ## Tests
 
