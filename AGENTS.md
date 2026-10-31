@@ -107,9 +107,12 @@ Chromium. Run `pnpm exec playwright install chromium` once before the first run.
   external dependencies (servers, databases, proxies) is fine.
 - Keep the tests in `e2e/`. Its Fallow zone may import nothing from `src/`, so
   `pnpm fallow:architecture` fails on an internal import.
-- Find elements by role and accessible name. Wrap each user action or check in a
-  `test.step` named after what the user does or sees, and keep reusable steps as
-  helpers in `e2e/steps.ts`.
+- Find elements by role and accessible name.
+- Group each test's actions and checks into `test.step` blocks written in the
+  test itself, named after what the user does or sees, so the test and its report
+  read as a scenario.
+- Put repeated actions and locators in plain helpers without `test.step`:
+  `e2e/drawings-ui.ts` for the UI and `e2e/drawings-api.ts` for the HTTP API.
 - The tests share one server and database and run one at a time. Give every
   drawing a unique name with `uniqueName`, and don't assume the list is empty.
 
