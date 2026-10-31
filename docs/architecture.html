@@ -248,7 +248,8 @@ footer { margin-top: 3rem; font-size: 0.9rem; color: var(--graphite); }
 <ul>
 	<li><a href="../playwright.config.ts"><code>playwright.config.ts</code></a> builds the client and starts the server on port 3101 with <code>DATA_DIR=.e2e-data</code>. The folder is deleted before each run and kept afterwards for debugging. The tests share this server and run one at a time.</li>
 	<li><a href="../e2e/drawings.spec.ts"><code>drawings.spec.ts</code></a> covers creating, renaming and deleting a drawing, opening one from the URL hash, and a drawing surviving a reload. The reload test reads the saved scene from the API, then selects all shapes in the editor to show the scene was loaded back.</li>
-	<li><a href="../e2e/steps.ts"><code>steps.ts</code></a> holds the steps, each wrapped in <code>test.step</code>, so the report reads as a scenario.</li>
+	<li>Each test groups its actions and checks into <code>test.step</code> blocks, so the test and its report read as a scenario.</li>
+	<li><a href="../e2e/drawings-ui.ts"><code>drawings-ui.ts</code></a> holds the locators and user actions for the drawings UI, and <a href="../e2e/drawings-api.ts"><code>drawings-api.ts</code></a> creates drawings and reads stored scenes through the HTTP API. Neither defines steps.</li>
 </ul>
 <p>The tests are black-box. The <code>e2e</code> Fallow zone may import nothing from <code>src/</code>. They run with <code>pnpm e2e</code> and in the <code>e2e</code> CI job, not in <code>pnpm check</code>.</p>
 
