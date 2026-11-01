@@ -338,6 +338,9 @@ input {
 
 .editor {
 	position: relative;
+	/* Keep Excalidraw's z-indexed layers inside the editor, so the error message,
+	   which comes later in the page, shows above them. */
+	isolation: isolate;
 	min-width: 0;
 }
 
