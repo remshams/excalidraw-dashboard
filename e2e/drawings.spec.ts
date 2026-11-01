@@ -6,10 +6,13 @@ import {
 	deleteDrawing,
 	drawingButton,
 	drawRectangle,
+	editorMenuItem,
 	errorMessage,
+	expectColorScheme,
 	expectDrawingOpen,
 	noDrawingOpenHint,
 	openApp,
+	openEditorMenu,
 	renameDrawing,
 	selectAllShapes,
 	selectedShapeActions,
@@ -133,5 +136,38 @@ test("open a drawing from the URL", async ({ page, request }) => {
 
 	await test.step(`${name} is open in the editor`, async () => {
 		await expectDrawingOpen(page, name);
+	});
+});
+
+test("follow the system's dark mode", async ({ page, request }) => {
+	const name = uniqueName("Night");
+	let id = "";
+
+	await test.step(`a drawing named ${name} exists`, async () => {
+		id = await createDrawingThroughApi(request, name);
+	});
+
+	await test.step(`open ${name} while the system is in dark mode`, async () => {
+		await page.emulateMedia({ colorScheme: "dark" });
+		await openApp(page, id);
+		await expectDrawingOpen(page, name);
+	});
+
+	await test.step("the drawing list and the editor are dark", async () => {
+		await expectColorScheme(page, "dark");
+	});
+
+	await test.step("the editor's menu has no theme switch", async () => {
+		await openEditorMenu(page);
+		await expect(editorMenuItem(page, "Light mode")).toHaveCount(0);
+		await expect(editorMenuItem(page, "Dark mode")).toHaveCount(0);
+	});
+
+	await test.step("switch the system to light mode", async () => {
+		await page.emulateMedia({ colorScheme: "light" });
+	});
+
+	await test.step("the drawing list and the editor turn light", async () => {
+		await expectColorScheme(page, "light");
 	});
 });
