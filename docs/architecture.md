@@ -78,9 +78,11 @@ the production build, the Hono server, SQLite and Excalidraw in Chromium.
   with `DATA_DIR=.e2e-data`. The folder is deleted before each run and kept
   afterwards for debugging. The tests share this server and run one at a time.
 - `drawings.spec.ts` covers creating, renaming and deleting a drawing, opening
-  one from the URL hash, a drawing surviving a reload, and following the
-  system's dark mode. The reload test reads the saved scene from the API, then
-  selects all shapes in the editor to show the scene was loaded back.
+  one from the URL hash, a drawing surviving a reload, following the system's
+  dark mode, and showing a failed save. The reload test reads the saved scene
+  from the API, then selects all shapes in the editor to show the scene was
+  loaded back. The failed-save test deletes the open drawing through the API, as
+  another tab would, then dismisses the error message above the editor.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - `drawings-ui.ts` holds the locators and user actions for the drawings UI, and
