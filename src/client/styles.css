@@ -8,7 +8,8 @@
 }
 
 :root {
-	/* Colors from open-color, the palette Excalidraw draws with. */
+	/* Colors from open-color, the palette Excalidraw draws with. The dark --sheet
+	   is the exception: it matches Excalidraw's dark canvas. */
 	--ink: #1e1e1e;
 	--sheet: #ffffff;
 	--desk: #f1f3f5;
@@ -16,6 +17,8 @@
 	--marker: #ffec99;
 	--signal: #c92a2a;
 	--focus: #1971c2;
+	--rule: #ced4da;
+	--hover: #e9ecef;
 	--hand: "Drawings Hand", "Comic Sans MS", cursive;
 
 	font-family: Assistant, system-ui, sans-serif;
@@ -23,7 +26,24 @@
 	line-height: 1.5;
 	color: var(--ink);
 	background: var(--sheet);
-	color-scheme: light;
+	color-scheme: light dark;
+}
+
+/* The dark palette follows Excalidraw's dark canvas; `useColorScheme` gives the
+   editor the same setting. */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--ink: #e9ecef;
+		--sheet: #121212;
+		--desk: #212529;
+		--graphite: #adb5bd;
+		/* Yellow 6 at 35% opacity: a highlighter stroke that keeps light ink readable. */
+		--marker: rgb(250 176 5 / 35%);
+		--signal: #ff6b6b;
+		--focus: #4dabf7;
+		--rule: #495057;
+		--hover: #343a40;
+	}
 }
 
 html,
@@ -144,7 +164,7 @@ input {
 	align-items: center;
 	gap: 0.25rem;
 	padding: 0.25rem 0.625rem 0.25rem 0.5rem;
-	border: 1px solid #ced4da;
+	border: 1px solid var(--rule);
 	border-radius: 0.5rem;
 	background: var(--sheet);
 	font-size: 0.875rem;
@@ -202,8 +222,10 @@ input {
 	position: absolute;
 	inset: 40% 0 0.05em;
 	z-index: -1;
-	background:
-		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M2 6C25 2 60 4 98 3l1 12C70 18 35 15 1 18z' fill='%23ffec99'/%3E%3C/svg%3E")
+	/* The SVG gives the stroke its shape; the mask lets the theme pick its color. */
+	background: var(--marker);
+	mask:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M2 6C25 2 60 4 98 3l1 12C70 18 35 15 1 18z'/%3E%3C/svg%3E")
 		center / 100% 100% no-repeat;
 	animation: sweep 320ms ease-out;
 }
@@ -231,7 +253,7 @@ input {
 }
 
 .icon:hover {
-	background: #e9ecef;
+	background: var(--hover);
 	color: var(--ink);
 }
 
@@ -299,7 +321,7 @@ input {
 
 .confirm button {
 	padding: 0.125rem 0.625rem;
-	border: 1px solid #ced4da;
+	border: 1px solid var(--rule);
 	border-radius: 0.375rem;
 	background: var(--sheet);
 	font-weight: 600;
