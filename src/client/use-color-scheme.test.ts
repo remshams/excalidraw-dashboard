@@ -10,10 +10,12 @@ function fakeSystemScheme(initial: "light" | "dark") {
 		get matches() {
 			return query === "(prefers-color-scheme: dark)" && dark;
 		},
-		addEventListener: (_type: "change", listener: () => void) =>
-			listeners.add(listener),
-		removeEventListener: (_type: "change", listener: () => void) =>
-			listeners.delete(listener),
+		addEventListener: (type: string, listener: () => void) => {
+			if (type === "change") listeners.add(listener);
+		},
+		removeEventListener: (type: string, listener: () => void) => {
+			if (type === "change") listeners.delete(listener);
+		},
 	}));
 	return {
 		listeners,
