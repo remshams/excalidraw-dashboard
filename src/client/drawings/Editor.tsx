@@ -9,12 +9,14 @@ const SAVE_DELAY_MS = 1000;
 
 type EditorProps = {
 	drawing: Drawing;
+	/** Display only: Excalidraw leaves the theme out of the stored scene. */
+	theme?: "light" | "dark";
 	onSaved: (summary: DrawingSummary) => void;
 	onError: (error: unknown) => void;
 };
 
 /** Edits one drawing. Render it with `key={drawing.id}` so switching drawings remounts it. */
-export function Editor({ drawing, onSaved, onError }: EditorProps) {
+export function Editor({ drawing, theme, onSaved, onError }: EditorProps) {
 	const callbacks = useRef({ onSaved, onError });
 	callbacks.current = { onSaved, onError };
 
@@ -45,6 +47,9 @@ export function Editor({ drawing, onSaved, onError }: EditorProps) {
 	return (
 		<Excalidraw
 			initialData={initialData}
+			theme={theme}
+			// The app follows the system's theme, so Excalidraw's own toggle stays hidden.
+			UIOptions={{ canvasActions: { toggleTheme: false } }}
 			onChange={(elements, appState, files) =>
 				scheduler.schedule(serializeAsJSON(elements, appState, files, "local"))
 			}
