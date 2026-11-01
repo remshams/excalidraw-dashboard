@@ -57,6 +57,41 @@ export async function expectDrawingOpen(
 	await expect(editorTools(page)).toBeVisible();
 }
 
+/** Background colors of the drawing list, from the app's light and dark palettes. */
+const listBackground = {
+	light: "rgb(241, 243, 245)",
+	dark: "rgb(33, 37, 41)",
+};
+
+/**
+ * The drawing list and Excalidraw both show the given color scheme. Excalidraw
+ * exposes its theme only through a class on its container and the canvas
+ * pixels, so this reads the class.
+ */
+export async function expectColorScheme(
+	page: Page,
+	scheme: "light" | "dark",
+): Promise<void> {
+	await expect(drawingList(page)).toHaveCSS(
+		"background-color",
+		listBackground[scheme],
+	);
+	const excalidraw = editor(page).locator(".excalidraw");
+	if (scheme === "dark") await expect(excalidraw).toHaveClass(/theme--dark/);
+	else await expect(excalidraw).not.toHaveClass(/theme--dark/);
+}
+
+/** Opens Excalidraw's main menu. Its button has no accessible name. */
+export async function openEditorMenu(page: Page): Promise<void> {
+	await editor(page).getByTestId("main-menu-trigger").click();
+	await expect(editorMenuItem(page, "Reset the canvas")).toBeVisible();
+}
+
+/** An item in Excalidraw's main menu, such as "Dark mode". */
+export function editorMenuItem(page: Page, name: string) {
+	return editor(page).getByRole("button", { name, exact: true });
+}
+
 /** The ID of the open drawing, read from the URL hash. */
 function openDrawingId(page: Page): string {
 	return new URL(page.url()).hash.slice(1);
