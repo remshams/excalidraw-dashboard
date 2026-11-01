@@ -16,9 +16,11 @@ vi.mock("./drawings/Editor.tsx", async () => {
 	return {
 		Editor: ({
 			drawing,
+			theme,
 			onError,
 		}: {
 			drawing: Drawing;
+			theme: string;
 			onError: (error: unknown) => void;
 		}) => {
 			const report = useRef(onError);
@@ -29,7 +31,12 @@ vi.mock("./drawings/Editor.tsx", async () => {
 				},
 				[],
 			);
-			return <p>Editing {drawing.name}</p>;
+			return (
+				<>
+					<p>Editing {drawing.name}</p>
+					<p>Theme: {theme}</p>
+				</>
+			);
 		},
 	};
 });
@@ -58,6 +65,7 @@ beforeEach(() => {
 afterEach(() => {
 	editor.failOnClose = undefined;
 	vi.restoreAllMocks();
+	vi.unstubAllGlobals();
 });
 
 describe("App", () => {
@@ -80,6 +88,18 @@ describe("App", () => {
 
 		expect(screen.getByText("Opening drawing…")).toBeInTheDocument();
 		expect(await screen.findByText("Editing Plan")).toBeInTheDocument();
+	});
+
+	it("opens the editor in the system's color scheme", async () => {
+		vi.stubGlobal("matchMedia", (query: string) => ({
+			matches: query === "(prefers-color-scheme: dark)",
+			addEventListener: () => {},
+			removeEventListener: () => {},
+		}));
+		window.location.hash = "#1";
+		render(<App />);
+
+		expect(await screen.findByText("Theme: dark")).toBeInTheDocument();
 	});
 
 	it("adds a created drawing in name order and opens it", async () => {
