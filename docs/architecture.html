@@ -219,7 +219,7 @@ footer { margin-top: 3rem; font-size: 0.9rem; color: var(--graphite); }
 	<li><a href="../src/client/drawings/use-drawing.ts"><code>use-drawing.ts</code></a> loads the selected drawing with its scene.</li>
 	<li><a href="../src/client/drawings/use-hash-id.ts"><code>use-hash-id.ts</code></a> keeps the selected drawing ID in the URL hash.</li>
 	<li><a href="../src/client/drawings/DrawingList.tsx"><code>DrawingList.tsx</code></a> renders the sidebar. Creating, renaming and deleting happen inline: names through <a href="../src/client/drawings/NameField.tsx"><code>NameField.tsx</code></a>, deletion after a confirmation in the row.</li>
-	<li><a href="../src/client/drawings/Editor.tsx"><code>Editor.tsx</code></a> embeds Excalidraw and saves changes through <a href="../src/client/drawings/save-scheduler.ts"><code>save-scheduler.ts</code></a>.</li>
+	<li><a href="../src/client/drawings/Editor.tsx"><code>Editor.tsx</code></a> embeds Excalidraw and saves changes through <a href="../src/client/drawings/save-scheduler.ts"><code>save-scheduler.ts</code></a>. It passes the theme it gets to Excalidraw and hides Excalidraw's theme toggle.</li>
 </ul>
 <p><a href="../src/client/sidebar/"><code>src/client/sidebar/</code></a> holds the sidebar that wraps the drawing list:</p>
 <ul>
@@ -227,6 +227,7 @@ footer { margin-top: 3rem; font-size: 0.9rem; color: var(--graphite); }
 	<li><a href="../src/client/sidebar/Sidebar.tsx"><code>Sidebar.tsx</code></a> renders the resize handle and the collapsed rail. It passes the button that hides it to its content, which <code>DrawingList</code> shows in its header.</li>
 </ul>
 <p><a href="../src/client/App.tsx"><code>App.tsx</code></a> composes these and shows request errors. <a href="../src/client/styles.css"><code>styles.css</code></a> holds the look: colors from open-color, the palette Excalidraw draws with, and Excalidraw's bundled fonts, Excalifont for drawing names and Assistant for controls.</p>
+<p>The app follows the system's light or dark setting. <a href="../src/client/styles.css"><code>styles.css</code></a> switches its palette with <code>prefers-color-scheme</code>. <a href="../src/client/use-color-scheme.ts"><code>use-color-scheme.ts</code></a> reads the same setting for <code>App</code>, which passes it to <code>Editor</code>. The theme is display state only: Excalidraw leaves it out of the stored scene, so a theme change saves nothing.</p>
 
 <h2><span>Runtime flow</span></h2>
 <ol>
@@ -247,7 +248,7 @@ footer { margin-top: 3rem; font-size: 0.9rem; color: var(--graphite); }
 <p>Playwright runs the end-to-end tests in <a href="../e2e/"><code>e2e/</code></a> against the real application: the production build, the Hono server, SQLite and Excalidraw in Chromium.</p>
 <ul>
 	<li><a href="../playwright.config.ts"><code>playwright.config.ts</code></a> builds the client and starts the server on port 3101 with <code>DATA_DIR=.e2e-data</code>. The folder is deleted before each run and kept afterwards for debugging. The tests share this server and run one at a time.</li>
-	<li><a href="../e2e/drawings.spec.ts"><code>drawings.spec.ts</code></a> covers creating, renaming and deleting a drawing, opening one from the URL hash, and a drawing surviving a reload. The reload test reads the saved scene from the API, then selects all shapes in the editor to show the scene was loaded back.</li>
+	<li><a href="../e2e/drawings.spec.ts"><code>drawings.spec.ts</code></a> covers creating, renaming and deleting a drawing, opening one from the URL hash, a drawing surviving a reload, and following the system's dark mode. The reload test reads the saved scene from the API, then selects all shapes in the editor to show the scene was loaded back.</li>
 	<li>Each test groups its actions and checks into <code>test.step</code> blocks, so the test and its report read as a scenario.</li>
 	<li><a href="../e2e/drawings-ui.ts"><code>drawings-ui.ts</code></a> holds the locators and user actions for the drawings UI, and <a href="../e2e/drawings-api.ts"><code>drawings-api.ts</code></a> creates drawings and reads stored scenes through the HTTP API. Neither defines steps.</li>
 </ul>
