@@ -48,6 +48,14 @@ export function errorMessage(page: Page) {
 	return page.getByRole("alert");
 }
 
+/**
+ * Dismisses the error message. The click fails if another element, such as the
+ * editor, covers the message.
+ */
+export async function dismissErrorMessage(page: Page): Promise<void> {
+	await errorMessage(page).getByRole("button", { name: "Dismiss" }).click();
+}
+
 /** The list marks the drawing as open and the editor shows Excalidraw's tools. */
 export async function expectDrawingOpen(
 	page: Page,

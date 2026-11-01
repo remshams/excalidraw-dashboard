@@ -1,9 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { createDrawingThroughApi, storedShapeTypes } from "./drawings-api.ts";
+import {
+	createDrawingThroughApi,
+	deleteDrawingThroughApi,
+	storedShapeTypes,
+} from "./drawings-api.ts";
 import {
 	createDrawing,
 	deleteDrawing,
+	dismissErrorMessage,
 	drawingButton,
 	drawRectangle,
 	editorMenuItem,
@@ -169,5 +174,36 @@ test("follow the system's dark mode", async ({ page, request }) => {
 
 	await test.step("the drawing list and the editor turn light", async () => {
 		await expectColorScheme(page, "light");
+	});
+});
+
+test("a failed save shows an error above the editor", async ({
+	page,
+	request,
+}) => {
+	const name = uniqueName("Orphan");
+	let id = "";
+
+	await test.step(`open a drawing named ${name}`, async () => {
+		id = await createDrawingThroughApi(request, name);
+		await openApp(page, id);
+		await expectDrawingOpen(page, name);
+	});
+
+	await test.step(`another tab deletes ${name}`, async () => {
+		await deleteDrawingThroughApi(request, id);
+	});
+
+	await test.step("draw a rectangle, which can't be saved", async () => {
+		await drawRectangle(page);
+	});
+
+	await test.step("the app says the save failed", async () => {
+		await expect(errorMessage(page)).toContainText("failed with 404");
+	});
+
+	await test.step("dismiss the message", async () => {
+		await dismissErrorMessage(page);
+		await expect(errorMessage(page)).toHaveCount(0);
 	});
 });
