@@ -5,6 +5,7 @@ import { useDrawing } from "./drawings/use-drawing.ts";
 import { useDrawings } from "./drawings/use-drawings.ts";
 import { useHashId } from "./drawings/use-hash-id.ts";
 import { Sidebar } from "./sidebar/Sidebar.tsx";
+import { useColorScheme } from "./use-color-scheme.ts";
 
 export function App() {
 	const [error, setError] = useState<string | null>(null);
@@ -12,6 +13,7 @@ export function App() {
 		setError(cause instanceof Error ? cause.message : String(cause));
 	}, []);
 
+	const theme = useColorScheme();
 	const [selectedId, select] = useHashId();
 	const drawing = useDrawing(selectedId, showError);
 	const { drawings, replace, create, rename, remove, wasDeleted } =
@@ -43,6 +45,7 @@ export function App() {
 					<Editor
 						key={drawing.id}
 						drawing={drawing}
+						theme={theme}
 						onSaved={replace}
 						onError={(cause) => {
 							// Closing a deleted drawing flushes its last edit, which then fails.
