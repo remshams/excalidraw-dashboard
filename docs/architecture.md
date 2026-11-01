@@ -31,6 +31,7 @@ import none of them.
 - `DrawingList.tsx` renders the sidebar. Creating, renaming and deleting happen
   inline: names through `NameField.tsx`, deletion after a confirmation in the row.
 - `Editor.tsx` embeds Excalidraw and saves changes through `save-scheduler.ts`.
+  It passes the theme it gets to Excalidraw and hides Excalidraw's theme toggle.
 
 `src/client/sidebar/` holds the sidebar that wraps the drawing list:
 - `use-sidebar.ts` owns its width and collapsed state, saves both in
@@ -41,6 +42,11 @@ import none of them.
 `App.tsx` composes these and shows request errors. `styles.css` holds the
 look: colors from open-color, the palette Excalidraw draws with, and Excalidraw's
 bundled fonts, Excalifont for drawing names and Assistant for controls.
+
+The app follows the system's light or dark setting. `styles.css` switches its
+palette with `prefers-color-scheme`. `use-color-scheme.ts` reads the same setting
+for `App`, which passes it to `Editor`. The theme is display state only:
+Excalidraw leaves it out of the stored scene, so a theme change saves nothing.
 
 ## Runtime flow
 
@@ -72,9 +78,9 @@ the production build, the Hono server, SQLite and Excalidraw in Chromium.
   with `DATA_DIR=.e2e-data`. The folder is deleted before each run and kept
   afterwards for debugging. The tests share this server and run one at a time.
 - `drawings.spec.ts` covers creating, renaming and deleting a drawing, opening
-  one from the URL hash, and a drawing surviving a reload. The reload test reads
-  the saved scene from the API, then selects all shapes in the editor to show the
-  scene was loaded back.
+  one from the URL hash, a drawing surviving a reload, and following the
+  system's dark mode. The reload test reads the saved scene from the API, then
+  selects all shapes in the editor to show the scene was loaded back.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - `drawings-ui.ts` holds the locators and user actions for the drawings UI, and
