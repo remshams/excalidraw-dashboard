@@ -18,6 +18,15 @@ export async function createDrawingThroughApi(
 	return drawing.id;
 }
 
+/** Deletes a drawing with `DELETE /api/drawings/:id`, as another tab would. */
+export async function deleteDrawingThroughApi(
+	request: APIRequestContext,
+	id: string,
+): Promise<void> {
+	const response = await request.delete(`/api/drawings/${id}`);
+	expect(response.ok()).toBe(true);
+}
+
 /** The types of the shapes in a drawing's stored scene, without deleted ones. */
 export async function storedShapeTypes(
 	request: APIRequestContext,
