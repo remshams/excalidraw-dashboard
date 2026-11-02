@@ -36,8 +36,9 @@ Excalidraw's code is bundled into the client, so it isn't an external system.
 Its canvas fonts are not: no asset path is set, so Excalidraw loads them from
 esm.sh when the canvas shows text.
 
-The database holds every drawing. It runs in WAL mode, so a backup copies all of
-`DATA_DIR`, or stops the server first. The browser keeps only the sidebar
+The database holds every drawing. A file copy of `DATA_DIR` is a consistent
+backup only while the server is stopped; a live backup uses SQLite's
+`VACUUM INTO`. The browser keeps only the sidebar
 layout, in `localStorage`.
 
 ## Processes
@@ -275,4 +276,5 @@ in `pnpm check`.
 
 ## Decisions
 
-The [ADR index](adr/README.md) lists the decisions behind this design.
+The [ADR index](adr/README.md) records the decisions behind this design as they
+are made.
