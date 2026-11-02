@@ -18,9 +18,10 @@ pnpm build && pnpm start    # Production server with client and API on :3001
 | `PORT`     | `3001`   | HTTP port                  |
 | `DATA_DIR` | `./data` | Directory of `drawings.db` |
 
-Back up `DATA_DIR` to back up all drawings. The database runs in WAL mode, so
-copy the whole folder, or stop the server first. Each stored scene uses the
-`.excalidraw` file format.
+Back up `DATA_DIR` to back up all drawings. Stop the server before copying the
+folder. For a backup while the server runs, use SQLite's `VACUUM INTO`, for
+example `sqlite3 data/drawings.db "VACUUM INTO 'backup.db'"`. Each stored scene
+uses the `.excalidraw` file format.
 
 See [AGENTS.md](AGENTS.md) for development rules and
 [the architecture document](docs/architecture/architecture.md) for the code structure.
