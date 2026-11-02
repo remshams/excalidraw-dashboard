@@ -5,8 +5,20 @@ import type { DrawingSummary } from "../../shared/types.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
 const drawings: DrawingSummary[] = [
-	{ id: "1", name: "Plan", createdAt: "", updatedAt: "" },
-	{ id: "2", name: "Roadmap", createdAt: "", updatedAt: "" },
+	{
+		id: "1",
+		name: "Plan",
+		createdAt: "",
+		updatedAt: "",
+		previewUpdatedAt: null,
+	},
+	{
+		id: "2",
+		name: "Roadmap",
+		createdAt: "",
+		updatedAt: "",
+		previewUpdatedAt: null,
+	},
 ];
 
 function setup() {
