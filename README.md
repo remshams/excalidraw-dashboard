@@ -18,8 +18,9 @@ pnpm build && pnpm start    # Production server with client and API on :3001
 | `PORT`     | `3001`   | HTTP port                  |
 | `DATA_DIR` | `./data` | Directory of `drawings.db` |
 
-Back up `drawings.db` in `DATA_DIR` to back up all drawings. Each stored scene uses
-the `.excalidraw` file format.
+Back up `DATA_DIR` to back up all drawings. The database runs in WAL mode, so
+copy the whole folder, or stop the server first. Each stored scene uses the
+`.excalidraw` file format.
 
 See [AGENTS.md](AGENTS.md) for development rules and
-[the architecture document](docs/architecture.md) for the code structure.
+[the architecture document](docs/architecture/architecture.md) for the code structure.
