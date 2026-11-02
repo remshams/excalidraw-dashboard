@@ -3,6 +3,11 @@ export type DrawingSummary = {
 	name: string;
 	createdAt: string;
 	updatedAt: string;
+	/**
+	 * When the PNG preview was last set, or null if the drawing has none. Clients
+	 * must add it to the preview URL as a version; see ADR 0001.
+	 */
+	previewUpdatedAt: string | null;
 };
 
 export type Drawing = DrawingSummary & {
