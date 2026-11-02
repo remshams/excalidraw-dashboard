@@ -16,7 +16,7 @@ Assign at least one relevant GitHub label to every issue. Check the repository's
 
 ## Affected modules
 
-Include an "Affected modules" section. Use the module names in the [architecture document](architecture.md) and list each affected module when you can identify it. Briefly explain its connection to the issue.
+Include an "Affected modules" section. Use the module names in the [architecture document](architecture/architecture.md) and list each affected module when you can identify it. Briefly explain its connection to the issue.
 
 For example, a lost-save issue might list `src/client/drawings/` for the save scheduler and `src/server/` for the update endpoint. Check the code before treating either as a confirmed cause.
 
