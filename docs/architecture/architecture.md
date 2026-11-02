@@ -4,7 +4,8 @@ excalidraw-dashboard is a self-hosted Excalidraw for one user, with a list of
 named drawings. A React client embeds `@excalidraw/excalidraw` and autosaves
 each drawing to a small Hono server, which stores it in SQLite through
 `node:sqlite`. Node 24 runs the server's TypeScript directly; only the client
-has a build step.
+has a build step. Each drawing can have a preview image, whose URL carries a
+version ([ADR 0001](adr/0001-version-preview-urls.md)).
 
 ## Domain language
 
@@ -13,8 +14,11 @@ has a build step.
 - **Scene**: a value object, the Excalidraw scene serialized with
   `serializeAsJSON(..., "local")`. It matches an exported `.excalidraw` file. A
   new drawing has no scene yet.
-- **Drawing summary**: a drawing without its scene, as the drawing list shows
-  it.
+- **Preview**: a PNG image of a drawing's scene. It is a value object that
+  belongs to the drawing; setting a new one replaces it. `previewUpdatedAt`
+  records when it was last set.
+- **Drawing summary**: a drawing without its scene or preview image, as the
+  drawing list shows it.
 
 ## Context
 
@@ -98,6 +102,9 @@ flowchart TD
 ```
 
 `drawing-store` is the repository for drawings; no other module contains SQL.
+A drawing row holds the name, the timestamps, the scene as JSON text and the
+preview as a BLOB. Only the preview route reads the BLOB. When the repository
+opens a database created before previews, it adds the missing columns.
 `index` is the composition root and holds no logic worth testing. Nothing
 enforces the dependencies inside the server beyond code review.
 
@@ -213,17 +220,25 @@ the edit is lost.
 
 ## HTTP API
 
-| Route               | Method | Purpose                                         |
-| ------------------- | ------ | ----------------------------------------------- |
-| `/api/drawings`     | GET    | List drawing summaries, sorted by name          |
-| `/api/drawings`     | POST   | Create a drawing; a blank name becomes Untitled |
-| `/api/drawings/:id` | GET    | Get a drawing with its scene                    |
-| `/api/drawings/:id` | PUT    | Change the name, the scene or both              |
-| `/api/drawings/:id` | DELETE | Delete a drawing                                |
+| Route                       | Method | Purpose                                         |
+| --------------------------- | ------ | ----------------------------------------------- |
+| `/api/drawings`             | GET    | List drawing summaries, sorted by name          |
+| `/api/drawings`             | POST   | Create a drawing; a blank name becomes Untitled |
+| `/api/drawings/:id`         | GET    | Get a drawing with its scene                    |
+| `/api/drawings/:id`         | PUT    | Change the name, the scene or both              |
+| `/api/drawings/:id`         | DELETE | Delete a drawing                                |
+| `/api/drawings/:id/preview` | GET    | The PNG preview, cached as immutable            |
+| `/api/drawings/:id/preview` | PUT    | Store an `image/png` body of at most 2 MB       |
+| `/api/drawings/:id/preview` | DELETE | Remove the preview                              |
 
-Unknown drawings answer 404. The server sets no body limit, because scenes with
-embedded images can be large. [`src/shared/types.ts`](../../src/shared/types.ts)
-holds the request and response types.
+Unknown drawings, and a drawing without a preview, answer 404. Preview uploads
+answer 415 for another content type and 413 above 2 MB. The `PUT` and `DELETE`
+on a preview return the drawing summary; they change `previewUpdatedAt`, not
+`updatedAt`. Clients are to add `?v=<previewUpdatedAt>` to the preview URL ([ADR
+0001](adr/0001-version-preview-urls.md)). Scenes have no body limit, because
+scenes with embedded images can be large.
+[`src/shared/types.ts`](../../src/shared/types.ts) holds the request and
+response types.
 
 ## Configuration
 
@@ -237,7 +252,8 @@ holds the request and response types.
 
 Vitest runs two projects from [`vite.config.ts`](../../vite.config.ts):
 - `server` tests the API through `app.request` against an in-memory SQLite
-  database.
+  database. `drawing-store.test.ts` opens a database file with the schema from
+  before previews, in a temporary folder, to test the upgrade.
 - `client` tests in jsdom with Testing Library. Component tests mock `api.ts`
   and replace `Editor.tsx`, since Excalidraw does not render in jsdom.
 

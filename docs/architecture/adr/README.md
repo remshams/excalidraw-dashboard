@@ -1,4 +1,5 @@
 # Architecture decision records
 
-No decisions are recorded yet. Add each one as `NNNN-short-title.md` and list it
-here in a table with its number and decision.
+| ADR                                  | Decision                                      |
+| ------------------------------------ | --------------------------------------------- |
+| [0001](0001-version-preview-urls.md) | Version preview URLs with their own timestamp |
