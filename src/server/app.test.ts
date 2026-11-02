@@ -13,6 +13,24 @@ const send = (method: string, path: string, body?: unknown) =>
 		body: body === undefined ? undefined : JSON.stringify(body),
 	});
 
+/** Bytes that start like a PNG; the server checks only the Content-Type. */
+const png = (fill = 1, size = 16) =>
+	new Uint8Array(size).fill(fill).fill(137, 0, 1);
+
+const putPreview = (
+	id: string,
+	body: Uint8Array<ArrayBuffer>,
+	type = "image/png",
+) =>
+	app.request(`/api/drawings/${id}/preview`, {
+		method: "PUT",
+		headers: { "Content-Type": type },
+		body,
+	});
+
+const getPreview = (id: string, version = "") =>
+	app.request(`/api/drawings/${id}/preview${version}`);
+
 const create = async (name: string): Promise<Drawing> =>
 	(await send("POST", "/drawings", { name })).json();
 
@@ -97,4 +115,116 @@ describe("drawings API", () => {
 	])("returns 404 for %s on an unknown drawing", async (method, body) => {
 		expect((await send(method, "/drawings/missing", body)).status).toBe(404);
 	});
+});
+
+describe("drawing previews API", () => {
+	it("creates a drawing without a preview", async () => {
+		expect((await create("Plan")).previewUpdatedAt).toBeNull();
+	});
+
+	it("stores a preview and serves it with a long-lived cache header", async () => {
+		const { id } = await create("Plan");
+
+		const stored = await putPreview(id, png(7));
+		const served = await getPreview(id, "?v=1");
+
+		expect(stored.status).toBe(200);
+		expect(served.status).toBe(200);
+		expect(served.headers.get("Content-Type")).toBe("image/png");
+		expect(served.headers.get("Cache-Control")).toBe(
+			"private, max-age=31536000, immutable",
+		);
+		expect(new Uint8Array(await served.arrayBuffer())).toEqual(png(7));
+	});
+
+	it("sets previewUpdatedAt and leaves updatedAt alone", async () => {
+		const drawing = await create("Plan");
+
+		const summary: DrawingSummary = await (
+			await putPreview(drawing.id, png())
+		).json();
+
+		expect(summary.previewUpdatedAt).toEqual(expect.any(String));
+		expect(summary.updatedAt).toBe(drawing.updatedAt);
+		expect(summary).not.toHaveProperty("scene");
+		const list: DrawingSummary[] = await (
+			await send("GET", "/drawings")
+		).json();
+		expect(list[0].previewUpdatedAt).toBe(summary.previewUpdatedAt);
+	});
+
+	it("replaces a preview with a new version", async () => {
+		const { id } = await create("Plan");
+		const first: DrawingSummary = await (await putPreview(id, png(1))).json();
+		await new Promise((resolve) => setTimeout(resolve, 5));
+
+		const second: DrawingSummary = await (await putPreview(id, png(2))).json();
+
+		expect(second.previewUpdatedAt).not.toBe(first.previewUpdatedAt);
+		expect(new Uint8Array(await (await getPreview(id)).arrayBuffer())).toEqual(
+			png(2),
+		);
+	});
+
+	it("removes a preview", async () => {
+		const drawing = await create("Plan");
+		await putPreview(drawing.id, png());
+
+		const response = await send("DELETE", `/drawings/${drawing.id}/preview`);
+		const summary: DrawingSummary = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(summary.previewUpdatedAt).toBeNull();
+		expect(summary.updatedAt).toBe(drawing.updatedAt);
+		expect((await getPreview(drawing.id)).status).toBe(404);
+	});
+
+	it("keeps a scene saved after the preview", async () => {
+		const { id } = await create("Plan");
+		await putPreview(id, png());
+
+		await send("PUT", `/drawings/${id}`, { scene: "{}" });
+
+		expect((await getPreview(id)).status).toBe(200);
+	});
+
+	it("rejects a preview that isn't a PNG with 415", async () => {
+		const { id } = await create("Plan");
+
+		const response = await putPreview(id, png(), "image/jpeg");
+
+		expect(response.status).toBe(415);
+		expect(await response.text()).toBe("Previews must be PNG images");
+		expect((await getPreview(id)).status).toBe(404);
+	});
+
+	it("rejects a preview over 2 MB with 413", async () => {
+		const { id } = await create("Plan");
+
+		const tooLarge = await putPreview(id, png(1, 2 * 1024 * 1024 + 1));
+		const atLimit = await putPreview(id, png(1, 2 * 1024 * 1024));
+
+		expect(tooLarge.status).toBe(413);
+		expect(atLimit.status).toBe(200);
+	});
+
+	it("returns 404 for a drawing without a preview", async () => {
+		const { id } = await create("Plan");
+
+		expect((await getPreview(id)).status).toBe(404);
+	});
+
+	it.each([
+		["GET", () => getPreview("missing")],
+		["PUT", () => putPreview("missing", png())],
+		[
+			"DELETE",
+			() => app.request("/api/drawings/missing/preview", { method: "DELETE" }),
+		],
+	])(
+		"returns 404 for %s on the preview of an unknown drawing",
+		async (_, call) => {
+			expect((await call()).status).toBe(404);
+		},
+	);
 });
