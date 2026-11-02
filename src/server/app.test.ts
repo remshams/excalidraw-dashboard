@@ -198,6 +198,15 @@ describe("drawing previews API", () => {
 		expect((await getPreview(id)).status).toBe(404);
 	});
 
+	it("accepts a PNG media type in any case and with parameters", async () => {
+		const { id } = await create("Plan");
+
+		const response = await putPreview(id, png(), " IMAGE/PNG ; q=1");
+
+		expect(response.status).toBe(200);
+		expect((await getPreview(id)).status).toBe(200);
+	});
+
 	it("rejects a preview over 2 MB with 413", async () => {
 		const { id } = await create("Plan");
 
