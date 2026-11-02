@@ -53,7 +53,13 @@ export function createApp(store: DrawingStore, options: AppOptions = {}) {
 			"/drawings/:id/preview",
 			bodyLimit({ maxSize: MAX_PREVIEW_BYTES }),
 			async (c) => {
-				if (c.req.header("Content-Type") !== "image/png") {
+				// Media types are case-insensitive and may carry parameters.
+				const mediaType = c.req
+					.header("Content-Type")
+					?.split(";")[0]
+					.trim()
+					.toLowerCase();
+				if (mediaType !== "image/png") {
 					return c.text("Previews must be PNG images", 415);
 				}
 				const preview = new Uint8Array(await c.req.arrayBuffer());
