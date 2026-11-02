@@ -47,6 +47,7 @@ const drawing = (id: string, name: string): Drawing => ({
 	scene: null,
 	createdAt: "",
 	updatedAt: "",
+	previewUpdatedAt: null,
 });
 
 const nav = () => within(screen.getByRole("navigation"));
