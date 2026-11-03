@@ -27,15 +27,36 @@ export async function deleteDrawingThroughApi(
 	expect(response.ok()).toBe(true);
 }
 
+/** Stores a scene with `PUT /api/drawings/:id`, as another tab would. */
+export async function storeSceneThroughApi(
+	request: APIRequestContext,
+	id: string,
+	scene: string,
+): Promise<void> {
+	const response = await request.put(`/api/drawings/${id}`, {
+		data: { scene },
+	});
+	expect(response.ok()).toBe(true);
+}
+
+/** A drawing's stored scene, or null if it has none. */
+export async function storedScene(
+	request: APIRequestContext,
+	id: string,
+): Promise<string | null> {
+	const response = await request.get(`/api/drawings/${id}`);
+	const drawing: StoredDrawing = await response.json();
+	return drawing.scene;
+}
+
 /** The types of the shapes in a drawing's stored scene, without deleted ones. */
 export async function storedShapeTypes(
 	request: APIRequestContext,
 	id: string,
 ): Promise<string[]> {
-	const response = await request.get(`/api/drawings/${id}`);
-	const drawing: StoredDrawing = await response.json();
-	if (!drawing.scene) return [];
-	const elements: SceneElement[] = JSON.parse(drawing.scene).elements;
+	const scene = await storedScene(request, id);
+	if (!scene) return [];
+	const elements: SceneElement[] = JSON.parse(scene).elements;
 	return elements
 		.filter((element) => !element.isDeleted)
 		.map((element) => element.type);
