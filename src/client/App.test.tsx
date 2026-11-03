@@ -5,9 +5,12 @@ import type { Drawing } from "../shared/types.ts";
 import { App } from "./App.tsx";
 import * as api from "./drawings/api.ts";
 
-/** Lets a test make the editor report a failed save when it closes. */
+/**
+ * Lets a test make the editor report a failed save after it closes, the way a
+ * save that was still in flight fails later.
+ */
 const editor = vi.hoisted(() => ({
-	failOnClose: undefined as Error | undefined,
+	failOnClose: undefined as Promise<Error> | undefined,
 }));
 
 vi.mock("./drawings/api.ts");
@@ -27,7 +30,7 @@ vi.mock("./drawings/editor/Editor.tsx", async () => {
 			report.current = onError;
 			useEffect(
 				() => () => {
-					if (editor.failOnClose) report.current(editor.failOnClose);
+					editor.failOnClose?.then((error) => report.current(error));
 				},
 				[],
 			);
@@ -50,10 +53,31 @@ const drawing = (id: string, name: string): Drawing => ({
 	previewUpdatedAt: null,
 });
 
-const nav = () => within(screen.getByRole("navigation"));
+/** A failure the test sends once it has done what should come first. */
+function laterFailure() {
+	let fail: (error: Error) => void = () => {};
+	editor.failOnClose = new Promise<Error>((resolve) => {
+		fail = resolve;
+	});
+	return fail;
+}
+
+const cards = () => within(screen.getByRole("list", { name: "Drawings" }));
+
+const openAt = (path: string) => window.history.replaceState(null, "", path);
+
+async function deleteFromCard(
+	user: ReturnType<typeof userEvent.setup>,
+	name: string,
+) {
+	await user.click(
+		await cards().findByRole("button", { name: `Delete ${name}` }),
+	);
+	await user.click(cards().getByRole("button", { name: "Delete" }));
+}
 
 beforeEach(() => {
-	window.history.replaceState(null, "", "/");
+	openAt("/");
 	vi.mocked(api.listDrawings).mockResolvedValue([
 		drawing("1", "Plan"),
 		drawing("2", "Roadmap"),
@@ -70,25 +94,55 @@ afterEach(() => {
 });
 
 describe("App", () => {
-	it("opens the drawing selected in the list", async () => {
+	it("shows the landing page at /", async () => {
+		render(<App />);
+
+		expect(
+			await cards().findByRole("link", { name: "Plan" }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Drawings" })).toBeVisible();
+		expect(screen.queryByText(/^Editing/)).toBeNull();
+	});
+
+	it("opens a drawing from its card", async () => {
 		const user = userEvent.setup();
 		render(<App />);
-		expect(
-			screen.getByText("Open a drawing from the list or start a new one."),
-		).toBeInTheDocument();
 
-		await user.click(await nav().findByRole("button", { name: "Roadmap" }));
+		await user.click(await cards().findByRole("link", { name: "Roadmap" }));
 
 		expect(await screen.findByText("Editing Roadmap")).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Roadmap" }),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("list", { name: "Drawings" })).toBeNull();
 		expect(window.location.pathname).toBe("/drawings/2");
 	});
 
+	it("goes back to all drawings from the editor", async () => {
+		openAt("/drawings/1");
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+
+		expect(
+			await cards().findByRole("link", { name: "Plan" }),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Editing Plan")).toBeNull();
+		expect(window.location.pathname).toBe("/");
+	});
+
 	it("opens the drawing named in the URL", async () => {
-		window.history.replaceState(null, "", "/drawings/1");
+		openAt("/drawings/1");
 		render(<App />);
 
 		expect(screen.getByText("Opening drawing…")).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: "All drawings" }),
+		).toBeInTheDocument();
 		expect(await screen.findByText("Editing Plan")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Plan" })).toBeInTheDocument();
 	});
 
 	it("opens the editor in the system's color scheme", async () => {
@@ -97,32 +151,44 @@ describe("App", () => {
 			addEventListener: () => {},
 			removeEventListener: () => {},
 		}));
-		window.history.replaceState(null, "", "/drawings/1");
+		openAt("/drawings/1");
 		render(<App />);
 
 		expect(await screen.findByText("Theme: dark")).toBeInTheDocument();
 	});
 
-	it("adds a created drawing in name order and opens it", async () => {
+	it("opens a created drawing", async () => {
 		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
 		vi.mocked(api.getDrawing).mockResolvedValue(drawing("3", "Ideas"));
 		const user = userEvent.setup();
 		render(<App />);
-		await nav().findByRole("button", { name: "Plan" });
+		await cards().findByRole("link", { name: "Plan" });
 
-		await user.click(nav().getByRole("button", { name: "New drawing" }));
-		await user.type(nav().getByRole("textbox"), "Ideas{Enter}");
+		await user.click(cards().getByRole("button", { name: "New drawing" }));
+		await user.type(cards().getByRole("textbox"), "Ideas{Enter}");
 
 		expect(await screen.findByText("Editing Ideas")).toBeInTheDocument();
+		expect(api.createDrawing).toHaveBeenCalledWith("Ideas");
+		expect(window.location.pathname).toBe("/drawings/3");
+	});
+
+	it("lists a created drawing in name order", async () => {
+		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
+		vi.mocked(api.getDrawing).mockResolvedValue(drawing("3", "Ideas"));
+		const user = userEvent.setup();
+		render(<App />);
+		await cards().findByRole("link", { name: "Plan" });
+		await user.click(cards().getByRole("button", { name: "New drawing" }));
+		await user.type(cards().getByRole("textbox"), "Ideas{Enter}");
+		await screen.findByText("Editing Ideas");
+
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+
 		expect(
-			nav()
-				.getAllByRole("listitem")
-				.map((item) => item.textContent),
-		).toEqual([
-			expect.stringContaining("Ideas"),
-			expect.stringContaining("Plan"),
-			expect.stringContaining("Roadmap"),
-		]);
+			cards()
+				.getAllByRole("link")
+				.map((link) => link.textContent),
+		).toEqual(["Ideas", "Plan", "Roadmap"]);
 	});
 
 	it("shows a renamed drawing under its new name", async () => {
@@ -130,62 +196,60 @@ describe("App", () => {
 		const user = userEvent.setup();
 		render(<App />);
 
-		await user.click(await nav().findByRole("button", { name: "Rename Plan" }));
-		await user.clear(nav().getByRole("textbox"));
-		await user.type(nav().getByRole("textbox"), "Sketch{Enter}");
+		await user.click(
+			await cards().findByRole("button", { name: "Rename Plan" }),
+		);
+		await user.clear(cards().getByRole("textbox"));
+		await user.type(cards().getByRole("textbox"), "Sketch{Enter}");
 
 		expect(
-			await nav().findByRole("button", { name: "Sketch" }),
+			await cards().findByRole("link", { name: "Sketch" }),
 		).toBeInTheDocument();
 		expect(api.updateDrawing).toHaveBeenCalledWith("1", { name: "Sketch" });
 	});
 
-	it("closes the open drawing when it is deleted", async () => {
+	it("removes a deleted drawing from the landing page", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
-		await screen.findByText("Editing Plan");
 
-		await user.click(nav().getByRole("button", { name: "Delete Plan" }));
-		await user.click(nav().getByRole("button", { name: "Delete" }));
+		await deleteFromCard(user, "Plan");
 
-		expect(
-			await screen.findByText(
-				"Open a drawing from the list or start a new one.",
-			),
-		).toBeInTheDocument();
-		expect(nav().queryByRole("button", { name: "Plan" })).toBeNull();
+		await waitFor(() =>
+			expect(cards().queryByRole("link", { name: "Plan" })).toBeNull(),
+		);
+		expect(api.deleteDrawing).toHaveBeenCalledWith("1");
 		expect(window.location.pathname).toBe("/");
 	});
 
-	it("shows no error when the deleted drawing's last save fails", async () => {
+	it("shows no error when a deleted drawing's last save fails later", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		editor.failOnClose = new Error("PUT /drawings/1 failed with 404");
-		window.history.replaceState(null, "", "/drawings/1");
+		const fail = laterFailure();
+		openAt("/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
 
-		await user.click(nav().getByRole("button", { name: "Delete Plan" }));
-		await user.click(nav().getByRole("button", { name: "Delete" }));
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		await deleteFromCard(user, "Plan");
+		await waitFor(() =>
+			expect(cards().queryByRole("link", { name: "Plan" })).toBeNull(),
+		);
+		fail(new Error("PUT /drawings/1 failed with 404"));
 
-		expect(
-			await screen.findByText(
-				"Open a drawing from the list or start a new one.",
-			),
-		).toBeInTheDocument();
+		await new Promise((resolve) => setTimeout(resolve, 0));
 		expect(screen.queryByRole("alert")).toBeNull();
 	});
 
 	it("shows a failed save of a drawing that still exists", async () => {
-		editor.failOnClose = new Error("PUT /drawings/1 failed with 500");
-		window.history.replaceState(null, "", "/drawings/1");
+		const fail = laterFailure();
+		openAt("/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
 
-		await user.click(nav().getByRole("button", { name: "Roadmap" }));
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		fail(new Error("PUT /drawings/1 failed with 500"));
 
 		expect(await screen.findByRole("alert")).toHaveTextContent(
 			"PUT /drawings/1 failed with 500",
@@ -193,27 +257,19 @@ describe("App", () => {
 	});
 
 	it("still shows a failed save after another drawing was deleted", async () => {
-		vi.mocked(api.listDrawings).mockResolvedValue([
-			drawing("1", "Plan"),
-			drawing("2", "Roadmap"),
-			drawing("3", "Ideas"),
-		]);
-		vi.mocked(api.getDrawing).mockImplementation(async (id) =>
-			drawing(id, { "1": "Plan", "3": "Ideas" }[id] ?? "Roadmap"),
-		);
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		window.history.replaceState(null, "", "/drawings/1");
+		const fail = laterFailure();
+		openAt("/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
 
-		await user.click(nav().getByRole("button", { name: "Delete Roadmap" }));
-		await user.click(nav().getByRole("button", { name: "Delete" }));
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		await deleteFromCard(user, "Roadmap");
 		await waitFor(() =>
-			expect(nav().queryByRole("button", { name: "Roadmap" })).toBeNull(),
+			expect(cards().queryByRole("link", { name: "Roadmap" })).toBeNull(),
 		);
-		editor.failOnClose = new Error("PUT /drawings/1 failed with 404");
-		await user.click(nav().getByRole("button", { name: "Ideas" }));
+		fail(new Error("PUT /drawings/1 failed with 404"));
 
 		expect(await screen.findByRole("alert")).toHaveTextContent(
 			"PUT /drawings/1 failed with 404",
@@ -224,36 +280,20 @@ describe("App", () => {
 		vi.mocked(api.deleteDrawing).mockRejectedValue(
 			new Error("DELETE /drawings/1 failed with 500"),
 		);
-		window.history.replaceState(null, "", "/drawings/1");
+		const fail = laterFailure();
+		openAt("/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
 
-		await user.click(nav().getByRole("button", { name: "Delete Plan" }));
-		await user.click(nav().getByRole("button", { name: "Delete" }));
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		await deleteFromCard(user, "Plan");
 		await user.click(await screen.findByRole("button", { name: "Dismiss" }));
-		editor.failOnClose = new Error("PUT /drawings/1 failed with 500");
-		await user.click(nav().getByRole("button", { name: "Roadmap" }));
+		fail(new Error("PUT /drawings/1 failed with 500"));
 
 		expect(await screen.findByRole("alert")).toHaveTextContent(
 			"PUT /drawings/1 failed with 500",
 		);
-	});
-
-	it("keeps another open drawing when deleting", async () => {
-		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		window.history.replaceState(null, "", "/drawings/1");
-		const user = userEvent.setup();
-		render(<App />);
-		await screen.findByText("Editing Plan");
-
-		await user.click(nav().getByRole("button", { name: "Delete Roadmap" }));
-		await user.click(nav().getByRole("button", { name: "Delete" }));
-
-		await waitFor(() =>
-			expect(nav().queryByRole("button", { name: "Roadmap" })).toBeNull(),
-		);
-		expect(screen.getByText("Editing Plan")).toBeInTheDocument();
 	});
 
 	it("shows a failed request until the message is dismissed", async () => {
