@@ -15,7 +15,7 @@ const editor = vi.hoisted(() => ({
 
 vi.mock("./drawings/api.ts");
 vi.mock("./drawings/editor/Editor.tsx", async () => {
-	const { useEffect, useRef } = await import("react");
+	const { useEffect, useRef, useState } = await import("react");
 	return {
 		Editor: ({
 			drawing,
@@ -26,6 +26,9 @@ vi.mock("./drawings/editor/Editor.tsx", async () => {
 			theme: string;
 			onError: (error: unknown) => void;
 		}) => {
+			// Like the real editor, keep the drawing it mounted with; Excalidraw reads
+			// its initial data only once.
+			const [mounted] = useState(drawing);
 			const report = useRef(onError);
 			report.current = onError;
 			useEffect(
@@ -36,7 +39,7 @@ vi.mock("./drawings/editor/Editor.tsx", async () => {
 			);
 			return (
 				<>
-					<p>Editing {drawing.name}</p>
+					<p>Editing {mounted.name}</p>
 					<p>Theme: {theme}</p>
 				</>
 			);
@@ -143,6 +146,37 @@ describe("App", () => {
 		).toBeInTheDocument();
 		expect(await screen.findByText("Editing Plan")).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Plan" })).toBeInTheDocument();
+	});
+
+	it("loads a drawing again when it reopens after leaving it", async () => {
+		openAt("/drawings/1");
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+		// The last edits before leaving changed the stored drawing.
+		vi.mocked(api.getDrawing).mockResolvedValue(drawing("1", "Plan, edited"));
+
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		await user.click(await cards().findByRole("link", { name: "Plan" }));
+
+		expect(await screen.findByText("Editing Plan, edited")).toBeInTheDocument();
+		expect(screen.queryByText("Editing Plan")).toBeNull();
+	});
+
+	it("says when a drawing couldn't be opened", async () => {
+		vi.mocked(api.getDrawing).mockRejectedValue(
+			new Error("GET /drawings/9 failed with 404"),
+		);
+		openAt("/drawings/9");
+		render(<App />);
+
+		expect(
+			await screen.findByText("This drawing couldn't be opened."),
+		).toBeInTheDocument();
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			"GET /drawings/9 failed with 404",
+		);
+		expect(screen.getByRole("link", { name: "All drawings" })).toBeVisible();
 	});
 
 	it("opens the editor in the system's color scheme", async () => {
