@@ -3,10 +3,10 @@ import { expect, test } from "@playwright/test";
 import {
 	createDrawingThroughApi,
 	deleteDrawingThroughApi,
-	storeSceneThroughApi,
 	storedPreviewType,
 	storedScene,
 	storedShapeTypes,
+	storeSceneThroughApi,
 } from "./drawings-api.ts";
 import {
 	createDrawing,
@@ -16,11 +16,15 @@ import {
 	drawRectangle,
 	editorMenuItem,
 	errorMessage,
+	expectAtDrawingPath,
 	expectColorScheme,
 	expectDrawingOpen,
+	goBack,
 	noDrawingOpenHint,
 	openApp,
+	openDrawingFromList,
 	openEditorMenu,
+	openOldLink,
 	renameDrawing,
 	selectAllShapes,
 	selectedShapeActions,
@@ -211,6 +215,57 @@ test("open a drawing from the URL", async ({ page, request }) => {
 
 	await test.step(`${name} is open in the editor`, async () => {
 		await expectDrawingOpen(page, name);
+	});
+});
+
+test("an old link with the drawing in the hash still opens it", async ({
+	page,
+	request,
+}) => {
+	const name = uniqueName("Bookmark");
+	let id = "";
+
+	await test.step(`a drawing named ${name} exists`, async () => {
+		id = await createDrawingThroughApi(request, name);
+	});
+
+	await test.step("open a link with the drawing's ID in the hash", async () => {
+		await openOldLink(page, id);
+	});
+
+	await test.step(`${name} is open, at its path`, async () => {
+		await expectDrawingOpen(page, name);
+		await expectAtDrawingPath(page, id);
+	});
+});
+
+test("the back button returns to the previous drawing", async ({
+	page,
+	request,
+}) => {
+	const first = uniqueName("First");
+	const second = uniqueName("Second");
+	let firstId = "";
+
+	await test.step(`drawings named ${first} and ${second} exist`, async () => {
+		firstId = await createDrawingThroughApi(request, first);
+		await createDrawingThroughApi(request, second);
+	});
+
+	await test.step(`open ${first}, then ${second} from the list`, async () => {
+		await openApp(page, firstId);
+		await expectDrawingOpen(page, first);
+		await openDrawingFromList(page, second);
+		await expectDrawingOpen(page, second);
+	});
+
+	await test.step("go back in the browser", async () => {
+		await goBack(page);
+	});
+
+	await test.step(`${first} is open again, at its path`, async () => {
+		await expectDrawingOpen(page, first);
+		await expectAtDrawingPath(page, firstId);
 	});
 });
 

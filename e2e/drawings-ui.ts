@@ -100,15 +100,48 @@ export function editorMenuItem(page: Page, name: string) {
 	return editor(page).getByRole("button", { name, exact: true });
 }
 
-/** The ID of the open drawing, read from the URL hash. */
+/** The ID of the open drawing, read from its URL path `/drawings/<id>`. */
 function openDrawingId(page: Page): string {
-	return new URL(page.url()).hash.slice(1);
+	return new URL(page.url()).pathname.replace(/^\/drawings\//, "");
 }
 
-/** Opens the app, with a drawing ID in the URL hash if given. */
+/** Opens the app, at a drawing's path if an ID is given. */
 export async function openApp(page: Page, drawingId?: string): Promise<void> {
-	await page.goto(drawingId ? `/#${drawingId}` : "/");
+	await page.goto(drawingId ? `/drawings/${drawingId}` : "/");
 	await expect(drawingList(page)).toBeVisible();
+}
+
+/** Opens the app through a link in the old form, with the drawing's ID in the hash. */
+export async function openOldLink(
+	page: Page,
+	drawingId: string,
+): Promise<void> {
+	await page.goto(`/#${drawingId}`);
+	await expect(drawingList(page)).toBeVisible();
+}
+
+/** Opens a drawing by clicking it in the list. */
+export async function openDrawingFromList(
+	page: Page,
+	name: string,
+): Promise<void> {
+	await drawingButton(page, name).click();
+}
+
+/** Goes back one page with the browser's back button. */
+export async function goBack(page: Page): Promise<void> {
+	await page.goBack();
+}
+
+/** Checks that the URL is the drawing's path, `/drawings/<id>`, with no hash. */
+export async function expectAtDrawingPath(
+	page: Page,
+	drawingId: string,
+): Promise<void> {
+	await expect
+		.poll(() => new URL(page.url()).pathname)
+		.toBe(`/drawings/${drawingId}`);
+	expect(new URL(page.url()).hash).toBe("");
 }
 
 /** Creates a drawing through the list, waits until it is open and returns its ID. */
@@ -118,7 +151,7 @@ export async function createDrawing(page: Page, name: string): Promise<string> {
 		.getByRole("textbox", { name: "Name of the new drawing" })
 		.fill(name);
 	await page.keyboard.press("Enter");
-	// The hash names the previous drawing until the new one opens.
+	// The URL names the previous drawing until the new one opens.
 	await expect(drawingRow(page, name)).toHaveAttribute("aria-current", "true");
 	return openDrawingId(page);
 }
