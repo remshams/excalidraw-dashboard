@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Drawing, DrawingSummary } from "../../shared/types.ts";
 import { updateDrawing } from "./api.ts";
 import { createSaveScheduler } from "./save-scheduler.ts";
@@ -47,10 +47,7 @@ export function useAutosave(drawing: Drawing, callbacks: Callbacks) {
 	}, [scheduler]);
 
 	/** Saves any pending scene, then resolves with the last stored one. */
-	const settle = useCallback(
-		() => scheduler.flush().then(() => saved.current),
-		[scheduler],
-	);
+	const settle = () => scheduler.flush().then(() => saved.current);
 
 	return { schedule: scheduler.schedule, settle };
 }
