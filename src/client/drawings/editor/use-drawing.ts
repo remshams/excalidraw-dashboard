@@ -2,24 +2,42 @@ import { useEffect, useState } from "react";
 import type { Drawing } from "../../../shared/types.ts";
 import { getDrawing } from "../api.ts";
 
-/** Loads the drawing with `id`. Returns null while it loads or when no ID is set. */
+/** The result of loading one drawing: the drawing, or null if loading failed. */
+type Loaded = { id: string; drawing: Drawing | null };
+
+/**
+ * Loads the drawing with `id`. `drawing` is null while it loads, when no ID is
+ * set, and when loading failed; `failed` tells the last case apart.
+ */
 export function useDrawing(
 	id: string | null,
 	onError: (error: unknown) => void,
-): Drawing | null {
-	const [drawing, setDrawing] = useState<Drawing | null>(null);
+): { drawing: Drawing | null; failed: boolean } {
+	const [loaded, setLoaded] = useState<Loaded | null>(null);
 
 	useEffect(() => {
 		if (!id) return;
 		let cancelled = false;
-		getDrawing(id).then((loaded) => {
-			if (!cancelled) setDrawing(loaded);
-		}, onError);
+		getDrawing(id).then(
+			(drawing) => {
+				if (!cancelled) setLoaded({ id, drawing });
+			},
+			(error: unknown) => {
+				if (!cancelled) setLoaded({ id, drawing: null });
+				onError(error);
+			},
+		);
 		return () => {
 			cancelled = true;
+			// Forget the drawing once it closes. Reopening it must load the scene
+			// again, which its last edits have changed since.
+			setLoaded(null);
 		};
 	}, [id, onError]);
 
-	// The previous drawing stays in state until the next one loads; never show it.
-	return drawing?.id === id ? drawing : null;
+	const current = loaded?.id === id ? loaded : null;
+	return {
+		drawing: current?.drawing ?? null,
+		failed: current !== null && current.drawing === null,
+	};
 }
