@@ -9,6 +9,7 @@ import { useColorScheme } from "./use-color-scheme.ts";
 
 export function App() {
 	const [error, setError] = useState<string | null>(null);
+	// Stable, because useDrawing and useDrawings reload when their onError changes.
 	const showError = useCallback((cause: unknown) => {
 		setError(cause instanceof Error ? cause.message : String(cause));
 	}, []);
