@@ -105,4 +105,38 @@ describe("createSaveScheduler", () => {
 		await vi.waitFor(() => expect(settled).toBe(true));
 		expect(save).toHaveBeenCalledOnce();
 	});
+
+	it("starts a save only after the previous one has settled", async () => {
+		let finish = () => {};
+		const save = vi.fn(
+			(_scene: string) =>
+				new Promise<void>((resolve) => {
+					finish = resolve;
+				}),
+		);
+		const scheduler = createSaveScheduler(save, 1000, null);
+
+		scheduler.schedule("a");
+		vi.runAllTimers();
+		scheduler.schedule("b");
+		scheduler.flush();
+		await Promise.resolve();
+		expect(save).toHaveBeenCalledExactlyOnceWith("a");
+
+		finish();
+		await vi.waitFor(() => expect(save).toHaveBeenLastCalledWith("b"));
+		expect(save).toHaveBeenCalledTimes(2);
+	});
+
+	it("starts a save right away once the previous one has settled", async () => {
+		const save = vi.fn(async (_scene: string) => {});
+		const scheduler = createSaveScheduler(save, 1000, null);
+		scheduler.schedule("a");
+		await scheduler.flush();
+
+		scheduler.schedule("b");
+		scheduler.flush();
+
+		expect(save).toHaveBeenLastCalledWith("b");
+	});
 });
