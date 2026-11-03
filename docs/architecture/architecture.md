@@ -328,18 +328,19 @@ Chromium.
   this server and run one at a time.
 - [`drawings.spec.ts`](../../e2e/drawings.spec.ts) covers creating, renaming and
   deleting a drawing, opening one from the URL hash, a drawing surviving a
-  reload, storing a preview when the user leaves a drawing, following the
-  system's dark mode, and showing a failed save. The
+  reload, storing a preview when the user leaves a drawing or opens one that has
+  none, following the system's dark mode, and showing a failed save. The
   reload test reads the saved scene from the API, then selects all shapes in the
   editor to show the scene was loaded back. The failed-save test deletes the
   open drawing through the API, as another tab would, then dismisses the error
-  message above the editor.
+  message above the editor. The preview-on-open test copies a drawn scene into
+  a drawing created through the API, so that drawing has no preview yet.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
   actions for the drawings UI, and
-  [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings
-  and reads stored scenes and previews through the HTTP API. Neither defines steps.
+  [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings,
+  stores scenes, and reads stored scenes and previews through the HTTP API. Neither defines steps.
 
 The tests are black-box. They run with `pnpm e2e` and in the `e2e` CI job, not
 in `pnpm check`.
