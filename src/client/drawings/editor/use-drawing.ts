@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Drawing } from "../../shared/types.ts";
-import { getDrawing } from "./api.ts";
+import type { Drawing } from "../../../shared/types.ts";
+import { getDrawing } from "../api.ts";
 
 /** Loads the drawing with `id`. Returns null while it loads or when no ID is set. */
 export function useDrawing(

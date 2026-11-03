@@ -1,10 +1,10 @@
 import { exportToBlob } from "@excalidraw/excalidraw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as api from "./api.ts";
+import * as api from "../api.ts";
 import { isPreviewOutdated, storePreview } from "./preview.ts";
 
 vi.mock("@excalidraw/excalidraw", () => ({ exportToBlob: vi.fn() }));
-vi.mock("./api.ts");
+vi.mock("../api.ts");
 
 const png = new Blob(["png"], { type: "image/png" });
 const stored = {

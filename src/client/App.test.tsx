@@ -11,7 +11,7 @@ const editor = vi.hoisted(() => ({
 }));
 
 vi.mock("./drawings/api.ts");
-vi.mock("./drawings/Editor.tsx", async () => {
+vi.mock("./drawings/editor/Editor.tsx", async () => {
 	const { useEffect, useRef } = await import("react");
 	return {
 		Editor: ({

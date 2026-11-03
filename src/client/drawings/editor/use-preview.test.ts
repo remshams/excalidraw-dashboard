@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Drawing, DrawingSummary } from "../../shared/types.ts";
+import type { Drawing, DrawingSummary } from "../../../shared/types.ts";
 import { storePreview } from "./preview.ts";
 import type { SavedScene } from "./use-autosave.ts";
 import { usePreview } from "./use-preview.ts";
