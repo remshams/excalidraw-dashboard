@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import {
 	createDrawingThroughApi,
 	deleteDrawingThroughApi,
+	storedPreviewType,
 	storedShapeTypes,
 } from "./drawings-api.ts";
 import {
@@ -69,6 +70,34 @@ test("a drawing survives a reload", async ({ page, request }) => {
 		await expect(selectedShapeActions(page)).toHaveCount(0);
 		await selectAllShapes(page);
 		await expect(selectedShapeActions(page)).toBeVisible();
+	});
+});
+
+test("leaving a drawing stores its preview", async ({ page, request }) => {
+	const name = uniqueName("Preview");
+	const other = uniqueName("Elsewhere");
+	let id = "";
+
+	await test.step(`draw a rectangle in a new drawing named ${name}`, async () => {
+		await openApp(page);
+		id = await createDrawing(page, name);
+		await drawRectangle(page);
+		await expect
+			.poll(() => storedShapeTypes(request, id))
+			.toEqual(["rectangle"]);
+	});
+
+	await test.step(`${name} has no preview while it's open`, async () => {
+		expect(await storedPreviewType(request, id)).toBeNull();
+	});
+
+	await test.step(`switch to a new drawing named ${other}`, async () => {
+		await createDrawing(page, other);
+		await expectDrawingOpen(page, other);
+	});
+
+	await test.step(`${name} has a PNG preview`, async () => {
+		await expect.poll(() => storedPreviewType(request, id)).toBe("image/png");
 	});
 });
 
