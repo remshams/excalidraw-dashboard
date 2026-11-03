@@ -1,22 +1,28 @@
-import { expect, type Page } from "@playwright/test";
+import { type APIRequestContext, expect, type Page } from "@playwright/test";
 
 // The drawings UI as a user sees it: where things are and what a user does.
 // Tests group these calls into named steps with `test.step`.
 
+/** The cards on the landing page, one per drawing after the blank sheet. */
 function drawingList(page: Page) {
-	return page.getByRole("navigation", { name: "Drawings" });
+	return page.getByRole("list", { name: "Drawings" });
 }
 
-/** The button that opens a drawing in the list. */
-export function drawingButton(page: Page, name: string) {
-	return drawingList(page).getByRole("button", { name, exact: true });
+/** The link of a drawing's card, which opens the drawing. */
+export function drawingCardLink(page: Page, name: string) {
+	return drawingList(page).getByRole("link", { name, exact: true });
 }
 
-/** A drawing's row. Its rename and delete actions appear while it is hovered. */
-function drawingRow(page: Page, name: string) {
+/** A drawing's card. Its rename and delete actions appear while it is hovered. */
+function drawingCard(page: Page, name: string) {
 	return drawingList(page)
 		.getByRole("listitem")
-		.filter({ has: page.getByRole("button", { name, exact: true }) });
+		.filter({ has: page.getByRole("link", { name, exact: true }) });
+}
+
+/** The link in the editor's bar that leads back to the landing page. */
+function allDrawingsLink(page: Page) {
+	return page.getByRole("link", { name: "All drawings" });
 }
 
 function editor(page: Page) {
@@ -39,9 +45,30 @@ export function selectedShapeActions(page: Page) {
 		.getByRole("group", { name: "Stroke width" });
 }
 
-/** The hint the app shows while no drawing is open. */
-export function noDrawingOpenHint(page: Page) {
-	return page.getByText("Open a drawing from the list or start a new one.");
+/** The landing page shows the cards and no editor. */
+export async function expectLandingPage(page: Page): Promise<void> {
+	await expect(drawingList(page)).toBeVisible();
+	await expect(allDrawingsLink(page)).toHaveCount(0);
+}
+
+/**
+ * The drawing's card shows its preview image, loaded from a URL that serves a
+ * PNG. The image has no role, because its alt text is empty: the card's link
+ * already carries the name.
+ */
+export async function expectCardShowsPreview(
+	page: Page,
+	request: APIRequestContext,
+	name: string,
+): Promise<void> {
+	const image = drawingCard(page, name).locator("img");
+	await expect(image).toBeVisible();
+	await expect
+		.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
+		.toBeGreaterThan(0);
+	const source = await image.getAttribute("src");
+	const response = await request.get(source ?? "");
+	expect(response.headers()["content-type"]).toBe("image/png");
 }
 
 export function errorMessage(page: Page) {
@@ -56,23 +83,25 @@ export async function dismissErrorMessage(page: Page): Promise<void> {
 	await errorMessage(page).getByRole("button", { name: "Dismiss" }).click();
 }
 
-/** The list marks the drawing as open and the editor shows Excalidraw's tools. */
+/** The editor's bar names the drawing and the editor shows Excalidraw's tools. */
 export async function expectDrawingOpen(
 	page: Page,
 	name: string,
 ): Promise<void> {
-	await expect(drawingRow(page, name)).toHaveAttribute("aria-current", "true");
+	await expect(
+		page.getByRole("heading", { level: 1, name, exact: true }),
+	).toBeVisible();
 	await expect(editorTools(page)).toBeVisible();
 }
 
-/** Background colors of the drawing list, from the app's light and dark palettes. */
-const listBackground = {
-	light: "rgb(241, 243, 245)",
-	dark: "rgb(33, 37, 41)",
+/** Background colors of the editor's bar, from the app's light and dark palettes. */
+const barBackground = {
+	light: "rgb(255, 255, 255)",
+	dark: "rgb(18, 18, 18)",
 };
 
 /**
- * The drawing list and Excalidraw both show the given color scheme. Excalidraw
+ * The editor's bar and Excalidraw both show the given color scheme. Excalidraw
  * exposes its theme only through a class on its container and the canvas
  * pixels, so this reads the class.
  */
@@ -80,9 +109,9 @@ export async function expectColorScheme(
 	page: Page,
 	scheme: "light" | "dark",
 ): Promise<void> {
-	await expect(drawingList(page)).toHaveCSS(
+	await expect(page.getByRole("banner")).toHaveCSS(
 		"background-color",
-		listBackground[scheme],
+		barBackground[scheme],
 	);
 	const excalidraw = editor(page).locator(".excalidraw");
 	if (scheme === "dark") await expect(excalidraw).toHaveClass(/theme--dark/);
@@ -105,10 +134,12 @@ function openDrawingId(page: Page): string {
 	return new URL(page.url()).pathname.replace(/^\/drawings\//, "");
 }
 
-/** Opens the app, at a drawing's path if an ID is given. */
+/** Opens the app: the landing page, or a drawing's path if an ID is given. */
 export async function openApp(page: Page, drawingId?: string): Promise<void> {
 	await page.goto(drawingId ? `/drawings/${drawingId}` : "/");
-	await expect(drawingList(page)).toBeVisible();
+	await expect(
+		drawingId ? allDrawingsLink(page) : drawingList(page),
+	).toBeVisible();
 }
 
 /** Opens the app through a link in the old form, with the drawing's ID in the hash. */
@@ -117,15 +148,21 @@ export async function openOldLink(
 	drawingId: string,
 ): Promise<void> {
 	await page.goto(`/#${drawingId}`);
-	await expect(drawingList(page)).toBeVisible();
+	await expect(allDrawingsLink(page)).toBeVisible();
 }
 
-/** Opens a drawing by clicking it in the list. */
-export async function openDrawingFromList(
+/** Opens a drawing by clicking its card on the landing page. */
+export async function openDrawingFromCard(
 	page: Page,
 	name: string,
 ): Promise<void> {
-	await drawingButton(page, name).click();
+	await drawingCardLink(page, name).click();
+}
+
+/** Leaves the editor through "All drawings" and waits for the landing page. */
+export async function goToAllDrawings(page: Page): Promise<void> {
+	await allDrawingsLink(page).click();
+	await expect(drawingList(page)).toBeVisible();
 }
 
 /** Goes back one page with the browser's back button. */
@@ -144,15 +181,17 @@ export async function expectAtDrawingPath(
 	expect(new URL(page.url()).hash).toBe("");
 }
 
-/** Creates a drawing through the list, waits until it is open and returns its ID. */
+/**
+ * Creates a drawing from the blank sheet on the landing page, waits until it is
+ * open and returns its ID.
+ */
 export async function createDrawing(page: Page, name: string): Promise<string> {
-	await page.getByRole("button", { name: "New drawing" }).click();
+	await drawingList(page).getByRole("button", { name: "New drawing" }).click();
 	await page
 		.getByRole("textbox", { name: "Name of the new drawing" })
 		.fill(name);
 	await page.keyboard.press("Enter");
-	// The URL names the previous drawing until the new one opens.
-	await expect(drawingRow(page, name)).toHaveAttribute("aria-current", "true");
+	await expectDrawingOpen(page, name);
 	return openDrawingId(page);
 }
 
@@ -161,7 +200,7 @@ export async function renameDrawing(
 	name: string,
 	newName: string,
 ): Promise<void> {
-	await drawingRow(page, name).hover();
+	await drawingCard(page, name).hover();
 	await drawingList(page)
 		.getByRole("button", { name: `Rename ${name}` })
 		.click();
@@ -171,9 +210,9 @@ export async function renameDrawing(
 	await page.keyboard.press("Enter");
 }
 
-/** Deletes a drawing through its row and confirms the question. */
+/** Deletes a drawing through its card and confirms the question. */
 export async function deleteDrawing(page: Page, name: string): Promise<void> {
-	await drawingRow(page, name).hover();
+	await drawingCard(page, name).hover();
 	await drawingList(page)
 		.getByRole("button", { name: `Delete ${name}` })
 		.click();
