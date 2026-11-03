@@ -118,8 +118,7 @@ flowchart TD
     sidebar["sidebar<br>src/client/sidebar/<br>Resizable, collapsible frame for the list"]:::module
     list["DrawingList<br>src/client/drawings/DrawingList.tsx<br>Lists drawings, edits names, confirms deletes"]:::module
     name["NameField<br>src/client/drawings/NameField.tsx<br>Edits a drawing name inline"]:::module
-    editor["Editor<br>src/client/drawings/Editor.tsx<br>Embeds Excalidraw and autosaves the scene"]:::module
-    scheduler["save-scheduler<br>src/client/drawings/save-scheduler.ts<br>Debounces and deduplicates saves"]:::module
+    editor["Editor and its hooks<br>src/client/drawings/Editor.tsx<br>Embeds Excalidraw; see the editor diagram"]:::module
     drawings["use-drawings<br>src/client/drawings/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
     drawing["use-drawing<br>src/client/drawings/use-drawing.ts<br>Loads the open drawing with its scene"]:::module
     hash["use-hash-id<br>src/client/drawings/use-hash-id.ts<br>Keeps the open drawing in the URL hash"]:::module
@@ -127,7 +126,7 @@ flowchart TD
     shared["shared<br>src/shared/<br>API types"]:::module
     app --> scheme & sidebar & list & editor & drawings & drawing & hash
     list --> name
-    editor --> scheduler & api
+    editor --> api
     drawings --> api
     drawing --> api
     api --> shared
@@ -138,6 +137,31 @@ renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature: its components, hooks and API calls sit together. Any client module may
 import `shared`; the diagram shows only `api`, the main user. Nothing enforces
 the dependencies inside the client beyond code review.
+
+```mermaid
+---
+title: Modules of the editor
+---
+flowchart TD
+    editor["Editor<br>src/client/drawings/Editor.tsx<br>Renders Excalidraw and wires the hooks"]:::module
+    autosave["use-autosave<br>src/client/drawings/use-autosave.ts<br>Saves the scene after each pause and on leave"]:::module
+    scheduler["save-scheduler<br>src/client/drawings/save-scheduler.ts<br>Debounces and deduplicates saves"]:::module
+    usePreview["use-preview<br>src/client/drawings/use-preview.ts<br>Refreshes an out-of-date preview on open and leave"]:::module
+    preview["preview<br>src/client/drawings/preview.ts<br>Renders the scene as a PNG and stores it"]:::module
+    api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
+    editor --> autosave & usePreview
+    autosave --> scheduler & api
+    usePreview --> preview
+    preview --> api
+```
+
+`Editor` only renders Excalidraw; the two hooks hold its behavior. `use-preview`
+gets the saved scene from `use-autosave` through `settle`, which `Editor` passes
+in, so it doesn't import `use-autosave` beyond a type. A preview is out of date
+when the drawing has none or when it's older than the last scene save, and only
+then is it rendered: a light PNG, at most 640 px on the longer side, from
+Excalidraw's `exportToBlob`. A scene with nothing visible removes the preview. A
+failed preview is only logged, and the next open tries again.
 
 `DrawingList` creates and renames drawings inline through `NameField`, and
 deletes one only after a confirmation in its row. `use-drawings` remembers which
@@ -167,7 +191,7 @@ title: Opening a drawing and autosaving it
 sequenceDiagram
     actor User
     participant App as App, DrawingList and hooks
-    participant Editor as Editor and Excalidraw
+    participant Editor as Editor, Excalidraw and use-autosave
     participant Scheduler as save-scheduler
     participant Api as api
     participant Server as app and drawing-store
@@ -192,8 +216,35 @@ sequenceDiagram
 
 `App, DrawingList and hooks` folds `App`, `DrawingList`, `use-drawing` and
 `use-drawings` into one lane.
-`save-scheduler` imports nothing; `Editor` gives it the function that saves.
-Switching drawings or leaving the page flushes a pending save.
+`save-scheduler` imports nothing; `use-autosave` gives it the function that
+saves. Switching drawings or leaving the page flushes a pending save.
+
+```mermaid
+---
+title: Leaving a drawing refreshes its preview
+---
+sequenceDiagram
+    actor User
+    participant App as App and use-drawings
+    participant Autosave as Editor and use-autosave
+    participant Preview as use-preview and preview
+    participant Server as app and drawing-store
+    User->>App: opens another drawing
+    App->>Autosave: unmount
+    Autosave->>Server: flushes the pending save, PUT /api/drawings/:id
+    Preview->>Autosave: settle
+    Server-->>Autosave: summary with the new updatedAt
+    Autosave-->>Preview: saved scene and summary
+    Note over Preview: renders only if the preview is older than the scene
+    Preview->>Server: PUT /api/drawings/:id/preview with the PNG
+    Server-->>Preview: summary with the new previewUpdatedAt
+    Preview->>App: onSaved updates the list
+```
+
+The same check runs when a drawing opens, which gives drawings saved before
+previews existed a preview and repairs one a closed tab left out of date. The
+browser seldom finishes an export during `pagehide`, so that path is best
+effort. Both lanes call the server through `api`, which this diagram leaves out.
 
 ```mermaid
 ---
@@ -255,7 +306,9 @@ Vitest runs two projects from [`vite.config.ts`](../../vite.config.ts):
   database. `drawing-store.test.ts` opens a database file with the schema from
   before previews, in a temporary folder, to test the upgrade.
 - `client` tests in jsdom with Testing Library. Component tests mock `api.ts`
-  and replace `Editor.tsx`, since Excalidraw does not render in jsdom.
+  and replace `Editor.tsx`, since Excalidraw does not render in jsdom. The
+  editor hooks and `preview.ts` are tested with `api.ts` and Excalidraw's
+  `exportToBlob` mocked.
 
 `pnpm check` runs the typecheck, Biome lint and formatting, Vitest, the
 production build and the Fallow gates: dead code, duplicates, zone boundaries
@@ -275,7 +328,8 @@ Chromium.
   this server and run one at a time.
 - [`drawings.spec.ts`](../../e2e/drawings.spec.ts) covers creating, renaming and
   deleting a drawing, opening one from the URL hash, a drawing surviving a
-  reload, following the system's dark mode, and showing a failed save. The
+  reload, storing a preview when the user leaves a drawing, following the
+  system's dark mode, and showing a failed save. The
   reload test reads the saved scene from the API, then selects all shapes in the
   editor to show the scene was loaded back. The failed-save test deletes the
   open drawing through the API, as another tab would, then dismisses the error
@@ -285,7 +339,7 @@ Chromium.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
   actions for the drawings UI, and
   [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings
-  and reads stored scenes through the HTTP API. Neither defines steps.
+  and reads stored scenes and previews through the HTTP API. Neither defines steps.
 
 The tests are black-box. They run with `pnpm e2e` and in the `e2e` CI job, not
 in `pnpm check`.
