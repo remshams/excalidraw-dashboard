@@ -3,7 +3,7 @@ import { DrawingList } from "./drawings/catalog/DrawingList.tsx";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
 import { Editor } from "./drawings/editor/Editor.tsx";
 import { useDrawing } from "./drawings/editor/use-drawing.ts";
-import { useHashId } from "./drawings/use-hash-id.ts";
+import { useOpenDrawingId } from "./drawings/use-open-drawing-id.ts";
 import { Sidebar } from "./sidebar/Sidebar.tsx";
 import { useColorScheme } from "./use-color-scheme.ts";
 
@@ -15,8 +15,8 @@ export function App() {
 	}, []);
 
 	const theme = useColorScheme();
-	const [selectedId, select] = useHashId();
-	const drawing = useDrawing(selectedId, showError);
+	const [openDrawingId, openDrawing] = useOpenDrawingId();
+	const drawing = useDrawing(openDrawingId, showError);
 	const { drawings, replace, create, rename, remove, wasDeleted } =
 		useDrawings(showError);
 
@@ -26,16 +26,16 @@ export function App() {
 				{(hideButton) => (
 					<DrawingList
 						drawings={drawings}
-						selectedId={selectedId}
+						selectedId={openDrawingId}
 						headerAction={hideButton}
-						onSelect={select}
+						onSelect={openDrawing}
 						onCreate={(name) =>
-							create(name).then((created) => select(created.id), showError)
+							create(name).then((created) => openDrawing(created.id), showError)
 						}
 						onRename={(id, name) => rename(id, name).catch(showError)}
 						onDelete={(id) =>
 							remove(id).then(() => {
-								if (id === selectedId) select(null);
+								if (id === openDrawingId) openDrawing(null);
 							}, showError)
 						}
 					/>
@@ -55,7 +55,7 @@ export function App() {
 					/>
 				) : (
 					<p className="placeholder">
-						{selectedId
+						{openDrawingId
 							? "Opening drawing…"
 							: "Open a drawing from the list or start a new one."}
 					</p>

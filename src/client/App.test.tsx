@@ -53,7 +53,7 @@ const drawing = (id: string, name: string): Drawing => ({
 const nav = () => within(screen.getByRole("navigation"));
 
 beforeEach(() => {
-	window.location.hash = "";
+	window.history.replaceState(null, "", "/");
 	vi.mocked(api.listDrawings).mockResolvedValue([
 		drawing("1", "Plan"),
 		drawing("2", "Roadmap"),
@@ -80,11 +80,11 @@ describe("App", () => {
 		await user.click(await nav().findByRole("button", { name: "Roadmap" }));
 
 		expect(await screen.findByText("Editing Roadmap")).toBeInTheDocument();
-		expect(window.location.hash).toBe("#2");
+		expect(window.location.pathname).toBe("/drawings/2");
 	});
 
-	it("opens the drawing named in the URL hash", async () => {
-		window.location.hash = "#1";
+	it("opens the drawing named in the URL", async () => {
+		window.history.replaceState(null, "", "/drawings/1");
 		render(<App />);
 
 		expect(screen.getByText("Opening drawing…")).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("App", () => {
 			addEventListener: () => {},
 			removeEventListener: () => {},
 		}));
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		render(<App />);
 
 		expect(await screen.findByText("Theme: dark")).toBeInTheDocument();
@@ -142,7 +142,7 @@ describe("App", () => {
 
 	it("closes the open drawing when it is deleted", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
@@ -156,12 +156,13 @@ describe("App", () => {
 			),
 		).toBeInTheDocument();
 		expect(nav().queryByRole("button", { name: "Plan" })).toBeNull();
+		expect(window.location.pathname).toBe("/");
 	});
 
 	it("shows no error when the deleted drawing's last save fails", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
 		editor.failOnClose = new Error("PUT /drawings/1 failed with 404");
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
@@ -179,7 +180,7 @@ describe("App", () => {
 
 	it("shows a failed save of a drawing that still exists", async () => {
 		editor.failOnClose = new Error("PUT /drawings/1 failed with 500");
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
@@ -201,7 +202,7 @@ describe("App", () => {
 			drawing(id, { "1": "Plan", "3": "Ideas" }[id] ?? "Roadmap"),
 		);
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
@@ -223,7 +224,7 @@ describe("App", () => {
 		vi.mocked(api.deleteDrawing).mockRejectedValue(
 			new Error("DELETE /drawings/1 failed with 500"),
 		);
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
@@ -241,7 +242,7 @@ describe("App", () => {
 
 	it("keeps another open drawing when deleting", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
-		window.location.hash = "#1";
+		window.history.replaceState(null, "", "/drawings/1");
 		const user = userEvent.setup();
 		render(<App />);
 		await screen.findByText("Editing Plan");
