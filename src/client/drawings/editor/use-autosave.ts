@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { Drawing, DrawingSummary } from "../../shared/types.ts";
-import { updateDrawing } from "./api.ts";
+import type { Drawing, DrawingSummary } from "../../../shared/types.ts";
+import { updateDrawing } from "../api.ts";
 import { createSaveScheduler } from "./save-scheduler.ts";
 
 const SAVE_DELAY_MS = 1000;

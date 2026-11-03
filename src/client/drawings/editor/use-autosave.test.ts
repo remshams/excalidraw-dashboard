@@ -1,10 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Drawing } from "../../shared/types.ts";
-import * as api from "./api.ts";
+import type { Drawing } from "../../../shared/types.ts";
+import * as api from "../api.ts";
 import { useAutosave } from "./use-autosave.ts";
 
-vi.mock("./api.ts");
+vi.mock("../api.ts");
 
 const drawing: Drawing = {
 	id: "1",

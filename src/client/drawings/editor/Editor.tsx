@@ -1,7 +1,7 @@
 import { Excalidraw, serializeAsJSON } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useState } from "react";
-import type { Drawing, DrawingSummary } from "../../shared/types.ts";
+import type { Drawing, DrawingSummary } from "../../../shared/types.ts";
 import { useAutosave } from "./use-autosave.ts";
 import { usePreview } from "./use-preview.ts";
 

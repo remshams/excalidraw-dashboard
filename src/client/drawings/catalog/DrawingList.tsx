@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { DrawingSummary } from "../../shared/types.ts";
+import type { DrawingSummary } from "../../../shared/types.ts";
 import { NameField } from "./NameField.tsx";
 
 type DrawingListProps = {

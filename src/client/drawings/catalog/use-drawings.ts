@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { DrawingSummary } from "../../shared/types.ts";
+import type { DrawingSummary } from "../../../shared/types.ts";
 import {
 	createDrawing,
 	deleteDrawing,
 	listDrawings,
 	updateDrawing,
-} from "./api.ts";
+} from "../api.ts";
 
 const byName = (a: DrawingSummary, b: DrawingSummary) =>
 	a.name.localeCompare(b.name, undefined, { sensitivity: "base" });

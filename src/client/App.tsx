@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
-import { DrawingList } from "./drawings/DrawingList.tsx";
-import { Editor } from "./drawings/Editor.tsx";
-import { useDrawing } from "./drawings/use-drawing.ts";
-import { useDrawings } from "./drawings/use-drawings.ts";
+import { DrawingList } from "./drawings/catalog/DrawingList.tsx";
+import { useDrawings } from "./drawings/catalog/use-drawings.ts";
+import { Editor } from "./drawings/editor/Editor.tsx";
+import { useDrawing } from "./drawings/editor/use-drawing.ts";
 import { useHashId } from "./drawings/use-hash-id.ts";
 import { Sidebar } from "./sidebar/Sidebar.tsx";
 import { useColorScheme } from "./use-color-scheme.ts";
