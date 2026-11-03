@@ -17,8 +17,8 @@ version ([ADR 0001](adr/0001-version-preview-urls.md)).
 - **Preview**: a PNG image of a drawing's scene. It is a value object that
   belongs to the drawing; setting a new one replaces it. `previewUpdatedAt`
   records when it was last set.
-- **Drawing summary**: a drawing without its scene or preview image, as the
-  drawing list shows it.
+- **Drawing summary**: a drawing without its scene or preview image, as a card
+  on the landing page shows it.
 
 ## Context
 
@@ -42,8 +42,7 @@ esm.sh when the canvas shows text.
 
 The database holds every drawing. A file copy of `DATA_DIR` is a consistent
 backup only while the server is stopped; a live backup uses SQLite's
-`VACUUM INTO`. The browser keeps only the sidebar
-layout, in `localStorage`.
+`VACUUM INTO`. The browser stores nothing; the URL names the open drawing.
 
 ## Processes
 
@@ -53,7 +52,7 @@ title: Processes of excalidraw-dashboard
 ---
 flowchart TD
     user(["User"]):::person
-    browser["Client<br>React and Excalidraw in the browser<br>Shows the list and the editor"]:::process
+    browser["Client<br>React and Excalidraw in the browser<br>Shows the landing page and the editor"]:::process
     server["Server<br>Node 24 with Hono<br>HTTP API and the client build"]:::process
     db[("Drawing database<br>SQLite in DATA_DIR")]:::store
     cdn["esm.sh<br>CDN for Excalidraw's canvas fonts"]:::external
@@ -76,7 +75,7 @@ outside `/api/` with `index.html`, so the client handles its own URLs, such as
 title: Zones of the code base
 ---
 flowchart TD
-    client["client<br>src/client/<br>React UI: drawing list and editor"]:::module
+    client["client<br>src/client/<br>React UI: landing page and editor"]:::module
     server["server<br>src/server/<br>HTTP API and drawing repository"]:::module
     shared["shared<br>src/shared/<br>Request and response types of the API"]:::module
     e2e["e2e<br>e2e/<br>Black-box tests through the UI and API"]:::module
@@ -116,14 +115,15 @@ title: Modules of the client
 flowchart TD
     app["App<br>src/client/App.tsx<br>Composes the views and shows request errors"]:::module
     scheme["use-color-scheme<br>src/client/use-color-scheme.ts<br>Follows the system's light or dark setting"]:::module
-    sidebar["sidebar<br>src/client/sidebar/<br>Resizable, collapsible frame for the list"]:::module
     catalog["catalog/<br>Lists, creates, renames and deletes drawings"]:::group
     editor["editor/<br>Loads and edits the open drawing"]:::group
     openId["use-open-drawing-id<br>src/client/drawings/use-open-drawing-id.ts<br>Keeps the open drawing in the URL path"]:::module
+    link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     shared["shared<br>src/shared/<br>API types"]:::module
-    app --> scheme & sidebar & catalog & editor & openId
-    catalog --> api
+    app --> scheme & catalog & editor & openId & link
+    catalog --> api & link
+    link --> openId
     editor --> api
     api --> shared
 ```
@@ -135,8 +135,12 @@ feature, one bounded context around the `Drawing` aggregate. It has two modules:
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `use-open-drawing-id.ts` sits at the root too,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
-`/` opens none, and an old `/#<id>` link is turned into its path. Any client
-module may import `shared`; the diagrams show only `api`, the main user.
+`/` opens none, and an old `/#<id>` link is turned into its path. `App` shows
+the landing page at `/` and the editor view otherwise: the editor below a bar
+with an "All drawings" link and the drawing's name. Cards and "All drawings"
+are `DrawingLink`s: real links to a drawing's path, so a middle click opens a
+new tab, while a plain click opens the drawing without loading the page. Any
+client module may import `shared`; the diagrams show only `api`, the main user.
 Nothing enforces the dependencies inside the client beyond code review.
 
 ```mermaid
@@ -172,30 +176,34 @@ failed preview is only logged, and the next open tries again.
 title: Modules of the catalog
 ---
 flowchart TD
-    list["DrawingList<br>src/client/drawings/catalog/DrawingList.tsx<br>Lists drawings, edits names, confirms deletes"]:::module
+    list["DrawingList<br>src/client/drawings/catalog/DrawingList.tsx<br>The landing page's cards with their previews"]:::module
     name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
+    confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
+    icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards and the editor bar"]:::module
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
+    link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
-    list --> name
+    list --> name & confirm & icons & link & api
     drawings --> api
 ```
 
-`App` renders `DrawingList` with the list from `use-drawings`. `DrawingList`
-creates and renames drawings inline through `NameField`, and deletes one only
-after a confirmation in its row. `use-drawings` remembers which
-drawings it deleted, so `App` can ignore the failed last save of a deleted
-drawing.
-
-`sidebar` is [`use-sidebar.ts`](../../src/client/sidebar/use-sidebar.ts), which
-keeps the width and collapsed state in `localStorage` and resizes by pointer and
-arrow keys, and [`Sidebar.tsx`](../../src/client/sidebar/Sidebar.tsx), which
-renders the resize handle and the collapsed rail. `Sidebar` passes the button
-that hides it to its content, and `DrawingList` shows it in its header.
+`App` renders `DrawingList` with the list from `use-drawings`. Its first card
+is a blank sheet that asks for a name and opens the new drawing. Every other
+card shows the drawing's preview on a sheet, with an `<img>` whose URL from
+`api.ts` carries `previewUpdatedAt` as a version. A drawing without a preview,
+or one whose preview fails to load, shows a blank sheet. Leaving a drawing
+sends its new preview's summary to `use-drawings`, so the card changes its URL
+and the browser loads the new image. A card renames its drawing through
+`NameField` and deletes it only after `DeleteConfirmation`. `use-drawings`
+remembers which drawings it deleted, so `App` can ignore a last save that was
+still in flight and fails once the drawing is gone. `App` takes the back icon
+for its bar from `icons`.
 
 [`styles.css`](../../src/client/styles.css) holds the look: colors from
 open-color, the palette Excalidraw draws with, and Excalidraw's bundled fonts,
 Excalifont for drawing names and Assistant for controls. It switches to a dark
-palette with `prefers-color-scheme`. `use-color-scheme` reads the same setting
+palette with `prefers-color-scheme`; there, previews, which are stored light,
+get Excalidraw's own canvas filter. `use-color-scheme` reads the same setting
 for `App`, which passes it to `Editor`. `Editor` hands it to Excalidraw and
 hides Excalidraw's own theme toggle. The theme is display state only: Excalidraw
 leaves it out of the stored scene, so a theme change saves nothing.
@@ -216,7 +224,7 @@ sequenceDiagram
     App->>Api: list drawings
     Api->>Server: GET /api/drawings
     Server-->>Api: drawing summaries
-    User->>App: opens a drawing from the list or its URL
+    User->>App: opens a drawing from its card or its URL
     App->>Api: get drawing
     Api->>Server: GET /api/drawings/:id
     Server-->>Api: drawing with its scene
@@ -235,9 +243,10 @@ sequenceDiagram
 `App, DrawingList and hooks` folds `App`, `DrawingList`, `use-drawing` and
 `use-drawings` into one lane.
 `save-scheduler` imports nothing; `use-autosave` gives it the function that
-saves. Switching drawings or leaving the page flushes a pending save. Saves run
-one at a time: the server keeps whichever write lands last, so a newer scene
-waits for the save in flight.
+saves. Going back to all drawings or leaving the page flushes a pending save,
+and reopening the drawing loads its scene again. Saves run one at a time: the
+server keeps whichever write lands last, so a newer scene waits for the save in
+flight.
 
 ```mermaid
 ---
@@ -249,7 +258,7 @@ sequenceDiagram
     participant Autosave as Editor and use-autosave
     participant Preview as use-preview and preview
     participant Server as app and drawing-store
-    User->>App: opens another drawing
+    User->>App: goes back to all drawings
     App->>Autosave: unmount
     Autosave->>Server: flushes the pending save, PUT /api/drawings/:id
     Preview->>Autosave: settle
@@ -259,6 +268,7 @@ sequenceDiagram
     Preview->>Server: PUT /api/drawings/:id/preview with the PNG
     Server-->>Preview: summary with the new previewUpdatedAt
     Preview->>App: onSaved updates the list
+    App->>Server: the card's image loads /api/drawings/:id/preview?v=…
 ```
 
 The same check runs when a drawing opens, which gives drawings saved before
@@ -268,19 +278,20 @@ effort. Both lanes call the server through `api`, which this diagram leaves out.
 
 ```mermaid
 ---
-title: Deleting the open drawing with a save pending
+title: Deleting a drawing right after leaving it
 ---
 sequenceDiagram
     actor User
     participant App as App, DrawingList and use-drawings
     participant Editor as Editor and save-scheduler
     participant Server as app and drawing-store
-    User->>App: deletes the open drawing and confirms
-    App->>Server: DELETE /api/drawings/:id
-    Server-->>App: 204
+    User->>App: goes back to all drawings
     App->>Editor: unmount
     Editor->>Server: flushes the pending save, PUT /api/drawings/:id
-    Server--xEditor: 404
+    User->>App: deletes the drawing and confirms
+    App->>Server: DELETE /api/drawings/:id
+    Server-->>App: 204
+    Server--xEditor: 404, if the delete landed first
     Editor->>App: save error
     Note over App: drawing was deleted in this tab, so no error is shown
 ```
@@ -347,16 +358,17 @@ Chromium.
   deleted before each run and kept afterwards for debugging. The tests share
   this server and run one at a time.
 - [`drawings.spec.ts`](../../e2e/drawings.spec.ts) covers creating, renaming and
-  deleting a drawing, opening one from its URL or an old `#<id>` link, going
-  back to the previous drawing with the browser's back button, a drawing
-  surviving a reload, storing a preview when the user leaves a drawing or opens
-  one that has none, following the system's dark mode, and showing a failed
-  save. The reload test reads the saved scene from the API, then selects all
-  shapes in the editor to show the scene was loaded back. The failed-save test
-  deletes the open drawing through the API, as another tab would, then
-  dismisses the error message above the editor. The preview-on-open test
-  copies a drawn scene into a drawing created through the API, so that drawing
-  has no preview yet.
+  deleting a drawing, opening one from its card, its URL or an old `#<id>`
+  link, retracing drawings and the landing page with the browser's back
+  button, a drawing surviving a reload, storing a preview when the user leaves
+  a drawing or opens one that has none and showing it on the card, reopening a
+  drawing right after leaving it, following the system's dark mode, and
+  showing a failed save. The reload test reads the saved scene from the API,
+  then selects all shapes in the editor to show the scene was loaded back. The
+  failed-save test deletes the open drawing through the API, as another tab
+  would, then dismisses the error message above the editor. The preview-on-open
+  test copies a drawn scene into a drawing created through the API, so that
+  drawing has no preview yet.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
