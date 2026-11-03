@@ -88,6 +88,15 @@ the server on port 3101 with a fresh database in `.e2e-data/`, and run in
 Chromium. Run `pnpm exec playwright install chromium` once before the first run.
 `pnpm check` doesn't run them; CI runs them in its own `e2e` job.
 
+To check a change in the running app by hand, use the `agent-browser` skill in
+`.agents/skills/`. It needs the `agent-browser` CLI on the `PATH`; install it once
+per machine, for example with `mise use -g npm:agent-browser`, and run
+`agent-browser install` if no Chrome or Chromium is installed. Start the app with
+`pnpm build && pnpm start`, and set `PORT` and a scratch `DATA_DIR` so the check
+doesn't touch real drawings. Such a check doesn't replace an e2e test; add one for
+behavior that must keep working. Update the skill with
+`pnpm dlx skills update agent-browser`.
+
 ## End-to-end tests
 
 - Write E2E tests as black-box tests. Drive the application only through its
