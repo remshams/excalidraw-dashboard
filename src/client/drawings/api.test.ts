@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deleteDrawing, listDrawings, updateDrawing } from "./api.ts";
+import {
+	deleteDrawing,
+	deletePreview,
+	listDrawings,
+	savePreview,
+	updateDrawing,
+} from "./api.ts";
 
 const mockFetch = (response: Response) =>
 	vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
@@ -21,6 +27,30 @@ describe("drawings API client", () => {
 		expect(fetch).toHaveBeenCalledWith("/api/drawings/1", {
 			method: "PUT",
 			body: '{"name":"Plan"}',
+			headers: { "Content-Type": "application/json" },
+		});
+	});
+
+	it("sends a preview as PNG", async () => {
+		const fetch = mockFetch(Response.json({ id: "1" }));
+		const png = new Blob(["png"], { type: "image/png" });
+
+		expect(await savePreview("1", png)).toEqual({ id: "1" });
+
+		expect(fetch).toHaveBeenCalledWith("/api/drawings/1/preview", {
+			method: "PUT",
+			body: png,
+			headers: { "Content-Type": "image/png" },
+		});
+	});
+
+	it("deletes a preview", async () => {
+		const fetch = mockFetch(Response.json({ id: "1" }));
+
+		expect(await deletePreview("1")).toEqual({ id: "1" });
+
+		expect(fetch).toHaveBeenCalledWith("/api/drawings/1/preview", {
+			method: "DELETE",
 			headers: { "Content-Type": "application/json" },
 		});
 	});
