@@ -45,3 +45,13 @@ export const savePreview = (id: string, png: Blob) =>
 
 export const deletePreview = (id: string) =>
 	request<DrawingSummary>(`/drawings/${id}/preview`, { method: "DELETE" });
+
+/**
+ * The URL of a drawing's PNG preview, or null if it has none. It carries
+ * `previewUpdatedAt` as a version, because the server lets browsers cache a
+ * preview forever (ADR 0001).
+ */
+export const previewUrl = ({ id, previewUpdatedAt }: DrawingSummary) =>
+	previewUpdatedAt === null
+		? null
+		: `/api/drawings/${id}/preview?v=${encodeURIComponent(previewUpdatedAt)}`;

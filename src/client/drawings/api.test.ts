@@ -3,6 +3,7 @@ import {
 	deleteDrawing,
 	deletePreview,
 	listDrawings,
+	previewUrl,
 	savePreview,
 	updateDrawing,
 } from "./api.ts";
@@ -67,5 +68,29 @@ describe("drawings API client", () => {
 		await expect(deleteDrawing("1")).rejects.toThrow(
 			"DELETE /drawings/1 failed with 404",
 		);
+	});
+
+	it("versions a preview's URL with its update time", () => {
+		expect(
+			previewUrl({
+				id: "1",
+				name: "Plan",
+				createdAt: "",
+				updatedAt: "",
+				previewUpdatedAt: "2026-01-02T03:04:05.000Z",
+			}),
+		).toBe("/api/drawings/1/preview?v=2026-01-02T03%3A04%3A05.000Z");
+	});
+
+	it("has no preview URL for a drawing without a preview", () => {
+		expect(
+			previewUrl({
+				id: "1",
+				name: "Plan",
+				createdAt: "",
+				updatedAt: "",
+				previewUpdatedAt: null,
+			}),
+		).toBeNull();
 	});
 });
