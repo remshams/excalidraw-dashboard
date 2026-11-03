@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const readHash = () => window.location.hash.slice(1) || null;
 
@@ -12,9 +12,9 @@ export function useHashId(): [string | null, (id: string | null) => void] {
 		return () => window.removeEventListener("hashchange", onHashChange);
 	}, []);
 
-	const select = useCallback((next: string | null) => {
+	const select = (next: string | null) => {
 		window.location.hash = next ?? "";
-	}, []);
+	};
 
 	return [id, select];
 }
