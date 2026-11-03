@@ -18,7 +18,7 @@ export function App() {
 
 	const theme = useColorScheme();
 	const [openDrawingId, openDrawing] = useOpenDrawingId();
-	const drawing = useDrawing(openDrawingId, showError);
+	const { drawing, failed } = useDrawing(openDrawingId, showError);
 	const { drawings, replace, create, rename, remove, wasDeleted } =
 		useDrawings(showError);
 
@@ -27,6 +27,7 @@ export function App() {
 			{openDrawingId ? (
 				<EditorView
 					drawing={drawing}
+					failed={failed}
 					theme={theme}
 					onOpen={openDrawing}
 					onSaved={replace}
@@ -62,8 +63,9 @@ export function App() {
 }
 
 type EditorViewProps = {
-	/** The open drawing, or null while it loads. */
+	/** The open drawing, or null while it loads or when loading failed. */
 	drawing: Drawing | null;
+	failed: boolean;
 	theme: "light" | "dark";
 	onOpen: (id: string | null) => void;
 	onSaved: (summary: DrawingSummary) => void;
@@ -74,6 +76,7 @@ type EditorViewProps = {
 /** The open drawing across the window, below a bar that leads back to all drawings. */
 function EditorView({
 	drawing,
+	failed,
 	theme,
 	onOpen,
 	onSaved,
@@ -98,7 +101,9 @@ function EditorView({
 						onError={(cause) => onError(drawing.id, cause)}
 					/>
 				) : (
-					<p className="placeholder">Opening drawing…</p>
+					<p className="placeholder">
+						{failed ? "This drawing couldn't be opened." : "Opening drawing…"}
+					</p>
 				)}
 			</main>
 		</div>
