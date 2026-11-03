@@ -145,7 +145,7 @@ title: Modules of the editor
 flowchart TD
     editor["Editor<br>src/client/drawings/Editor.tsx<br>Renders Excalidraw and wires the hooks"]:::module
     autosave["use-autosave<br>src/client/drawings/use-autosave.ts<br>Saves the scene after each pause and on leave"]:::module
-    scheduler["save-scheduler<br>src/client/drawings/save-scheduler.ts<br>Debounces and deduplicates saves"]:::module
+    scheduler["save-scheduler<br>src/client/drawings/save-scheduler.ts<br>Debounces, deduplicates and orders saves"]:::module
     usePreview["use-preview<br>src/client/drawings/use-preview.ts<br>Refreshes an out-of-date preview on open and leave"]:::module
     preview["preview<br>src/client/drawings/preview.ts<br>Renders the scene as a PNG and stores it"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
@@ -217,7 +217,9 @@ sequenceDiagram
 `App, DrawingList and hooks` folds `App`, `DrawingList`, `use-drawing` and
 `use-drawings` into one lane.
 `save-scheduler` imports nothing; `use-autosave` gives it the function that
-saves. Switching drawings or leaving the page flushes a pending save.
+saves. Switching drawings or leaving the page flushes a pending save. Saves run
+one at a time: the server keeps whichever write lands last, so a newer scene
+waits for the save in flight.
 
 ```mermaid
 ---
