@@ -40,3 +40,18 @@ export async function storedShapeTypes(
 		.filter((element) => !element.isDeleted)
 		.map((element) => element.type);
 }
+
+/**
+ * The media type of a drawing's stored preview, or null if it has none. The
+ * request context keeps no HTTP cache, so the URL needs no version.
+ */
+export async function storedPreviewType(
+	request: APIRequestContext,
+	id: string,
+): Promise<string | null> {
+	const response = await request.get(`/api/drawings/${id}/preview`);
+	if (response.status() === 404) return null;
+	expect(response.ok()).toBe(true);
+	expect((await response.body()).length).toBeGreaterThan(0);
+	return response.headers()["content-type"] ?? null;
+}
