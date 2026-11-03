@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "../../shared/types.ts";
 import {
 	createDrawing,
@@ -19,11 +19,11 @@ export function useDrawings(onError: (error: unknown) => void) {
 		listDrawings().then(setDrawings, onError);
 	}, [onError]);
 
-	const replace = useCallback((summary: DrawingSummary) => {
+	const replace = (summary: DrawingSummary) => {
 		setDrawings((list) =>
 			list.map((d) => (d.id === summary.id ? summary : d)).sort(byName),
 		);
-	}, []);
+	};
 
 	const create = async (name: string) => {
 		const created = await createDrawing(name);
@@ -42,10 +42,7 @@ export function useDrawings(onError: (error: unknown) => void) {
 	};
 
 	/** Whether this app deleted the drawing, so later errors about it don't matter. */
-	const wasDeleted = useCallback(
-		(id: string) => deletedIds.current.has(id),
-		[],
-	);
+	const wasDeleted = (id: string) => deletedIds.current.has(id);
 
 	return { drawings, replace, create, rename, remove, wasDeleted };
 }
