@@ -1,52 +1,115 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "../../../shared/types.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
-const drawings: DrawingSummary[] = [
-	{
-		id: "1",
-		name: "Plan",
-		createdAt: "",
-		updatedAt: "",
-		previewUpdatedAt: null,
-	},
-	{
-		id: "2",
-		name: "Roadmap",
-		createdAt: "",
-		updatedAt: "",
-		previewUpdatedAt: null,
-	},
+const summary = (
+	id: string,
+	name: string,
+	previewUpdatedAt: string | null = null,
+): DrawingSummary => ({
+	id,
+	name,
+	createdAt: "",
+	updatedAt: "",
+	previewUpdatedAt,
+});
+
+const drawings = [
+	summary("1", "Plan", "2026-01-02T00:00:00.000Z"),
+	summary("2", "Roadmap"),
 ];
 
-function setup() {
+function setup(shown = drawings) {
 	const props = {
-		onSelect: vi.fn(),
+		onOpen: vi.fn(),
 		onCreate: vi.fn(),
 		onRename: vi.fn(),
 		onDelete: vi.fn(),
 	};
-	render(<DrawingList drawings={drawings} selectedId="2" {...props} />);
-	return { ...props, user: userEvent.setup() };
+	const { rerender } = render(<DrawingList drawings={shown} {...props} />);
+	return {
+		...props,
+		user: userEvent.setup(),
+		show: (next: DrawingSummary[]) =>
+			rerender(<DrawingList drawings={next} {...props} />),
+	};
 }
 
+const cards = () =>
+	within(screen.getByRole("list", { name: "Drawings" })).getAllByRole(
+		"listitem",
+	);
+
+/** The card's preview image; it has no role, since its alt text is empty. */
+const previewOf = (name: string) =>
+	screen.getByRole("link", { name }).querySelector("img");
+
 describe("DrawingList", () => {
-	it("marks the selected drawing", () => {
+	it("shows a blank sheet to start a drawing, then a card per drawing in the given order", () => {
 		setup();
 
-		const items = screen.getAllByRole("listitem");
-		expect(items[0]).toHaveAttribute("aria-current", "false");
-		expect(items[1]).toHaveAttribute("aria-current", "true");
+		expect(cards().map((card) => card.textContent)).toEqual([
+			"New drawing",
+			expect.stringContaining("Plan"),
+			expect.stringContaining("Roadmap"),
+		]);
 	});
 
-	it("selects a drawing by its name", async () => {
-		const { user, onSelect } = setup();
+	it("links each card to its drawing's path", () => {
+		setup();
 
-		await user.click(screen.getByRole("button", { name: "Plan" }));
+		expect(screen.getByRole("link", { name: "Plan" })).toHaveAttribute(
+			"href",
+			"/drawings/1",
+		);
+	});
 
-		expect(onSelect).toHaveBeenCalledWith("1");
+	it("opens a drawing from its card", async () => {
+		const { user, onOpen } = setup();
+
+		await user.click(screen.getByRole("link", { name: "Roadmap" }));
+
+		expect(onOpen).toHaveBeenCalledExactlyOnceWith("2");
+	});
+
+	it("shows the preview, versioned by its update time", () => {
+		setup();
+
+		const image = previewOf("Plan");
+		expect(image).toHaveAttribute(
+			"src",
+			"/api/drawings/1/preview?v=2026-01-02T00%3A00%3A00.000Z",
+		);
+		expect(image).toHaveAttribute("alt", "");
+		expect(image).toHaveAttribute("loading", "lazy");
+	});
+
+	it("shows a blank sheet for a drawing without a preview", () => {
+		setup();
+
+		expect(previewOf("Roadmap")).toBeNull();
+	});
+
+	it("shows a blank sheet when the preview fails to load", () => {
+		setup();
+
+		fireEvent.error(previewOf("Plan") as HTMLImageElement);
+
+		expect(previewOf("Plan")).toBeNull();
+	});
+
+	it("shows a new preview after an earlier one failed to load", () => {
+		const { show } = setup();
+		fireEvent.error(previewOf("Plan") as HTMLImageElement);
+
+		show([summary("1", "Plan", "2026-01-03T00:00:00.000Z")]);
+
+		expect(previewOf("Plan")).toHaveAttribute(
+			"src",
+			"/api/drawings/1/preview?v=2026-01-03T00%3A00%3A00.000Z",
+		);
 	});
 
 	it("creates a drawing with the entered name", async () => {
@@ -70,7 +133,9 @@ describe("DrawingList", () => {
 		await user.type(screen.getByRole("textbox"), "Sketch{Escape}");
 
 		expect(onCreate).not.toHaveBeenCalled();
-		expect(screen.queryByRole("textbox")).toBeNull();
+		expect(
+			screen.getByRole("button", { name: "New drawing" }),
+		).toBeInTheDocument();
 	});
 
 	it("renames a drawing in place", async () => {
@@ -83,7 +148,7 @@ describe("DrawingList", () => {
 		await user.type(field, "Ideas{Enter}");
 
 		expect(onRename).toHaveBeenCalledWith("1", "Ideas");
-		expect(screen.getByRole("button", { name: "Plan" })).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "Plan" })).toBeInTheDocument();
 	});
 
 	it("deletes a drawing after confirmation", async () => {
@@ -117,9 +182,51 @@ describe("DrawingList", () => {
 			await cancel(user);
 
 			expect(onDelete).not.toHaveBeenCalled();
-			expect(
-				screen.getByRole("button", { name: "Roadmap" }),
-			).toBeInTheDocument();
+			expect(screen.getByRole("link", { name: "Roadmap" })).toBeInTheDocument();
 		},
 	);
+
+	it("asks on one card at a time", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Delete Roadmap" }));
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+
+		expect(screen.queryByText("Delete “Roadmap”?")).toBeNull();
+		expect(
+			screen.getByRole("textbox", { name: "New name for Plan" }),
+		).toBeInTheDocument();
+	});
+
+	it("closes the new drawing's name field when another card asks", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "New drawing" }));
+		await user.click(screen.getByRole("button", { name: "Delete Plan" }));
+
+		expect(
+			screen.queryByRole("textbox", { name: "Name of the new drawing" }),
+		).toBeNull();
+		expect(screen.getByText("Delete “Plan”?")).toBeInTheDocument();
+	});
+
+	it("closes a card's question when the new drawing asks for a name", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Delete Plan" }));
+		await user.click(screen.getByRole("button", { name: "New drawing" }));
+
+		expect(screen.queryByText("Delete “Plan”?")).toBeNull();
+		expect(
+			screen.getByRole("textbox", { name: "Name of the new drawing" }),
+		).toBeInTheDocument();
+	});
+
+	it("keeps the preview on the sheet while a card asks", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Delete Plan" }));
+
+		expect(cards()[1].querySelector("img")).not.toBeNull();
+	});
 });
