@@ -116,45 +116,47 @@ flowchart TD
     app["App<br>src/client/App.tsx<br>Composes the views and shows request errors"]:::module
     scheme["use-color-scheme<br>src/client/use-color-scheme.ts<br>Follows the system's light or dark setting"]:::module
     sidebar["sidebar<br>src/client/sidebar/<br>Resizable, collapsible frame for the list"]:::module
-    list["DrawingList<br>src/client/drawings/DrawingList.tsx<br>Lists drawings, edits names, confirms deletes"]:::module
-    name["NameField<br>src/client/drawings/NameField.tsx<br>Edits a drawing name inline"]:::module
-    editor["Editor and its hooks<br>src/client/drawings/Editor.tsx<br>Embeds Excalidraw; see the editor diagram"]:::module
-    drawings["use-drawings<br>src/client/drawings/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
-    drawing["use-drawing<br>src/client/drawings/use-drawing.ts<br>Loads the open drawing with its scene"]:::module
+    catalog["catalog/<br>Lists, creates, renames and deletes drawings"]:::group
+    editor["editor/<br>Loads and edits the open drawing"]:::group
     hash["use-hash-id<br>src/client/drawings/use-hash-id.ts<br>Keeps the open drawing in the URL hash"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     shared["shared<br>src/shared/<br>API types"]:::module
-    app --> scheme & sidebar & list & editor & drawings & drawing & hash
-    list --> name
+    app --> scheme & sidebar & catalog & editor & hash
+    catalog --> api
     editor --> api
-    drawings --> api
-    drawing --> api
     api --> shared
 ```
 
 [`src/client/main.tsx`](../../src/client/main.tsx) is the composition root: it
 renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
-feature: its components, hooks and API calls sit together. Any client module may
-import `shared`; the diagram shows only `api`, the main user. Nothing enforces
-the dependencies inside the client beyond code review.
+feature, one bounded context around the `Drawing` aggregate. It has two modules:
+`catalog/` lists, creates, renames and deletes drawings, and `editor/` edits the
+open one and keeps its scene and preview saved. They don't import each other;
+both use `api.ts` at the root. `use-hash-id.ts` stays at the root as well, and
+`App` uses it to track the open drawing. Any client module may import `shared`;
+the diagrams show only `api`, the main user. Nothing enforces the dependencies
+inside the client beyond code review.
 
 ```mermaid
 ---
 title: Modules of the editor
 ---
 flowchart TD
-    editor["Editor<br>src/client/drawings/Editor.tsx<br>Renders Excalidraw and wires the hooks"]:::module
-    autosave["use-autosave<br>src/client/drawings/use-autosave.ts<br>Saves the scene after each pause and on leave"]:::module
-    scheduler["save-scheduler<br>src/client/drawings/save-scheduler.ts<br>Debounces, deduplicates and orders saves"]:::module
-    usePreview["use-preview<br>src/client/drawings/use-preview.ts<br>Refreshes an out-of-date preview on open and leave"]:::module
-    preview["preview<br>src/client/drawings/preview.ts<br>Renders the scene as a PNG and stores it"]:::module
+    drawing["use-drawing<br>src/client/drawings/editor/use-drawing.ts<br>Loads the open drawing with its scene"]:::module
+    editor["Editor<br>src/client/drawings/editor/Editor.tsx<br>Renders Excalidraw and wires the hooks"]:::module
+    autosave["use-autosave<br>src/client/drawings/editor/use-autosave.ts<br>Saves the scene after each pause and on leave"]:::module
+    scheduler["save-scheduler<br>src/client/drawings/editor/save-scheduler.ts<br>Debounces, deduplicates and orders saves"]:::module
+    usePreview["use-preview<br>src/client/drawings/editor/use-preview.ts<br>Refreshes an out-of-date preview on open and leave"]:::module
+    preview["preview<br>src/client/drawings/editor/preview.ts<br>Renders the scene as a PNG and stores it"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     editor --> autosave & usePreview
     autosave --> scheduler & api
     usePreview --> preview
     preview --> api
+    drawing --> api
 ```
 
+`App` loads the open drawing with `use-drawing` and renders `Editor` with it.
 `Editor` only renders Excalidraw; the two hooks hold its behavior. `use-preview`
 gets the saved scene from `use-autosave` through `settle`, which `Editor` passes
 in, so it doesn't import `use-autosave` beyond a type. A preview is out of date
@@ -163,8 +165,22 @@ then is it rendered: a light PNG, at most 640 px on the longer side, from
 Excalidraw's `exportToBlob`. A scene with nothing visible removes the preview. A
 failed preview is only logged, and the next open tries again.
 
-`DrawingList` creates and renames drawings inline through `NameField`, and
-deletes one only after a confirmation in its row. `use-drawings` remembers which
+```mermaid
+---
+title: Modules of the catalog
+---
+flowchart TD
+    list["DrawingList<br>src/client/drawings/catalog/DrawingList.tsx<br>Lists drawings, edits names, confirms deletes"]:::module
+    name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
+    drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
+    api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
+    list --> name
+    drawings --> api
+```
+
+`App` renders `DrawingList` with the list from `use-drawings`. `DrawingList`
+creates and renames drawings inline through `NameField`, and deletes one only
+after a confirmation in its row. `use-drawings` remembers which
 drawings it deleted, so `App` can ignore the failed last save of a deleted
 drawing.
 
