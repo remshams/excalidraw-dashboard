@@ -1,7 +1,8 @@
 # excalidraw-dashboard
 
-A self-hosted Excalidraw with a sidebar of named drawings. Drawings autosave to a
-SQLite database on the server, so there is no manual export or import.
+A self-hosted Excalidraw that opens on a page of named drawings, each shown as a
+card with a preview. Drawings autosave to a SQLite database on the server, so
+there is no manual export or import.
 
 ## Usage
 
