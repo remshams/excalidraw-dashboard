@@ -70,7 +70,9 @@ export function createApp(store: DrawingStore, options: AppOptions = {}) {
 		.delete("/drawings/:id/preview", (c) => {
 			const drawing = store.setPreview(c.req.param("id"), null);
 			return drawing ? c.json(drawing) : c.notFound();
-		});
+		})
+		// Without this, the client's fallback below would answer an unknown API path with index.html.
+		.all("*", (c) => c.notFound());
 
 	// Scenes with embedded images can be large; Hono applies no body limit by default.
 	const app = new Hono().route("/api", api);
@@ -81,6 +83,7 @@ export function createApp(store: DrawingStore, options: AppOptions = {}) {
 			"utf8",
 		);
 		app.use("/*", serveStatic({ root: options.staticDir }));
+		// The client reads the open drawing from the path, such as /drawings/<id>.
 		app.get("*", (c) => c.html(indexHtml));
 	}
 
