@@ -6,8 +6,8 @@ import type {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	const response = await fetch(`/api${path}`, {
-		...init,
 		headers: { "Content-Type": "application/json" },
+		...init,
 	});
 	if (!response.ok) {
 		throw new Error(
@@ -35,3 +35,13 @@ export const updateDrawing = (id: string, changes: UpdateDrawingRequest) =>
 
 export const deleteDrawing = (id: string) =>
 	request<void>(`/drawings/${id}`, { method: "DELETE" });
+
+export const savePreview = (id: string, png: Blob) =>
+	request<DrawingSummary>(`/drawings/${id}/preview`, {
+		method: "PUT",
+		body: png,
+		headers: { "Content-Type": "image/png" },
+	});
+
+export const deletePreview = (id: string) =>
+	request<DrawingSummary>(`/drawings/${id}/preview`, { method: "DELETE" });
