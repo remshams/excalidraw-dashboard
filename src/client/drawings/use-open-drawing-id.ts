@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 
 const PREFIX = "/drawings/";
 
-const pathOf = (id: string | null) =>
+/** The URL path that opens a drawing, or `/` for none. */
+export const drawingPath = (id: string | null) =>
 	id === null ? "/" : `${PREFIX}${encodeURIComponent(id)}`;
 
 /** The ID in a `/drawings/<id>` path, or null for any other path. */
@@ -24,7 +25,7 @@ const readId = () => {
 const replaceHashLink = () => {
 	const id = window.location.hash.slice(1);
 	if (id && window.location.pathname === "/") {
-		window.history.replaceState(null, "", pathOf(id));
+		window.history.replaceState(null, "", drawingPath(id));
 	}
 };
 
@@ -52,7 +53,7 @@ export function useOpenDrawingId(): [
 	}, []);
 
 	const openDrawing = (next: string | null) => {
-		const path = pathOf(next);
+		const path = drawingPath(next);
 		if (path !== window.location.pathname) {
 			window.history.pushState(null, "", path);
 		}
