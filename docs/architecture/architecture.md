@@ -66,7 +66,8 @@ flowchart TD
 In development, `pnpm dev` starts the server with `node --watch` and the Vite
 dev server for the client, which proxies `/api` to the server. In production,
 the server also serves the Vite build from `./dist` and answers every other path
-with `index.html`, so the client handles its own URLs.
+outside `/api/` with `index.html`, so the client handles its own URLs, such as
+`/drawings/<id>`. An unknown path under `/api/` gets a 404.
 
 ## Modules and dependencies
 
@@ -118,10 +119,10 @@ flowchart TD
     sidebar["sidebar<br>src/client/sidebar/<br>Resizable, collapsible frame for the list"]:::module
     catalog["catalog/<br>Lists, creates, renames and deletes drawings"]:::group
     editor["editor/<br>Loads and edits the open drawing"]:::group
-    hash["use-hash-id<br>src/client/drawings/use-hash-id.ts<br>Keeps the open drawing in the URL hash"]:::module
+    openId["use-open-drawing-id<br>src/client/drawings/use-open-drawing-id.ts<br>Keeps the open drawing in the URL path"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     shared["shared<br>src/shared/<br>API types"]:::module
-    app --> scheme & sidebar & catalog & editor & hash
+    app --> scheme & sidebar & catalog & editor & openId
     catalog --> api
     editor --> api
     api --> shared
@@ -132,10 +133,11 @@ renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature, one bounded context around the `Drawing` aggregate. It has two modules:
 `catalog/` lists, creates, renames and deletes drawings, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
-both use `api.ts` at the root. `use-hash-id.ts` stays at the root as well, and
-`App` uses it to track the open drawing. Any client module may import `shared`;
-the diagrams show only `api`, the main user. Nothing enforces the dependencies
-inside the client beyond code review.
+both use `api.ts` at the root. `use-open-drawing-id.ts` sits at the root too,
+and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
+`/` opens none, and an old `/#<id>` link is turned into its path. Any client
+module may import `shared`; the diagrams show only `api`, the main user.
+Nothing enforces the dependencies inside the client beyond code review.
 
 ```mermaid
 ---
@@ -214,7 +216,7 @@ sequenceDiagram
     App->>Api: list drawings
     Api->>Server: GET /api/drawings
     Server-->>Api: drawing summaries
-    User->>App: opens a drawing from the list or URL hash
+    User->>App: opens a drawing from the list or its URL
     App->>Api: get drawing
     Api->>Server: GET /api/drawings/:id
     Server-->>Api: drawing with its scene
@@ -345,14 +347,16 @@ Chromium.
   deleted before each run and kept afterwards for debugging. The tests share
   this server and run one at a time.
 - [`drawings.spec.ts`](../../e2e/drawings.spec.ts) covers creating, renaming and
-  deleting a drawing, opening one from the URL hash, a drawing surviving a
-  reload, storing a preview when the user leaves a drawing or opens one that has
-  none, following the system's dark mode, and showing a failed save. The
-  reload test reads the saved scene from the API, then selects all shapes in the
-  editor to show the scene was loaded back. The failed-save test deletes the
-  open drawing through the API, as another tab would, then dismisses the error
-  message above the editor. The preview-on-open test copies a drawn scene into
-  a drawing created through the API, so that drawing has no preview yet.
+  deleting a drawing, opening one from its URL or an old `#<id>` link, going
+  back to the previous drawing with the browser's back button, a drawing
+  surviving a reload, storing a preview when the user leaves a drawing or opens
+  one that has none, following the system's dark mode, and showing a failed
+  save. The reload test reads the saved scene from the API, then selects all
+  shapes in the editor to show the scene was loaded back. The failed-save test
+  deletes the open drawing through the API, as another tab would, then
+  dismisses the error message above the editor. The preview-on-open test
+  copies a drawn scene into a drawing created through the API, so that drawing
+  has no preview yet.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
