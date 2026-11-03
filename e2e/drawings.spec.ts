@@ -3,7 +3,9 @@ import { expect, test } from "@playwright/test";
 import {
 	createDrawingThroughApi,
 	deleteDrawingThroughApi,
+	storeSceneThroughApi,
 	storedPreviewType,
+	storedScene,
 	storedShapeTypes,
 } from "./drawings-api.ts";
 import {
@@ -98,6 +100,45 @@ test("leaving a drawing stores its preview", async ({ page, request }) => {
 
 	await test.step(`${name} has a PNG preview`, async () => {
 		await expect.poll(() => storedPreviewType(request, id)).toBe("image/png");
+	});
+});
+
+test("opening a drawing without a preview stores one", async ({
+	context,
+	page,
+	request,
+}) => {
+	const source = uniqueName("Source");
+	const name = uniqueName("Copy");
+	let scene = "";
+	let id = "";
+
+	await test.step(`draw a rectangle in a new drawing named ${source}`, async () => {
+		await openApp(page);
+		const sourceId = await createDrawing(page, source);
+		await drawRectangle(page);
+		await expect
+			.poll(() => storedShapeTypes(request, sourceId))
+			.toEqual(["rectangle"]);
+		scene = (await storedScene(request, sourceId)) ?? "";
+	});
+
+	await test.step(`store the scene in a new drawing named ${name} through the API`, async () => {
+		id = await createDrawingThroughApi(request, name);
+		await storeSceneThroughApi(request, id, scene);
+		expect(await storedPreviewType(request, id)).toBeNull();
+	});
+
+	const tab = await context.newPage();
+
+	await test.step(`open ${name} in a new tab`, async () => {
+		await openApp(tab, id);
+		await expectDrawingOpen(tab, name);
+	});
+
+	await test.step(`${name} has a PNG preview while it's still open`, async () => {
+		await expect.poll(() => storedPreviewType(request, id)).toBe("image/png");
+		await expectDrawingOpen(tab, name);
 	});
 });
 
