@@ -200,16 +200,18 @@ still in flight and fails once the drawing is gone. `App` takes the back icon
 for its bar from `icons`.
 
 [`styles.css`](../../src/client/styles.css) holds what the whole client shares:
-colors from open-color, the palette Excalidraw draws with; Excalidraw's bundled
-fonts, Excalifont for drawing names and Assistant for controls; the base rules;
-and the focus ring. It switches to a dark palette with `prefers-color-scheme`.
-Each component keeps its own rules in a CSS module next to it, such as
-`DrawingList.module.css`, so its class names can't clash with another
-component's. `DrawingList`'s module gives previews, which are stored light,
-Excalidraw's own canvas filter in dark mode. `use-color-scheme` reads the same
-setting for `App`, which passes it to `Editor`. `Editor` hands it to Excalidraw
-and hides Excalidraw's own theme toggle. The theme is display state only:
-Excalidraw leaves it out of the stored scene, so a theme change saves nothing.
+design tokens for colors from open-color, the palette Excalidraw draws with, and
+for font sizes, line heights, font weights, stroke widths and corner radii;
+Excalidraw's bundled fonts, Excalifont for drawing names and Assistant for
+controls; the base rules; and the focus ring. It switches to a dark palette with
+`prefers-color-scheme`. Each component keeps its own rules in a CSS module next
+to it, such as `DrawingList.module.css`, so its class names can't clash with
+another component's. `DrawingList`'s module gives previews, which are stored
+light, Excalidraw's own canvas filter in dark mode. `use-color-scheme` reads the
+same setting for `App`, which passes it to `Editor`. `Editor` hands it to
+Excalidraw and hides Excalidraw's own theme toggle. The theme is display state
+only: Excalidraw leaves it out of the stored scene, so a theme change saves
+nothing.
 
 ## Runtime flow
 
@@ -344,9 +346,10 @@ Vitest runs two projects from [`vite.config.ts`](../../vite.config.ts):
   editor hooks and `preview.ts` are tested with `api.ts` and Excalidraw's
   `exportToBlob` mocked.
 
-`pnpm check` runs the typecheck, Biome lint and formatting, Vitest, the
-production build and the Fallow gates: dead code, duplicates, zone boundaries
-and health with a CRAP limit of 12. For health, `pnpm coverage` first writes
+`pnpm check` runs the typecheck, Biome lint and formatting, a Stylelint check
+that CSS modules use the design tokens, Vitest, the production build and the
+Fallow gates: dead code, duplicates, zone boundaries and health with a CRAP
+limit of 12. For health, `pnpm coverage` first writes
 `coverage/coverage-final.json`, which Fallow reads for the CRAP scores.
 
 `pnpm mutation` runs mutation testing on changed code against `origin/main` and
