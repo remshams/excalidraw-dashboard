@@ -16,6 +16,7 @@
 		"e2e": "playwright test",
 		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json && tsc -p tsconfig.e2e.json",
 		"lint": "biome lint .",
+		"lint:css": "stylelint \"src/**/*.module.css\"",
 		"format": "biome format --write .",
 		"format:check": "biome format .",
 		"coverage": "rm -rf coverage && vitest run --coverage",
@@ -26,7 +27,7 @@
 		"fallow": "pnpm coverage && pnpm fallow:dead-code && pnpm fallow:dupes && pnpm fallow:architecture && pnpm fallow:health",
 		"mutation": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=diff.mnemonicPrefix GIT_CONFIG_VALUE_0=false fallow mutation --changed-since \"${MUTATION_BASE:-origin/main}\" --min-score 80",
 		"mutation:all": "fallow mutation --all",
-		"check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build && pnpm fallow"
+		"check": "pnpm typecheck && pnpm lint && pnpm lint:css && pnpm format:check && pnpm test && pnpm build && pnpm fallow"
 	},
 	"dependencies": {
 		"@excalidraw/excalidraw": "^0.18.1",
@@ -49,6 +50,8 @@
 		"concurrently": "^10.0.6",
 		"fallow": "3.35.0",
 		"jsdom": "^30.1.3",
+		"stylelint": "^17.16.0",
+		"stylelint-declaration-strict-value": "^1.12.1",
 		"typescript": "^7.0.2",
 		"vite": "^8.3.5",
 		"vitest": "5.0.5"
