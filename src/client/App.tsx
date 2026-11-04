@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import type { Drawing, DrawingSummary } from "../shared/types.ts";
+import styles from "./App.module.css";
 import { DrawingList } from "./drawings/catalog/DrawingList.tsx";
 import { BackIcon } from "./drawings/catalog/icons.tsx";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
@@ -38,7 +39,7 @@ export function App() {
 					}}
 				/>
 			) : (
-				<main className="gallery">
+				<main className={styles.gallery}>
 					<DrawingList
 						drawings={drawings}
 						onOpen={openDrawing}
@@ -51,7 +52,7 @@ export function App() {
 				</main>
 			)}
 			{error && (
-				<div className="error" role="alert">
+				<div className={styles.error} role="alert">
 					<p>{error}</p>
 					<button type="button" onClick={() => setError(null)}>
 						Dismiss
@@ -83,15 +84,15 @@ function EditorView({
 	onError,
 }: EditorViewProps) {
 	return (
-		<div className="editing">
-			<header className="editor-bar">
-				<DrawingLink drawingId={null} onOpen={onOpen} className="back">
+		<div className={styles.editing}>
+			<header className={styles.editorBar}>
+				<DrawingLink drawingId={null} onOpen={onOpen} className={styles.back}>
 					<BackIcon />
 					All drawings
 				</DrawingLink>
 				{drawing && <h1>{drawing.name}</h1>}
 			</header>
-			<main className="editor">
+			<main className={styles.editor}>
 				{drawing ? (
 					<Editor
 						key={drawing.id}
@@ -101,7 +102,7 @@ function EditorView({
 						onError={(cause) => onError(drawing.id, cause)}
 					/>
 				) : (
-					<p className="placeholder">
+					<p className={styles.placeholder}>
 						{failed ? "This drawing couldn't be opened." : "Opening drawing…"}
 					</p>
 				)}
