@@ -1,4 +1,4 @@
-/* Styles for the whole app: fonts, color tokens, base rules and the focus ring.
+/* Styles for the whole app: fonts, design tokens, base rules and the focus ring.
    Each component keeps its own styles in a CSS module next to it. */
 
 /* Excalidraw's handwriting, Latin subset. The file name carries a hash, so check
