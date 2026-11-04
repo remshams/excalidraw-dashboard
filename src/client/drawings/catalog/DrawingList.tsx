@@ -3,6 +3,7 @@ import type { DrawingSummary } from "../../../shared/types.ts";
 import { previewUrl } from "../api.ts";
 import { DrawingLink } from "../DrawingLink.tsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.tsx";
+import styles from "./DrawingList.module.css";
 import { PencilIcon, PlusIcon, TrashIcon } from "./icons.tsx";
 import { NameField } from "./NameField.tsx";
 
@@ -34,7 +35,7 @@ export function DrawingList({
 	const close = () => setTask(null);
 
 	return (
-		<div className="drawing-list">
+		<div className={styles.list}>
 			<h1>Drawings</h1>
 			<ul aria-label="Drawings">
 				<NewDrawingCard
@@ -89,13 +90,13 @@ function NewDrawingCard({
 	onCancel,
 }: NewDrawingCardProps) {
 	const sheet = (
-		<span className="sheet blank">
+		<span className={`${styles.sheet} ${styles.blank}`}>
 			<PlusIcon />
 		</span>
 	);
 
 	return (
-		<li className="new">
+		<li>
 			{creating ? (
 				<>
 					{sheet}
@@ -106,9 +107,9 @@ function NewDrawingCard({
 					/>
 				</>
 			) : (
-				<button type="button" className="open" onClick={onStart}>
+				<button type="button" className={styles.open} onClick={onStart}>
 					{sheet}
-					<span className="name">New drawing</span>
+					<span className={styles.name}>New drawing</span>
 				</button>
 			)}
 		</li>
@@ -161,14 +162,14 @@ function DrawingCard({
 
 	return (
 		<li>
-			<DrawingLink drawingId={id} onOpen={onOpen} className="open">
+			<DrawingLink drawingId={id} onOpen={onOpen} className={styles.open}>
 				<Sheet drawing={drawing} />
-				<span className="name">{name}</span>
+				<span className={styles.name}>{name}</span>
 			</DrawingLink>
-			<span className="actions">
+			<span className={styles.actions}>
 				<button
 					type="button"
-					className="icon"
+					className={styles.icon}
 					aria-label={`Rename ${name}`}
 					onClick={() => onStart("rename")}
 				>
@@ -176,7 +177,7 @@ function DrawingCard({
 				</button>
 				<button
 					type="button"
-					className="icon"
+					className={styles.icon}
 					aria-label={`Delete ${name}`}
 					onClick={() => onStart("delete")}
 				>
@@ -196,7 +197,7 @@ function Sheet({ drawing }: { drawing: DrawingSummary }) {
 	const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
 	return (
-		<span className="sheet">
+		<span className={styles.sheet}>
 			{url && url !== failedUrl && (
 				<img
 					src={url}
