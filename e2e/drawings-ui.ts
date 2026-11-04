@@ -142,15 +142,6 @@ export async function openApp(page: Page, drawingId?: string): Promise<void> {
 	).toBeVisible();
 }
 
-/** Opens the app through a link in the old form, with the drawing's ID in the hash. */
-export async function openOldLink(
-	page: Page,
-	drawingId: string,
-): Promise<void> {
-	await page.goto(`/#${drawingId}`);
-	await expect(allDrawingsLink(page)).toBeVisible();
-}
-
 /** Opens a drawing by clicking its card on the landing page. */
 export async function openDrawingFromCard(
 	page: Page,
@@ -170,7 +161,7 @@ export async function goBack(page: Page): Promise<void> {
 	await page.goBack();
 }
 
-/** Checks that the URL is the drawing's path, `/drawings/<id>`, with no hash. */
+/** Checks that the URL is the drawing's path, `/drawings/<id>`. */
 export async function expectAtDrawingPath(
 	page: Page,
 	drawingId: string,
@@ -178,7 +169,6 @@ export async function expectAtDrawingPath(
 	await expect
 		.poll(() => new URL(page.url()).pathname)
 		.toBe(`/drawings/${drawingId}`);
-	expect(new URL(page.url()).hash).toBe("");
 }
 
 /**
