@@ -1,3 +1,5 @@
+import styles from "./DeleteConfirmation.module.css";
+
 type DeleteConfirmationProps = {
 	name: string;
 	onConfirm: () => void;
@@ -13,13 +15,13 @@ export function DeleteConfirmation({
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: Escape is a shortcut; both choices are buttons.
 		<div
-			className="confirm"
+			className={styles.confirm}
 			onKeyDown={(event) => {
 				if (event.key === "Escape") onCancel();
 			}}
 		>
 			<p>Delete “{name}”?</p>
-			<button type="button" className="danger" onClick={onConfirm}>
+			<button type="button" className={styles.danger} onClick={onConfirm}>
 				Delete
 			</button>
 			{/* biome-ignore lint/a11y/noAutofocus: focus the safe choice when the question appears. */}

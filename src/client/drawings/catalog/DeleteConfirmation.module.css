@@ -1,0 +1,30 @@
+.confirm {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.5rem;
+	padding-inline: 0.125rem;
+	font-size: 0.875rem;
+}
+
+.confirm p {
+	flex-basis: 100%;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.confirm button {
+	padding: 0.125rem 0.625rem;
+	border: 1px solid var(--rule);
+	border-radius: 0.375rem;
+	background: var(--sheet);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* Under .confirm, so it outranks the rule for every button above. */
+.confirm .danger {
+	border-color: var(--signal);
+	background: var(--signal);
+	color: var(--sheet);
+}
