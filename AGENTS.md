@@ -65,7 +65,11 @@ code.
   into feature hooks (`use-*.ts`) once a component grows beyond rendering.
 - Style a component in a CSS module next to it, such as `DrawingList.module.css`,
   with camelCase class names. Keep only what the whole client shares in
-  `src/client/styles.css`: fonts, color tokens, base rules and the focus ring.
+  `src/client/styles.css`: fonts, design tokens, base rules and the focus ring.
+- Use the design tokens from `styles.css` for colors, font sizes, line heights,
+  font weights, border and outline widths and corner radii, such as
+  `var(--radius-md)`. `pnpm lint:css` fails on a raw value there. A value only
+  one component needs goes in a named custom property in its module.
 - Treat Excalidraw as a black box behind `Editor.tsx`. Render it with
   `key={drawing.id}` so switching drawings remounts it with fresh initial data.
 - Keep the Excalidraw serialization format (`serializeAsJSON(..., "local")`) as
@@ -76,10 +80,11 @@ code.
 
 ## Development
 
-Use pnpm. Run `pnpm check` before committing. It covers typecheck, Biome lint and
-formatting, Vitest, the production build and all Fallow gates (dead code,
-duplicates, architecture boundaries and health with a CRAP limit of 12 from fresh
-coverage). Run `pnpm format` to fix formatting.
+Use pnpm. Run `pnpm check` before committing. It covers typecheck, Biome lint
+and formatting, the design-token check on CSS modules (Stylelint), Vitest, the
+production build and all Fallow gates (dead code, duplicates, architecture
+boundaries and health with a CRAP limit of 12 from fresh coverage). Run
+`pnpm format` to fix formatting.
 
 Mutation testing is optional locally: `pnpm mutation` checks changed code against
 `origin/main`, configurable through `MUTATION_BASE`; `pnpm mutation:all` reports
