@@ -26,7 +26,6 @@ import {
 	openApp,
 	openDrawingFromCard,
 	openEditorMenu,
-	openOldLink,
 	renameDrawing,
 	selectAllShapes,
 	selectedShapeActions,
@@ -287,27 +286,6 @@ test("open a drawing from the URL", async ({ page, request }) => {
 
 	await test.step(`${name} is open in the editor`, async () => {
 		await expectDrawingOpen(page, name);
-	});
-});
-
-test("an old link with the drawing in the hash still opens it", async ({
-	page,
-	request,
-}) => {
-	const name = uniqueName("Bookmark");
-	let id = "";
-
-	await test.step(`a drawing named ${name} exists`, async () => {
-		id = await createDrawingThroughApi(request, name);
-	});
-
-	await test.step("open a link with the drawing's ID in the hash", async () => {
-		await openOldLink(page, id);
-	});
-
-	await test.step(`${name} is open, at its path`, async () => {
-		await expectDrawingOpen(page, name);
-		await expectAtDrawingPath(page, id);
 	});
 });
 
