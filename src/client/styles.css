@@ -14,7 +14,8 @@
 	--sheet: #ffffff;
 	--desk: #f1f3f5;
 	--graphite: #495057;
-	--marker: #ffec99;
+	/* Excalidraw's selection violet. */
+	--selection: #6965db;
 	--signal: #c92a2a;
 	--focus: #1971c2;
 	--rule: #ced4da;
@@ -37,8 +38,9 @@
 		--sheet: #121212;
 		--desk: #212529;
 		--graphite: #adb5bd;
-		/* Yellow 6 at 35% opacity: a highlighter stroke that keeps light ink readable. */
-		--marker: rgb(250 176 5 / 35%);
+		/* Excalidraw's dark primary violet. Its dark selection color is too dark to
+		   see on the desk. */
+		--selection: #a8a5ff;
 		--signal: #ff6b6b;
 		--focus: #4dabf7;
 		--rule: #495057;
@@ -125,8 +127,10 @@ input {
 	cursor: pointer;
 }
 
+/* The sheet shows keyboard focus with the selection outline below, so the link
+   drops its own. */
 .drawing-list .open:focus-visible {
-	outline-offset: 4px;
+	outline: none;
 }
 
 /* A sheet of paper on the desk, with the drawing scaled to fit. */
@@ -153,8 +157,11 @@ input {
 	object-fit: contain;
 }
 
-.open:hover .sheet {
-	border-color: var(--graphite);
+/* The card under the pointer or keyboard is outlined like a selected element in
+   Excalidraw. */
+.drawing-list .open:is(:hover, :focus-visible) .sheet:not(.blank) {
+	outline: 1.5px solid var(--selection);
+	outline-offset: 3px;
 }
 
 /* The blank sheet that starts a drawing is outlined like an Excalidraw selection. */
@@ -170,14 +177,12 @@ input {
 	height: 2.5rem;
 }
 
-.open:hover .sheet.blank {
-	border-color: var(--focus);
-	color: var(--focus);
+.open:is(:hover, :focus-visible) .sheet.blank {
+	border-color: var(--selection);
+	color: var(--selection);
 }
 
 .drawing-list .name {
-	position: relative;
-	isolation: isolate;
 	align-self: flex-start;
 	max-width: 100%;
 	padding-inline: 0.125rem;
@@ -187,30 +192,6 @@ input {
 	line-height: 1.4;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-/* The card under the pointer or keyboard gets a highlighter stroke under its
-   name, swept in from the left. */
-.drawing-list .open:is(:hover, :focus-visible) .name::before {
-	content: "";
-	position: absolute;
-	inset: 40% 0 0.05em;
-	z-index: -1;
-	/* The SVG gives the stroke its shape; the mask lets the theme pick its color. */
-	background: var(--marker);
-	mask:
-		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M2 6C25 2 60 4 98 3l1 12C70 18 35 15 1 18z'/%3E%3C/svg%3E")
-		center / 100% 100% no-repeat;
-	animation: sweep 240ms ease-out;
-}
-
-@keyframes sweep {
-	from {
-		clip-path: inset(0 100% 0 0);
-	}
-	to {
-		clip-path: inset(0 0 0 0);
-	}
 }
 
 .icon {
@@ -425,11 +406,5 @@ input {
 	.drawing-list ul {
 		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
 		gap: 1.5rem 1rem;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.drawing-list .open:is(:hover, :focus-visible) .name::before {
-		animation: none;
 	}
 }
