@@ -2,9 +2,10 @@
  * Only checks that the CSS modules use the design tokens from
  * src/client/styles.css for colors, type, stroke widths and corner radii.
  * Biome lints and formats CSS otherwise. Spacing isn't checked: layout needs
- * one-off values. Neither are the font and text-decoration shorthands: the
- * plugin can't expand them and would flag font families and keywords, so use
- * the longhands for sizes, weights and colors.
+ * one-off values. Neither is the font shorthand: the plugin can't expand it
+ * and would flag font families and keywords. It expands text-decoration only
+ * partly, so whether a raw color there fails depends on word order. Use the
+ * longhands font-size, font-weight, line-height and text-decoration-color.
  */
 export default {
 	// The tokens are defined there.
