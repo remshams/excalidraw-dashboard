@@ -68,9 +68,11 @@ code.
   `src/client/styles.css`: fonts, design tokens, base rules and the focus ring.
 - Use the design tokens from `styles.css` for colors, font sizes, line heights,
   font weights, border and outline widths and corner radii, such as
-  `var(--radius-md)`. `pnpm lint:css` fails on a raw value there. A value only
-  one component needs goes in a named custom property in its module, or behind
-  a `stylelint-disable-next-line` comment that gives the reason.
+  `var(--radius-md)`. `pnpm lint:css` fails on a raw value there. It doesn't
+  check the `font` shorthand, so write `font-size`, `font-weight` and
+  `line-height` separately. A value only one component needs goes in a named
+  custom property in its module, or behind a `stylelint-disable-next-line`
+  comment that gives the reason.
 - Treat Excalidraw as a black box behind `Editor.tsx`. Render it with
   `key={drawing.id}` so switching drawings remounts it with fresh initial data.
 - Keep the Excalidraw serialization format (`serializeAsJSON(..., "local")`) as
