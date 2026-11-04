@@ -63,6 +63,9 @@ code.
 
 - Write function components and hooks. Move state and effects out of components
   into feature hooks (`use-*.ts`) once a component grows beyond rendering.
+- Style a component in a CSS module next to it, such as `DrawingList.module.css`,
+  with camelCase class names. Keep only what the whole client shares in
+  `src/client/styles.css`: fonts, color tokens, base rules and the focus ring.
 - Treat Excalidraw as a black box behind `Editor.tsx`. Render it with
   `key={drawing.id}` so switching drawings remounts it with fresh initial data.
 - Keep the Excalidraw serialization format (`serializeAsJSON(..., "local")`) as
