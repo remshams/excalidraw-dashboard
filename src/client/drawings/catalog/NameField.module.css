@@ -1,0 +1,15 @@
+.field {
+	min-width: 0;
+}
+
+.field input {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0.125rem 0.375rem;
+	border: 1px solid var(--graphite);
+	border-radius: 0.375rem;
+	background: var(--sheet);
+	font-family: var(--hand);
+	font-size: 1.25rem;
+	line-height: 1.4;
+}

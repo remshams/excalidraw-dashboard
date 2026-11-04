@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import styles from "./NameField.module.css";
 
 type NameFieldProps = {
 	label: string;
@@ -28,7 +29,7 @@ export function NameField({
 
 	return (
 		<form
-			className="name-field"
+			className={styles.field}
 			onSubmit={(event) => {
 				event.preventDefault();
 				finish(true);
