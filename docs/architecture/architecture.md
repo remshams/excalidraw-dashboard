@@ -135,13 +135,13 @@ feature, one bounded context around the `Drawing` aggregate. It has two modules:
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `use-open-drawing-id.ts` sits at the root too,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
-`/` opens none, and an old `/#<id>` link is turned into its path. `App` shows
-the landing page at `/` and the editor view otherwise: the editor below a bar
-with an "All drawings" link and the drawing's name. Cards and "All drawings"
-are `DrawingLink`s: real links to a drawing's path, so a middle click opens a
-new tab, while a plain click opens the drawing without loading the page. Any
-client module may import `shared`; the diagrams show only `api`, the main user.
-Nothing enforces the dependencies inside the client beyond code review.
+and `/` opens none. `App` shows the landing page at `/` and the editor view
+otherwise: the editor below a bar with an "All drawings" link and the drawing's
+name. Cards and "All drawings" are `DrawingLink`s: real links to a drawing's
+path, so a middle click opens a new tab, while a plain click opens the drawing
+without loading the page. Any client module may import `shared`; the diagrams
+show only `api`, the main user. Nothing enforces the dependencies inside the
+client beyond code review.
 
 ```mermaid
 ---
@@ -358,17 +358,16 @@ Chromium.
   deleted before each run and kept afterwards for debugging. The tests share
   this server and run one at a time.
 - [`drawings.spec.ts`](../../e2e/drawings.spec.ts) covers creating, renaming and
-  deleting a drawing, opening one from its card, its URL or an old `#<id>`
-  link, retracing drawings and the landing page with the browser's back
-  button, a drawing surviving a reload, storing a preview when the user leaves
-  a drawing or opens one that has none and showing it on the card, reopening a
-  drawing right after leaving it, following the system's dark mode, and
-  showing a failed save. The reload test reads the saved scene from the API,
-  then selects all shapes in the editor to show the scene was loaded back. The
-  failed-save test deletes the open drawing through the API, as another tab
-  would, then dismisses the error message above the editor. The preview-on-open
-  test copies a drawn scene into a drawing created through the API, so that
-  drawing has no preview yet.
+  deleting a drawing, opening one from its card or its URL, retracing drawings
+  and the landing page with the browser's back button, a drawing surviving a
+  reload, storing a preview when the user leaves a drawing or opens one that has
+  none and showing it on the card, reopening a drawing right after leaving it,
+  following the system's dark mode, and showing a failed save. The reload test
+  reads the saved scene from the API, then selects all shapes in the editor to
+  show the scene was loaded back. The failed-save test deletes the open drawing
+  through the API, as another tab would, then dismisses the error message above
+  the editor. The preview-on-open test copies a drawn scene into a drawing
+  created through the API, so that drawing has no preview yet.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
