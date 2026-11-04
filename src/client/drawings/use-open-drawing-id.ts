@@ -21,14 +21,6 @@ const readId = () => {
 	}
 };
 
-/** Turns an old `/#<id>` link into `/drawings/<id>`, without a history entry. */
-const replaceHashLink = () => {
-	const id = window.location.hash.slice(1);
-	if (id && window.location.pathname === "/") {
-		window.history.replaceState(null, "", drawingPath(id));
-	}
-};
-
 /**
  * Keeps the open drawing's ID in the URL path, `/drawings/<id>`, so reloads,
  * links and the back button reopen it. `/` means no drawing is open.
@@ -37,17 +29,10 @@ export function useOpenDrawingId(): [
 	string | null,
 	(id: string | null) => void,
 ] {
-	const [id, setId] = useState(() => {
-		replaceHashLink();
-		return readId();
-	});
+	const [id, setId] = useState(readId);
 
 	useEffect(() => {
-		// Old /#<id> entries can still be in the tab's history.
-		const onPopState = () => {
-			replaceHashLink();
-			setId(readId());
-		};
+		const onPopState = () => setId(readId());
 		window.addEventListener("popstate", onPopState);
 		return () => window.removeEventListener("popstate", onPopState);
 	}, []);

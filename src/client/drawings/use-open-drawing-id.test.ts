@@ -87,39 +87,6 @@ describe("useOpenDrawingId", () => {
 		expect(result.current[0]).toBe("abc");
 	});
 
-	it("turns an old #<id> link into the drawing's path", () => {
-		goTo("/#abc");
-		const before = historyLength();
-
-		const { result } = renderHook(() => useOpenDrawingId());
-
-		expect(result.current[0]).toBe("abc");
-		expect(window.location.pathname).toBe("/drawings/abc");
-		expect(window.location.hash).toBe("");
-		expect(historyLength()).toBe(before);
-	});
-
-	it("turns an old #<id> entry reached through the history into its path", () => {
-		const { result } = renderHook(() => useOpenDrawingId());
-
-		act(() => {
-			goTo("/#abc");
-			window.dispatchEvent(new PopStateEvent("popstate"));
-		});
-
-		expect(result.current[0]).toBe("abc");
-		expect(window.location.pathname).toBe("/drawings/abc");
-	});
-
-	it("leaves a hash on another path alone", () => {
-		goTo("/drawings/abc#note");
-
-		const { result } = renderHook(() => useOpenDrawingId());
-
-		expect(result.current[0]).toBe("abc");
-		expect(window.location.hash).toBe("#note");
-	});
-
 	it("stops following the history once unmounted", () => {
 		const add = vi.spyOn(window, "addEventListener");
 		const remove = vi.spyOn(window, "removeEventListener");
