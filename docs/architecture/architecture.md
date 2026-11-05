@@ -238,7 +238,7 @@ Excalidraw's bundled fonts, Excalifont for drawing names and Assistant for
 controls; the base rules; and the focus ring. It switches to a dark palette with
 `prefers-color-scheme`. Each component keeps its own rules in a CSS module next
 to it, such as `DrawingList.module.css`, so its class names can't clash with
-another component's. `DrawingList`'s module gives previews, which are stored
+another component's. `PreviewImage`'s module gives previews, which are stored
 light, Excalidraw's own canvas filter in dark mode. `use-color-scheme` reads the
 same setting for `App`, which passes it to `Editor`. `Editor` hands it to
 Excalidraw and hides Excalidraw's own theme toggle. The theme is display state
