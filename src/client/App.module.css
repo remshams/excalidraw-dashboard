@@ -40,8 +40,11 @@
 	text-decoration: none;
 }
 
-.back:hover {
-	border-color: var(--graphite);
+/* Violet under the pointer or keyboard, like the blank sheet on the landing
+   page. */
+.back:is(:hover, :focus-visible) {
+	border-color: var(--selection);
+	color: var(--selection);
 }
 
 .editorBar h1 {
