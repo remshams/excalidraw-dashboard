@@ -13,6 +13,21 @@ export function drawingCardLink(page: Page, name: string) {
 	return drawingList(page).getByRole("link", { name, exact: true });
 }
 
+/** The cards on the landing page, the blank sheet first. Each card reads as its name. */
+export function drawingCards(page: Page) {
+	return drawingList(page).getByRole("listitem");
+}
+
+/** The landing page's message about the search, such as that nothing matches. */
+export function searchStatus(page: Page) {
+	return page.getByRole("status");
+}
+
+/** Types a query into the landing page's search field. */
+export async function searchDrawings(page: Page, query: string): Promise<void> {
+	await page.getByRole("searchbox", { name: "Search drawings" }).fill(query);
+}
+
 /** A drawing's card. Its rename and delete actions appear while it is hovered. */
 function drawingCard(page: Page, name: string) {
 	return drawingList(page)
