@@ -4,9 +4,9 @@
 }
 
 .list h1 {
-	margin: 0 0 1.75rem;
+	margin: 0 0 var(--space-lg);
 	font-family: var(--hand);
-	font-size: var(--text-4xl);
+	font-size: var(--text-xl);
 	font-weight: var(--weight-regular);
 	line-height: var(--leading-sm);
 }
@@ -14,7 +14,7 @@
 .list ul {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-	gap: 2rem 1.5rem;
+	gap: var(--space-lg);
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -24,7 +24,7 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
+	gap: var(--space-sm);
 	min-width: 0;
 }
 
@@ -32,7 +32,7 @@
 .open {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
+	gap: var(--space-sm);
 	padding: 0;
 	border: 0;
 	background: none;
@@ -66,9 +66,9 @@
    own height and crop it. */
 .sheet img {
 	position: absolute;
-	inset: 0.75rem;
-	width: calc(100% - 1.5rem);
-	height: calc(100% - 1.5rem);
+	inset: var(--space-md);
+	width: calc(100% - 2 * var(--space-md));
+	height: calc(100% - 2 * var(--space-md));
 	object-fit: contain;
 }
 
@@ -108,7 +108,7 @@
 .name {
 	align-self: flex-start;
 	max-width: 100%;
-	padding-inline: 0.125rem;
+	padding-inline: var(--space-xs);
 	overflow: hidden;
 	font-family: var(--hand);
 	font-size: var(--text-lg);
@@ -142,8 +142,12 @@
 	right: 0;
 	bottom: 0;
 	display: flex;
-	padding-left: 1.5rem;
-	background: linear-gradient(to right, transparent, var(--desk) 1.25rem);
+	padding-left: var(--space-lg);
+	background: linear-gradient(
+		to right,
+		transparent,
+		var(--desk) var(--space-md)
+	);
 	/* Transparent rather than hidden, so Shift+Tab still reaches the buttons. */
 	opacity: 0;
 }
@@ -157,12 +161,12 @@
    keeps the full width of a narrow card. */
 @media (hover: none) {
 	.actions {
-		top: 0.375rem;
-		right: 0.375rem;
+		top: var(--space-sm);
+		right: var(--space-sm);
 		bottom: auto;
 		padding: 0;
 		border: var(--stroke-sm) solid var(--rule);
-		border-radius: var(--radius-lg);
+		border-radius: var(--radius-md);
 		background: var(--sheet);
 		opacity: 1;
 	}
@@ -171,12 +175,11 @@
 /* Small screens: two narrower columns of cards. */
 @media (max-width: 40rem) {
 	.list h1 {
-		margin-bottom: 1.25rem;
-		font-size: var(--text-3xl);
+		margin-bottom: var(--space-md);
 	}
 
 	.list ul {
 		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-		gap: 1.5rem 1rem;
+		gap: var(--space-md);
 	}
 }
