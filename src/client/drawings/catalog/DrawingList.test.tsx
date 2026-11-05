@@ -229,4 +229,59 @@ describe("DrawingList", () => {
 
 		expect(cards()[1].querySelector("img")).not.toBeNull();
 	});
+
+	describe("search", () => {
+		const search = () =>
+			screen.getByRole("searchbox", { name: "Search drawings" });
+
+		it("shows only the drawings whose name matches, after the blank sheet", async () => {
+			const { user } = setup();
+
+			await user.type(search(), "road");
+
+			expect(cards().map((card) => card.textContent)).toEqual([
+				"New drawing",
+				expect.stringContaining("Roadmap"),
+			]);
+			expect(screen.getByRole("status")).toBeEmptyDOMElement();
+		});
+
+		it("shows every drawing again once the query is cleared", async () => {
+			const { user } = setup();
+
+			await user.type(search(), "road");
+			await user.clear(search());
+
+			expect(cards()).toHaveLength(3);
+		});
+
+		it("says so when no drawing matches, and keeps the blank sheet", async () => {
+			const { user } = setup();
+
+			await user.type(search(), "  Garden ");
+
+			expect(screen.getByRole("status")).toHaveTextContent(
+				"No drawing is named “Garden”.",
+			);
+			expect(cards().map((card) => card.textContent)).toEqual(["New drawing"]);
+		});
+
+		it("says nothing for a blank query", async () => {
+			const { user } = setup([]);
+
+			await user.type(search(), "   ");
+
+			expect(screen.getByRole("status")).toBeEmptyDOMElement();
+		});
+
+		it("applies to drawings that change while searching", async () => {
+			const { user, show } = setup();
+
+			await user.type(search(), "plan");
+			show([...drawings, summary("3", "Floor plan")]);
+
+			expect(screen.getByRole("link", { name: "Floor plan" })).toBeVisible();
+			expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
+		});
+	});
 });

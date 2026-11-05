@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DrawingSummary } from "../../../shared/types.ts";
 import { previewUrl } from "../api.ts";
 import { DrawingLink } from "../DrawingLink.tsx";
+import { searchByName } from "../search.ts";
 import { DeleteConfirmation } from "./DeleteConfirmation.tsx";
 import styles from "./DrawingList.module.css";
 import { PencilIcon, PlusIcon, TrashIcon } from "./icons.tsx";
@@ -23,7 +24,10 @@ type CardTask = "rename" | "delete";
  */
 type OpenTask = { kind: "create" } | { kind: CardTask; id: string } | null;
 
-/** The landing page: every drawing as a sheet with its preview, after a blank sheet that starts a new one. */
+/**
+ * The landing page: every drawing that matches the search as a sheet with its
+ * preview, after a blank sheet that starts a new one.
+ */
 export function DrawingList({
 	drawings,
 	onOpen,
@@ -32,11 +36,24 @@ export function DrawingList({
 	onDelete,
 }: DrawingListProps) {
 	const [task, setTask] = useState<OpenTask>(null);
+	const [query, setQuery] = useState("");
 	const close = () => setTask(null);
+	const shown = searchByName(drawings, query);
+	const searched = query.trim();
 
 	return (
 		<div className={styles.list}>
-			<h1>Drawings</h1>
+			<header className={styles.header}>
+				<h1>Drawings</h1>
+				<input
+					type="search"
+					className={styles.search}
+					aria-label="Search drawings"
+					placeholder="Search…"
+					value={query}
+					onChange={(event) => setQuery(event.target.value)}
+				/>
+			</header>
 			<ul aria-label="Drawings">
 				<NewDrawingCard
 					creating={task?.kind === "create"}
@@ -47,7 +64,7 @@ export function DrawingList({
 					}}
 					onCancel={close}
 				/>
-				{drawings.map((drawing) => (
+				{shown.map((drawing) => (
 					<DrawingCard
 						key={drawing.id}
 						drawing={drawing}
@@ -70,6 +87,13 @@ export function DrawingList({
 					/>
 				))}
 			</ul>
+			{/* Always rendered, so screen readers announce the message when it
+			    appears. */}
+			<p role="status" className={styles.status}>
+				{searched && shown.length === 0
+					? `No drawing is named “${searched}”.`
+					: null}
+			</p>
 		</div>
 	);
 }
