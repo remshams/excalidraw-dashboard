@@ -119,6 +119,19 @@ describe("QuickSwitcher", () => {
 		expect(onOpen).not.toHaveBeenCalled();
 	});
 
+	it.each([
+		["a composition is active", { isComposing: true }],
+		["the key belongs to an input method", { keyCode: 229 }],
+	])("leaves Enter and Escape alone while %s", (_case, composing) => {
+		const { onOpen, onClose } = setup();
+
+		fireEvent.keyDown(search(), { key: "Enter", ...composing });
+		fireEvent.keyDown(search(), { key: "Escape", ...composing });
+
+		expect(onOpen).not.toHaveBeenCalled();
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
 	it("selects the row under the pointer and opens it on a click", async () => {
 		const { user, onOpen, onClose } = setup();
 		const garden = screen.getByRole("option", { name: "Garden" });

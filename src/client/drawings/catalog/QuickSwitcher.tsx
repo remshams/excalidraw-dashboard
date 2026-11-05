@@ -44,6 +44,8 @@ export function QuickSwitcher({
 	const onKeyDown = (event: KeyboardEvent) => {
 		// Keeps the keys from listeners on the document, such as Excalidraw's.
 		event.stopPropagation();
+		// An input method uses these keys to edit and confirm its composition.
+		if (event.nativeEvent.isComposing || event.keyCode === 229) return;
 		switch (event.key) {
 			case "ArrowDown":
 				move(1);
