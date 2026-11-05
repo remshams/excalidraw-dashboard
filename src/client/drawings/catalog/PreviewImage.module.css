@@ -1,0 +1,7 @@
+/* Previews are stored light. In dark mode they get Excalidraw's own canvas
+   filter, so a preview looks like the drawing in the dark editor. */
+@media (prefers-color-scheme: dark) {
+	.image {
+		filter: invert(93%) hue-rotate(180deg);
+	}
+}
