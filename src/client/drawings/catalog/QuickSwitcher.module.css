@@ -1,0 +1,109 @@
+.switcher {
+	/* The selected row's bar, as wide as a thick pencil line. */
+	--selected-bar: 0.25rem;
+	/* Dims the editor behind the dialog, in both themes. */
+	--backdrop: rgb(0 0 0 / 40%);
+
+	box-sizing: border-box;
+	/* No padding or inner box around the content: a press on the dialog element
+	   itself is always one on its backdrop. */
+	flex-direction: column;
+	width: min(36rem, 100% - 2 * var(--space-md));
+	max-height: calc(100dvh - 2 * var(--space-lg));
+	margin: var(--space-xl) auto auto;
+	padding: 0;
+	overflow: hidden;
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+	color: var(--ink);
+}
+
+.switcher[open] {
+	display: flex;
+}
+
+.switcher::backdrop {
+	background: var(--backdrop);
+}
+
+.search {
+	flex-shrink: 0;
+	box-sizing: border-box;
+	width: 100%;
+	padding: var(--space-sm) var(--space-md);
+	border: 0;
+	border-bottom: var(--stroke-sm) solid var(--rule);
+	background: none;
+	font-size: var(--text-lg);
+}
+
+/* Inside the dialog, which clips what lies outside it. */
+.search:focus-visible {
+	outline-offset: -2px;
+}
+
+.results {
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.option {
+	display: flex;
+	align-items: center;
+	gap: var(--space-md);
+	padding: var(--space-sm) var(--space-md);
+	cursor: pointer;
+}
+
+/* Inset, so the bar takes no room from the row. */
+.option[aria-selected="true"] {
+	background: var(--hover);
+	box-shadow: inset var(--selected-bar) 0 0 var(--selection);
+}
+
+/* A small version of the sheet of paper on a card. */
+.sheet {
+	position: relative;
+	box-sizing: border-box;
+	display: grid;
+	flex-shrink: 0;
+	place-items: center;
+	width: 4rem;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-sm);
+	background: var(--sheet);
+}
+
+.sheet img {
+	position: absolute;
+	inset: var(--space-xs);
+	width: calc(100% - 2 * var(--space-xs));
+	height: calc(100% - 2 * var(--space-xs));
+	object-fit: contain;
+}
+
+.sheet.blank {
+	border: var(--stroke-md) dashed var(--graphite);
+	background: none;
+	color: var(--graphite);
+}
+
+.name {
+	flex-grow: 1;
+	min-width: 0;
+	overflow: hidden;
+	font-family: var(--hand);
+	font-size: var(--text-lg);
+	line-height: var(--leading-md);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.openLabel {
+	flex-shrink: 0;
+	color: var(--graphite);
+	font-size: var(--text-sm);
+}
