@@ -66,7 +66,10 @@ In development, `pnpm dev` starts the server with `node --watch` and the Vite
 dev server for the client, which proxies `/api` to the server. In production,
 the server also serves the Vite build from `./dist` and answers every other path
 outside `/api/` with `index.html`, so the client handles its own URLs, such as
-`/drawings/<id>`. An unknown path under `/api/` gets a 404.
+`/drawings/<id>`. An unknown path under `/api/` gets a 404. The
+[`Dockerfile`](../../Dockerfile) packages this production server: it builds the
+client in one stage and runs `src/server/index.ts` on Node 24 as the `node`
+user, with the database in `/data`.
 
 ## Modules and dependencies
 
