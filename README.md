@@ -28,10 +28,11 @@ uses the `.excalidraw` file format.
 
 The [`Dockerfile`](Dockerfile) builds one image with the client and the server.
 It runs as the `node` user, listens on port 3001 and keeps the database in
-`/data`, usually a bind mount. The container's `node` user has UID 1000, so
-create the folder first, owned by UID 1000 rather than root; if your own UID
-differs, `chown 1000 data` after creating it. `--init` lets the server stop at
-once:
+`/data`, usually a bind mount. With standard rootful Docker, the container's
+`node` user has UID 1000 on the host too, so create the folder first, owned by
+UID 1000 rather than root. If your own UID differs, run
+`sudo chown -R 1000:1000 data`, with the server stopped if the folder already
+holds a database. `--init` lets the server stop at once:
 
 ```sh
 docker build -t excalidraw-dashboard .
