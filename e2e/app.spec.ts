@@ -13,12 +13,13 @@ test("the browser tab shows the Excalidraw logo", async ({ page, request }) => {
 		const icon = page.locator('head link[rel="icon"]');
 		await expect(icon).toHaveAttribute("type", "image/svg+xml");
 		href = await icon.getAttribute("href");
+		expect(href).toBe("/favicon.svg");
 	});
 
-	await test.step("the server serves the icon as an SVG image", async () => {
+	await test.step("the server serves the Excalidraw logo as an SVG image", async () => {
 		const response = await request.get(href ?? "");
 		expect(response.status()).toBe(200);
 		expect(response.headers()["content-type"]).toContain("image/svg+xml");
-		expect(await response.text()).toContain("<svg");
+		expect(await response.text()).toContain("<title>Excalidraw</title>");
 	});
 });
