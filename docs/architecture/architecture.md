@@ -375,12 +375,15 @@ Chromium.
   and the landing page with the browser's back button, a drawing surviving a
   reload, storing a preview when the user leaves a drawing or opens one that has
   none and showing it on the card, reopening a drawing right after leaving it,
-  following the system's dark mode, and showing a failed save. The reload test
+  following the system's dark mode, searching the drawings by name, and showing
+  a failed save. The reload test
   reads the saved scene from the API, then selects all shapes in the editor to
   show the scene was loaded back. The failed-save test deletes the open drawing
   through the API, as another tab would, then dismisses the error message above
   the editor. The preview-on-open test copies a drawn scene into a drawing
   created through the API, so that drawing has no preview yet.
+- [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
+  Excalidraw logo as its icon and that the server serves it as an SVG.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
