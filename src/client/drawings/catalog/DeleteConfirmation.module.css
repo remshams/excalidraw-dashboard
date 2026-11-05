@@ -2,8 +2,8 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 0.25rem 0.5rem;
-	padding-inline: 0.125rem;
+	gap: var(--space-xs) var(--space-sm);
+	padding-inline: var(--space-xs);
 	font-size: var(--text-sm);
 }
 
@@ -14,7 +14,7 @@
 }
 
 .confirm button {
-	padding: 0.125rem 0.625rem;
+	padding: var(--space-xs) var(--space-sm);
 	border: var(--stroke-sm) solid var(--rule);
 	border-radius: var(--radius-md);
 	background: var(--sheet);
