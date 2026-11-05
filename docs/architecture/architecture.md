@@ -135,9 +135,8 @@ feature, one bounded context around the `Drawing` aggregate. It has two modules:
 `catalog/` lists, creates, renames and deletes drawings, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `search.ts`, a domain service that finds
-drawings by a part of their name, sits at the root so the editor's quick
-switcher can share it with the catalog. `use-open-drawing-id.ts` sits at the
-root too,
+drawings by a part of their name, sits at the root too, so the quick switcher
+planned in #8 can share it with the catalog. So does `use-open-drawing-id.ts`,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
 and `/` opens none. `App` shows the landing page at `/` and the editor view
 otherwise: the editor below a bar with an "All drawings" link and the drawing's
