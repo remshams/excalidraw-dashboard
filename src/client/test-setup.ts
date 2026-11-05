@@ -11,4 +11,13 @@ window.matchMedia = (query: string) =>
 		removeEventListener: () => {},
 	}) as unknown as MediaQueryList;
 
+// jsdom doesn't implement modal dialogs or scrolling.
+HTMLDialogElement.prototype.showModal = function () {
+	this.open = true;
+};
+HTMLDialogElement.prototype.close = function () {
+	this.open = false;
+};
+Element.prototype.scrollIntoView = () => {};
+
 afterEach(cleanup);
