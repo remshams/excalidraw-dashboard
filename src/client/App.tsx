@@ -2,8 +2,13 @@ import { useCallback, useState } from "react";
 import type { Drawing, DrawingSummary } from "../shared/types.ts";
 import styles from "./App.module.css";
 import { DrawingList } from "./drawings/catalog/DrawingList.tsx";
-import { BackIcon } from "./drawings/catalog/icons.tsx";
+import { BackIcon, SearchIcon } from "./drawings/catalog/icons.tsx";
+import { QuickSwitcher } from "./drawings/catalog/QuickSwitcher.tsx";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
+import {
+	switcherShortcutHint,
+	useSwitcherShortcut,
+} from "./drawings/catalog/use-switcher-shortcut.ts";
 import { DrawingLink } from "./drawings/DrawingLink.tsx";
 import { Editor } from "./drawings/editor/Editor.tsx";
 import { useDrawing } from "./drawings/editor/use-drawing.ts";
@@ -22,15 +27,19 @@ export function App() {
 	const { drawing, failed } = useDrawing(openDrawingId, showError);
 	const { drawings, replace, create, rename, remove, wasDeleted } =
 		useDrawings(showError);
+	const createAndOpen = (name: string) =>
+		create(name).then((created) => openDrawing(created.id), showError);
 
 	return (
 		<>
 			{openDrawingId ? (
 				<EditorView
 					drawing={drawing}
+					drawings={drawings}
 					failed={failed}
 					theme={theme}
 					onOpen={openDrawing}
+					onCreate={createAndOpen}
 					onSaved={replace}
 					onError={(id, cause) => {
 						// The last save can still be in flight when the user deletes the
@@ -43,9 +52,7 @@ export function App() {
 					<DrawingList
 						drawings={drawings}
 						onOpen={openDrawing}
-						onCreate={(name) =>
-							create(name).then((created) => openDrawing(created.id), showError)
-						}
+						onCreate={createAndOpen}
 						onRename={(id, name) => rename(id, name).catch(showError)}
 						onDelete={(id) => remove(id).catch(showError)}
 					/>
@@ -66,31 +73,59 @@ export function App() {
 type EditorViewProps = {
 	/** The open drawing, or null while it loads or when loading failed. */
 	drawing: Drawing | null;
+	/** Every drawing, for the quick switcher. */
+	drawings: DrawingSummary[];
 	failed: boolean;
 	theme: "light" | "dark";
 	onOpen: (id: string | null) => void;
+	onCreate: (name: string) => void;
 	onSaved: (summary: DrawingSummary) => void;
 	/** Reports a failed save of the drawing with the given ID. */
 	onError: (id: string, error: unknown) => void;
 };
 
-/** The open drawing across the window, below a bar that leads back to all drawings. */
+/**
+ * The open drawing across the window, below a bar that leads back to all drawings
+ * and opens the quick switcher.
+ */
 function EditorView({
 	drawing,
+	drawings,
 	failed,
 	theme,
 	onOpen,
+	onCreate,
 	onSaved,
 	onError,
 }: EditorViewProps) {
+	const [switching, setSwitching] = useState(false);
+	const toggleSwitcher = useCallback(() => setSwitching((open) => !open), []);
+	useSwitcherShortcut(toggleSwitcher);
+
 	return (
 		<div className={styles.editing}>
 			<header className={styles.editorBar}>
-				<DrawingLink drawingId={null} onOpen={onOpen} className={styles.back}>
+				<DrawingLink
+					drawingId={null}
+					onOpen={onOpen}
+					className={styles.barAction}
+				>
 					<BackIcon />
 					All drawings
 				</DrawingLink>
 				{drawing && <h1>{drawing.name}</h1>}
+				<button
+					type="button"
+					className={`${styles.barAction} ${styles.switch}`}
+					aria-label="Switch drawing"
+					aria-keyshortcuts="Control+K Meta+K"
+					onClick={() => setSwitching(true)}
+				>
+					<SearchIcon />
+					<span className={styles.switchText}>
+						Switch drawing <kbd>{switcherShortcutHint()}</kbd>
+					</span>
+				</button>
 			</header>
 			<main className={styles.editor}>
 				{drawing ? (
@@ -107,6 +142,15 @@ function EditorView({
 					</p>
 				)}
 			</main>
+			{switching && (
+				<QuickSwitcher
+					drawings={drawings}
+					openDrawingId={drawing?.id ?? null}
+					onOpen={onOpen}
+					onCreate={onCreate}
+					onClose={() => setSwitching(false)}
+				/>
+			)}
 		</div>
 	);
 }
