@@ -274,6 +274,28 @@ describe("DrawingList", () => {
 			expect(screen.getByRole("status")).toBeEmptyDOMElement();
 		});
 
+		it("doesn't name a new drawing after the query", async () => {
+			const { user } = setup();
+
+			await user.type(search(), "road");
+			await user.click(screen.getByRole("button", { name: "New drawing" }));
+
+			expect(
+				screen.getByRole("textbox", { name: "Name of the new drawing" }),
+			).toHaveValue("");
+		});
+
+		it("closes a card's question when the query changes", async () => {
+			const { user } = setup();
+
+			await user.click(screen.getByRole("button", { name: "Delete Roadmap" }));
+			await user.type(search(), "plan");
+			await user.clear(search());
+
+			expect(screen.queryByText("Delete “Roadmap”?")).toBeNull();
+			expect(screen.getByRole("link", { name: "Roadmap" })).toBeVisible();
+		});
+
 		it("applies to drawings that change while searching", async () => {
 			const { user, show } = setup();
 

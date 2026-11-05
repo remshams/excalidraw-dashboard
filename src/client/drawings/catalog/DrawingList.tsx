@@ -51,7 +51,11 @@ export function DrawingList({
 					aria-label="Search drawings"
 					placeholder="Search…"
 					value={query}
-					onChange={(event) => setQuery(event.target.value)}
+					onChange={(event) => {
+						setQuery(event.target.value);
+						// A question on a card the search hides would come back with it.
+						close();
+					}}
 				/>
 			</header>
 			<ul aria-label="Drawings">
