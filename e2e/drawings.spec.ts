@@ -29,6 +29,7 @@ import {
 	openEditorMenu,
 	renameDrawing,
 	searchDrawings,
+	searchField,
 	searchStatus,
 	selectAllShapes,
 	selectedShapeActions,
@@ -276,9 +277,10 @@ test("delete a drawing", async ({ page }) => {
 });
 
 test("search the drawings by name", async ({ page, request }) => {
-	// Only this test's drawings contain the tag, so the search finds nothing else.
-	const tag = randomUUID().slice(0, 8);
-	const pond = `Pond ${tag}`;
+	// Both names share the unique tag, and only this test's drawings contain it,
+	// so the search finds nothing else.
+	const pond = uniqueName("Pond");
+	const tag = pond.slice("Pond ".length);
 	const patio = `Patio ${tag}`;
 
 	await test.step(`drawings named ${pond} and ${patio} exist`, async () => {
@@ -299,6 +301,19 @@ test("search the drawings by name", async ({ page, request }) => {
 		await expect(searchStatus(page)).toHaveText(
 			`No drawing is named “Pool ${tag}”.`,
 		);
+	});
+
+	await test.step(`open ${pond} from the search and go back to all drawings`, async () => {
+		await searchDrawings(page, pond);
+		await openDrawingFromCard(page, pond);
+		await expectDrawingOpen(page, pond);
+		await goToAllDrawings(page);
+	});
+
+	await test.step("the search is empty and the landing page shows every drawing again", async () => {
+		await expect(searchField(page)).toHaveValue("");
+		await expect(drawingCardLink(page, pond)).toBeVisible();
+		await expect(drawingCardLink(page, patio)).toBeVisible();
 	});
 });
 

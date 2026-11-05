@@ -23,9 +23,14 @@ export function searchStatus(page: Page) {
 	return page.getByRole("status");
 }
 
+/** The landing page's search field. */
+export function searchField(page: Page) {
+	return page.getByRole("searchbox", { name: "Search drawings" });
+}
+
 /** Types a query into the landing page's search field. */
 export async function searchDrawings(page: Page, query: string): Promise<void> {
-	await page.getByRole("searchbox", { name: "Search drawings" }).fill(query);
+	await searchField(page).fill(query);
 }
 
 /** A drawing's card. Its rename and delete actions appear while it is hovered. */
