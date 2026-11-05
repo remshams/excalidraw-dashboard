@@ -34,8 +34,8 @@
 	--weight-regular: 400;
 	--weight-bold: 600;
 
-	/* Widths of borders and outlines: hairlines, and the selection outline and
-	   focus ring. */
+	/* Widths of borders and outlines: hairlines, and the selection outline, the
+	   focus ring and the blank sheet's dashed border. */
 	--stroke-sm: 1px;
 	--stroke-md: 2px;
 
