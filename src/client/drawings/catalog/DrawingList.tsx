@@ -1,12 +1,12 @@
 import { useState } from "react";
 import type { DrawingSummary } from "../../../shared/types.ts";
-import { previewUrl } from "../api.ts";
 import { DrawingLink } from "../DrawingLink.tsx";
 import { searchByName } from "../search.ts";
 import { DeleteConfirmation } from "./DeleteConfirmation.tsx";
 import styles from "./DrawingList.module.css";
 import { PencilIcon, PlusIcon, TrashIcon } from "./icons.tsx";
 import { NameField } from "./NameField.tsx";
+import { PreviewImage } from "./PreviewImage.tsx";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];
@@ -216,24 +216,11 @@ function DrawingCard({
 	);
 }
 
-/**
- * The drawing's preview on a sheet of paper. The sheet stays blank while the
- * drawing has no preview, and when the preview fails to load.
- */
+/** The drawing's preview on a sheet of paper, or a blank sheet without one. */
 function Sheet({ drawing }: { drawing: DrawingSummary }) {
-	const url = previewUrl(drawing);
-	const [failedUrl, setFailedUrl] = useState<string | null>(null);
-
 	return (
 		<span className={styles.sheet}>
-			{url && url !== failedUrl && (
-				<img
-					src={url}
-					alt=""
-					loading="lazy"
-					onError={() => setFailedUrl(url)}
-				/>
-			)}
+			<PreviewImage drawing={drawing} />
 		</span>
 	);
 }

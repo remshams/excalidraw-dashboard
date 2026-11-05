@@ -101,14 +101,6 @@
 	object-fit: contain;
 }
 
-/* Previews are stored light. In dark mode they get Excalidraw's own canvas
-   filter, so a card looks like the drawing in the dark editor. */
-@media (prefers-color-scheme: dark) {
-	.sheet img {
-		filter: invert(93%) hue-rotate(180deg);
-	}
-}
-
 /* The card under the pointer or keyboard is outlined like a selected element in
    Excalidraw. */
 .open:is(:hover, :focus-visible) .sheet:not(.blank) {
