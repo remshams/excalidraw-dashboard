@@ -232,6 +232,53 @@ export async function deleteDrawing(page: Page, name: string): Promise<void> {
 		.click();
 }
 
+/** The button in the editor's bar that opens the quick switcher. */
+export function switchDrawingButton(page: Page) {
+	return page.getByRole("button", { name: "Switch drawing" });
+}
+
+/** The quick switcher, while it is open. */
+export function quickSwitcher(page: Page) {
+	return page.getByRole("dialog", { name: "Switch drawing" });
+}
+
+/** A row of the quick switcher that contains the text, such as a drawing's name. */
+export function switcherRow(page: Page, text: string) {
+	return quickSwitcher(page).getByRole("option", { name: text });
+}
+
+/** The rows of the quick switcher, from the top. */
+export function switcherRows(page: Page) {
+	return quickSwitcher(page).getByRole("option");
+}
+
+/** The field of the quick switcher that takes the focus when it opens. */
+export function switcherSearch(page: Page) {
+	return quickSwitcher(page).getByRole("combobox", {
+		name: "Find or create a drawing",
+	});
+}
+
+/** Opens or closes the quick switcher with Ctrl+K (⌘K on a Mac). */
+export async function pressSwitcherShortcut(page: Page): Promise<void> {
+	await page.keyboard.press("ControlOrMeta+k");
+}
+
+/** Presses the mouse on the page beside the open quick switcher. */
+export async function clickBesideSwitcher(page: Page): Promise<void> {
+	await page.mouse.click(5, 300);
+}
+
+/** Excalidraw's field for a link, which its own Ctrl+K opens on a selected shape. */
+export function editorLinkField(page: Page) {
+	return editor(page).getByPlaceholder("Type or paste your link here");
+}
+
+/** Excalidraw's rectangle tool, whose shortcut is the key R. */
+export function rectangleTool(page: Page) {
+	return page.getByRole("radio", { name: "Rectangle" });
+}
+
 async function editorBox(page: Page) {
 	const box = await editor(page).boundingBox();
 	if (!box) throw new Error("The editor is not visible.");
@@ -241,10 +288,7 @@ async function editorBox(page: Page) {
 /** Draws a rectangle in the middle of the canvas. */
 export async function drawRectangle(page: Page): Promise<void> {
 	// Excalidraw hides the radio input behind its label, so click the label.
-	await page
-		.getByRole("radio", { name: "Rectangle" })
-		.locator("xpath=..")
-		.click();
+	await rectangleTool(page).locator("xpath=..").click();
 	const box = await editorBox(page);
 	const x = box.x + box.width / 2;
 	const y = box.y + box.height / 2;

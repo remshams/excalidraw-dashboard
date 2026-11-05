@@ -9,12 +9,14 @@ import {
 	storeSceneThroughApi,
 } from "./drawings-api.ts";
 import {
+	clickBesideSwitcher,
 	createDrawing,
 	deleteDrawing,
 	dismissErrorMessage,
 	drawingCardLink,
 	drawingCards,
 	drawRectangle,
+	editorLinkField,
 	editorMenuItem,
 	errorMessage,
 	expectAtDrawingPath,
@@ -27,12 +29,19 @@ import {
 	openApp,
 	openDrawingFromCard,
 	openEditorMenu,
+	pressSwitcherShortcut,
+	quickSwitcher,
+	rectangleTool,
 	renameDrawing,
 	searchDrawings,
 	searchField,
 	searchStatus,
 	selectAllShapes,
 	selectedShapeActions,
+	switchDrawingButton,
+	switcherRow,
+	switcherRows,
+	switcherSearch,
 } from "./drawings-ui.ts";
 
 // The tests share one server and database. A unique name keeps each test's
@@ -434,5 +443,135 @@ test("a failed save shows an error above the editor", async ({
 	await test.step("dismiss the message", async () => {
 		await dismissErrorMessage(page);
 		await expect(errorMessage(page)).toHaveCount(0);
+	});
+});
+
+test("switching drawings with the quick switcher keeps the last edit", async ({
+	page,
+	request,
+}) => {
+	const first = uniqueName("Switch first");
+	const second = uniqueName("Switch second");
+	const secondId = await createDrawingThroughApi(request, second);
+	let firstId = "";
+
+	await test.step(`create ${first} and draw in it`, async () => {
+		await openApp(page);
+		firstId = await createDrawing(page, first);
+		await drawRectangle(page);
+	});
+
+	await test.step(`switch to ${second} right away with the shortcut`, async () => {
+		await pressSwitcherShortcut(page);
+		await page.keyboard.type(second);
+		await expect(switcherRows(page)).toHaveCount(1);
+		await page.keyboard.press("Enter");
+	});
+
+	await test.step(`${second} is open and the switcher is closed`, async () => {
+		await expectDrawingOpen(page, second);
+		await expectAtDrawingPath(page, secondId);
+		await expect(quickSwitcher(page)).toHaveCount(0);
+	});
+
+	await test.step(`${first} kept the rectangle and shows it on its card`, async () => {
+		await expect
+			.poll(() => storedShapeTypes(request, firstId))
+			.toEqual(["rectangle"]);
+		await goToAllDrawings(page);
+		await expectCardShowsPreview(page, request, first);
+	});
+
+	await test.step(`the switcher marks ${second} as open`, async () => {
+		await openDrawingFromCard(page, second);
+		await expectDrawingOpen(page, second);
+		await switchDrawingButton(page).click();
+		await expect(switcherRow(page, second)).toContainText("Open");
+		await expect(switcherRow(page, first)).not.toContainText("Open");
+	});
+
+	await test.step(`clicking ${first} opens it`, async () => {
+		await switcherRow(page, first).click();
+		await expectDrawingOpen(page, first);
+		await expectAtDrawingPath(page, firstId);
+	});
+});
+
+test("the quick switcher creates a drawing from the typed name", async ({
+	page,
+}) => {
+	const name = uniqueName("Switch new");
+
+	await test.step("open a drawing and the switcher", async () => {
+		await openApp(page);
+		await createDrawing(page, uniqueName("Switch start"));
+		await switchDrawingButton(page).click();
+	});
+
+	await test.step(`choose the create row for ${name}`, async () => {
+		await switcherSearch(page).fill(`  ${name}  `);
+		await switcherRow(page, `Create “${name}”`).click();
+	});
+
+	await test.step(`${name} is open, and has a card on the landing page`, async () => {
+		await expectDrawingOpen(page, name);
+		await goToAllDrawings(page);
+		await expect(drawingCardLink(page, name)).toBeVisible();
+	});
+});
+
+test("the quick switcher closes and keeps keys from Excalidraw", async ({
+	page,
+}) => {
+	await test.step("open a drawing with a selected shape", async () => {
+		await openApp(page);
+		await createDrawing(page, uniqueName("Switch keys"));
+		await drawRectangle(page);
+		await selectAllShapes(page);
+	});
+
+	await test.step("the shortcut opens the switcher instead of Excalidraw's link field", async () => {
+		await pressSwitcherShortcut(page);
+		await expect(quickSwitcher(page)).toBeVisible();
+		await expect(switcherSearch(page)).toBeFocused();
+		await expect(editorLinkField(page)).toHaveCount(0);
+	});
+
+	await test.step("the shortcut closes the switcher again", async () => {
+		await pressSwitcherShortcut(page);
+		await expect(quickSwitcher(page)).toHaveCount(0);
+	});
+
+	await test.step("a key typed in the switcher doesn't pick Excalidraw's tool", async () => {
+		await pressSwitcherShortcut(page);
+		await page.keyboard.press("r");
+		await expect(switcherSearch(page)).toHaveValue("r");
+		await expect(rectangleTool(page)).not.toBeChecked();
+	});
+
+	await test.step("Tab keeps the focus in the search field", async () => {
+		await page.keyboard.press("Tab");
+		await expect(switcherSearch(page)).toBeFocused();
+	});
+
+	await test.step("Escape closes the switcher and gives the button its focus back", async () => {
+		await page.keyboard.press("Escape");
+		await switchDrawingButton(page).click();
+		await page.keyboard.press("Escape");
+		await expect(quickSwitcher(page)).toHaveCount(0);
+		await expect(switchDrawingButton(page)).toBeFocused();
+	});
+
+	await test.step("a click outside closes the switcher and gives the button its focus back", async () => {
+		await switchDrawingButton(page).click();
+		await clickBesideSwitcher(page);
+		await expect(quickSwitcher(page)).toHaveCount(0);
+		await expect(switchDrawingButton(page)).toBeFocused();
+	});
+
+	await test.step("on the landing page the shortcut opens nothing", async () => {
+		await goToAllDrawings(page);
+		await pressSwitcherShortcut(page);
+		await expect(quickSwitcher(page)).toHaveCount(0);
 	});
 });
