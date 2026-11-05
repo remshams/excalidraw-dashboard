@@ -120,9 +120,10 @@ flowchart TD
     openId["use-open-drawing-id<br>src/client/drawings/use-open-drawing-id.ts<br>Keeps the open drawing in the URL path"]:::module
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
+    search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
     shared["shared<br>src/shared/<br>API types"]:::module
     app --> scheme & catalog & editor & openId & link
-    catalog --> api & link
+    catalog --> api & link & search
     link --> openId
     editor --> api
     api --> shared
@@ -133,7 +134,10 @@ renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature, one bounded context around the `Drawing` aggregate. It has two modules:
 `catalog/` lists, creates, renames and deletes drawings, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
-both use `api.ts` at the root. `use-open-drawing-id.ts` sits at the root too,
+both use `api.ts` at the root. `search.ts`, a domain service that finds
+drawings by a part of their name, sits at the root so the editor's quick
+switcher can share it with the catalog. `use-open-drawing-id.ts` sits at the
+root too,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
 and `/` opens none. `App` shows the landing page at `/` and the editor view
 otherwise: the editor below a bar with an "All drawings" link and the drawing's
@@ -183,11 +187,14 @@ flowchart TD
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
-    list --> name & confirm & icons & link & api
+    search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
+    list --> name & confirm & icons & link & api & search
     drawings --> api
 ```
 
-`App` renders `DrawingList` with the list from `use-drawings`. Its first card
+`App` renders `DrawingList` with the list from `use-drawings`. A search field
+next to the heading filters the cards through `search.ts`, and a status says
+when no drawing has the name. The first card
 is a blank sheet that asks for a name and opens the new drawing. Every other
 card shows the drawing's preview on a sheet, with an `<img>` whose URL from
 `api.ts` carries `previewUpdatedAt` as a version. A drawing without a preview,
