@@ -75,7 +75,8 @@ code.
   comment that gives the reason.
 - Use the spacing scale (`--space-xs` to `--space-xl`) for padding, margins,
   gaps and offsets. It isn't linted, because layout sometimes needs a one-off
-  value; element sizes such as a card's minimum width stay raw values.
+  value. Element sizes such as a card's minimum width, and pixel offsets such as
+  `outline-offset`, stay raw values.
 - Treat Excalidraw as a black box behind `Editor.tsx`. Render it with
   `key={drawing.id}` so switching drawings remounts it with fresh initial data.
 - Keep the Excalidraw serialization format (`serializeAsJSON(..., "local")`) as
