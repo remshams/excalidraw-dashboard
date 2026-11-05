@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Drawing } from "../shared/types.ts";
@@ -339,5 +345,164 @@ describe("App", () => {
 		await user.click(screen.getByRole("button", { name: "Dismiss" }));
 
 		expect(screen.queryByRole("alert")).toBeNull();
+	});
+
+	describe("quick switcher", () => {
+		const switchButton = () =>
+			screen.getByRole("button", { name: "Switch drawing" });
+
+		async function openEditor() {
+			openAt("/drawings/1");
+			const user = userEvent.setup();
+			render(<App />);
+			await screen.findByText("Editing Plan");
+			return user;
+		}
+
+		it("opens from the button in the editor's bar", async () => {
+			const user = await openEditor();
+			expect(screen.queryByRole("dialog")).toBeNull();
+
+			await user.click(switchButton());
+
+			expect(
+				screen.getByRole("dialog", { name: "Switch drawing" }),
+			).toBeVisible();
+			expect(
+				await screen.findByRole("option", { name: "Plan Open" }),
+			).toBeVisible();
+		});
+
+		it.each([
+			["Ctrl+K", "{Control>}k{/Control}"],
+			["⌘K", "{Meta>}k{/Meta}"],
+		])("toggles with %s in the editor", async (_shortcut, keys) => {
+			const user = await openEditor();
+
+			await user.keyboard(keys);
+			expect(screen.getByRole("dialog")).toBeVisible();
+
+			await user.keyboard(keys);
+			expect(screen.queryByRole("dialog")).toBeNull();
+		});
+
+		it("takes the shortcut from everything else on the page", async () => {
+			const user = await openEditor();
+			const onDocument = vi.fn();
+			document.addEventListener("keydown", onDocument);
+
+			await user.keyboard("{Control>}k");
+
+			document.removeEventListener("keydown", onDocument);
+			await user.keyboard("{/Control}");
+			const keys = onDocument.mock.calls.map(([event]) => event.key);
+			expect(keys).not.toContain("k");
+		});
+
+		it("ignores the shortcut's repeats while the keys stay down", async () => {
+			const user = await openEditor();
+
+			await user.keyboard("{Control>}k");
+			fireEvent.keyDown(window, { key: "k", ctrlKey: true, repeat: true });
+			await user.keyboard("{/Control}");
+
+			expect(screen.getByRole("dialog")).toBeVisible();
+		});
+
+		it("leaves other combinations with K to the browser", async () => {
+			const user = await openEditor();
+
+			await user.keyboard("{Control>}{Shift>}k{/Shift}{/Control}");
+			await user.keyboard("k");
+
+			expect(screen.queryByRole("dialog")).toBeNull();
+		});
+
+		it("leaves the shortcut to the browser on the landing page", async () => {
+			const user = userEvent.setup();
+			render(<App />);
+			await cards().findByRole("link", { name: "Plan" });
+			const onDocument = vi.fn();
+			document.addEventListener("keydown", onDocument);
+
+			await user.keyboard("{Control>}k{/Control}");
+
+			document.removeEventListener("keydown", onDocument);
+			expect(screen.queryByRole("dialog")).toBeNull();
+			const shortcut = onDocument.mock.calls
+				.map(([event]) => event)
+				.find((event) => event.key === "k");
+			expect(shortcut.defaultPrevented).toBe(false);
+		});
+
+		it("shows the shortcut as a Mac writes it on a Mac", async () => {
+			vi.spyOn(navigator, "platform", "get").mockReturnValue("MacIntel");
+
+			await openEditor();
+
+			expect(switchButton()).toHaveTextContent("⌘K");
+		});
+
+		it("shows the shortcut with Ctrl elsewhere", async () => {
+			await openEditor();
+
+			expect(switchButton()).toHaveTextContent("Ctrl K");
+		});
+
+		it("switches to the chosen drawing and closes", async () => {
+			const user = await openEditor();
+			await user.click(switchButton());
+
+			await user.click(await screen.findByRole("option", { name: "Roadmap" }));
+
+			expect(await screen.findByText("Editing Roadmap")).toBeInTheDocument();
+			expect(window.location.pathname).toBe("/drawings/2");
+			expect(screen.queryByRole("dialog")).toBeNull();
+		});
+
+		it("stays on the open drawing when it is chosen", async () => {
+			const user = await openEditor();
+			const entries = window.history.length;
+			await user.click(switchButton());
+
+			await user.click(
+				await screen.findByRole("option", { name: "Plan Open" }),
+			);
+
+			expect(screen.queryByRole("dialog")).toBeNull();
+			expect(screen.getByText("Editing Plan")).toBeInTheDocument();
+			expect(window.history.length).toBe(entries);
+		});
+
+		it("creates a drawing and opens it", async () => {
+			vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Attic"));
+			vi.mocked(api.getDrawing).mockImplementation(async (id) =>
+				drawing(id, id === "3" ? "Attic" : "Plan"),
+			);
+			const user = await openEditor();
+			await user.click(switchButton());
+
+			await user.type(screen.getByRole("combobox"), "Attic{Enter}");
+
+			expect(await screen.findByText("Editing Attic")).toBeInTheDocument();
+			expect(api.createDrawing).toHaveBeenCalledWith("Attic");
+			expect(window.location.pathname).toBe("/drawings/3");
+		});
+
+		it("shows an error when creating fails and stays on the drawing", async () => {
+			vi.mocked(api.createDrawing).mockRejectedValue(
+				new Error("Could not create"),
+			);
+			const user = await openEditor();
+			await user.click(switchButton());
+
+			await user.type(screen.getByRole("combobox"), "Attic{Enter}");
+
+			expect(await screen.findByRole("alert")).toHaveTextContent(
+				"Could not create",
+			);
+			expect(screen.getByText("Editing Plan")).toBeInTheDocument();
+			expect(screen.queryByRole("dialog")).toBeNull();
+		});
 	});
 });

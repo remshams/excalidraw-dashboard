@@ -25,7 +25,8 @@
 	background: var(--sheet);
 }
 
-.back {
+/* The link and the button in the bar look the same. */
+.barAction {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
@@ -42,9 +43,21 @@
 
 /* Violet under the pointer or keyboard, like the blank sheet on the landing
    page. */
-.back:is(:hover, :focus-visible) {
+.barAction:is(:hover, :focus-visible) {
 	border-color: var(--selection);
 	color: var(--selection);
+}
+
+/* At the far end of the bar. */
+.switch {
+	margin-left: auto;
+	cursor: pointer;
+}
+
+.switch kbd {
+	margin-left: var(--space-xs);
+	font-family: inherit;
+	font-weight: var(--weight-regular);
 }
 
 .editorBar h1 {
@@ -111,9 +124,14 @@
 	cursor: pointer;
 }
 
-/* Small screens: less space above the cards. */
 @media (max-width: 40rem) {
+	/* Less space above the cards. */
 	.gallery {
 		padding-top: var(--space-lg);
+	}
+
+	/* The icon alone, so the drawing's name keeps the bar. */
+	.switchText {
+		display: none;
 	}
 }
