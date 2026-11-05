@@ -3,12 +3,41 @@
 	margin: 0 auto;
 }
 
+/* The heading with the search field at the end of its line. */
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-md);
+	margin-bottom: var(--space-lg);
+}
+
 .list h1 {
-	margin: 0 0 var(--space-lg);
+	margin: 0;
 	font-family: var(--hand);
 	font-size: var(--text-xl);
 	font-weight: var(--weight-regular);
 	line-height: var(--leading-sm);
+}
+
+/* Looks like the rename field, in the body font. */
+.search {
+	box-sizing: border-box;
+	width: 16rem;
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+.status {
+	margin: 0;
+	color: var(--graphite);
+}
+
+/* The status takes no space while it has no message. */
+.status:not(:empty) {
+	margin-top: var(--space-lg);
 }
 
 .list ul {
@@ -174,8 +203,16 @@
 
 /* Small screens: two narrower columns of cards. */
 @media (max-width: 40rem) {
-	.list h1 {
+	/* The search field goes under the heading at full width. */
+	.header {
+		flex-direction: column;
+		align-items: stretch;
+		gap: var(--space-sm);
 		margin-bottom: var(--space-md);
+	}
+
+	.search {
+		width: 100%;
 	}
 
 	.list ul {
