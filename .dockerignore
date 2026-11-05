@@ -3,6 +3,9 @@
 node_modules
 dist
 data
+# SQLite databases and backups, such as one made with VACUUM INTO.
+*.db
+*.db-*
 .e2e-data
 coverage
 .fallow
