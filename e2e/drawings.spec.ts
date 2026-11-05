@@ -13,6 +13,7 @@ import {
 	deleteDrawing,
 	dismissErrorMessage,
 	drawingCardLink,
+	drawingCards,
 	drawRectangle,
 	editorMenuItem,
 	errorMessage,
@@ -27,6 +28,8 @@ import {
 	openDrawingFromCard,
 	openEditorMenu,
 	renameDrawing,
+	searchDrawings,
+	searchStatus,
 	selectAllShapes,
 	selectedShapeActions,
 } from "./drawings-ui.ts";
@@ -269,6 +272,33 @@ test("delete a drawing", async ({ page }) => {
 		// The list is empty until it loads; the kept drawing shows that it has.
 		await expect(drawingCardLink(page, kept)).toBeVisible();
 		await expect(drawingCardLink(page, name)).toHaveCount(0);
+	});
+});
+
+test("search the drawings by name", async ({ page, request }) => {
+	// Only this test's drawings contain the tag, so the search finds nothing else.
+	const tag = randomUUID().slice(0, 8);
+	const pond = `Pond ${tag}`;
+	const patio = `Patio ${tag}`;
+
+	await test.step(`drawings named ${pond} and ${patio} exist`, async () => {
+		await createDrawingThroughApi(request, pond);
+		await createDrawingThroughApi(request, patio);
+		await openApp(page);
+	});
+
+	await test.step(`searching for "pond ${tag}" shows only ${pond} and the blank sheet`, async () => {
+		await searchDrawings(page, `pond ${tag}`);
+		await expect(drawingCards(page)).toHaveText(["New drawing", pond]);
+		await expect(searchStatus(page)).toBeEmpty();
+	});
+
+	await test.step("searching for an unknown name says no drawing has it", async () => {
+		await searchDrawings(page, `Pool ${tag}`);
+		await expect(drawingCards(page)).toHaveText(["New drawing"]);
+		await expect(searchStatus(page)).toHaveText(
+			`No drawing is named “Pool ${tag}”.`,
+		);
 	});
 });
 
