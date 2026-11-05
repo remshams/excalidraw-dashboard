@@ -1,0 +1,11 @@
+# Only the sources the image builds from; local data and tool output stay out.
+.git
+node_modules
+dist
+data
+.e2e-data
+coverage
+.fallow
+test-results
+playwright-report
+*.tsbuildinfo
