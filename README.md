@@ -28,11 +28,13 @@ uses the `.excalidraw` file format.
 
 The [`Dockerfile`](Dockerfile) builds one image with the client and the server.
 It runs as the `node` user, listens on port 3001 and keeps the database in
-`/data`, which is usually a bind mount owned by UID 1000:
+`/data`, usually a bind mount. Create the folder first, so it belongs to your
+user (UID 1000) rather than root. `--init` lets the server stop at once:
 
 ```sh
 docker build -t excalidraw-dashboard .
-docker run -d -p 127.0.0.1:3001:3001 -v "$PWD/data:/data" excalidraw-dashboard
+mkdir -p data
+docker run -d --init -p 127.0.0.1:3001:3001 -v "$PWD/data:/data" excalidraw-dashboard
 ```
 
 Its health check calls `/api/drawings`. The app has no login, so publish it
