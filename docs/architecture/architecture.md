@@ -201,7 +201,8 @@ for its bar from `icons`.
 
 [`styles.css`](../../src/client/styles.css) holds what the whole client shares:
 design tokens for colors from open-color, the palette Excalidraw draws with, and
-for font sizes, line heights, font weights, stroke widths and corner radii;
+for font sizes, line heights, font weights, stroke widths, corner radii and
+spacing;
 Excalidraw's bundled fonts, Excalifont for drawing names and Assistant for
 controls; the base rules; and the focus ring. It switches to a dark palette with
 `prefers-color-scheme`. Each component keeps its own rules in a CSS module next
