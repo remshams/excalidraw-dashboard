@@ -1,6 +1,6 @@
 # The app as one container: the server serves the built client and the API.
 # Build: docker build -t excalidraw-dashboard .
-# Run:   docker run -p 3001:3001 -v "$PWD/data:/data" excalidraw-dashboard
+# Run:   mkdir -p data && docker run --init -p 127.0.0.1:3001:3001 -v "$PWD/data:/data" excalidraw-dashboard
 
 FROM node:24-slim AS base
 # The pnpm version CI uses.
