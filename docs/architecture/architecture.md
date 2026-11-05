@@ -118,7 +118,7 @@ title: Modules of the client
 flowchart TD
     app["App<br>src/client/App.tsx<br>Composes the views and shows request errors"]:::module
     scheme["use-color-scheme<br>src/client/use-color-scheme.ts<br>Follows the system's light or dark setting"]:::module
-    catalog["catalog/<br>Lists, creates, renames and deletes drawings"]:::group
+    catalog["catalog/<br>Lists, creates, renames, deletes and switches drawings"]:::group
     editor["editor/<br>Loads and edits the open drawing"]:::group
     openId["use-open-drawing-id<br>src/client/drawings/use-open-drawing-id.ts<br>Keeps the open drawing in the URL path"]:::module
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
@@ -135,11 +135,11 @@ flowchart TD
 [`src/client/main.tsx`](../../src/client/main.tsx) is the composition root: it
 renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature, one bounded context around the `Drawing` aggregate. It has two modules:
-`catalog/` lists, creates, renames and deletes drawings, and `editor/` edits the
+`catalog/` lists, creates, renames, deletes and switches drawings, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `search.ts`, a domain service that finds
-drawings by a part of their name, sits at the root too, so the quick switcher
-planned in #8 can share it with the catalog. So does `use-open-drawing-id.ts`,
+drawings by a part of their name, sits at the root too. So does
+`use-open-drawing-id.ts`,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
 and `/` opens none. `App` shows the landing page at `/` and the editor view
 otherwise: the editor below a bar with an "All drawings" link and the drawing's
@@ -183,6 +183,10 @@ title: Modules of the catalog
 ---
 flowchart TD
     list["DrawingList<br>src/client/drawings/catalog/DrawingList.tsx<br>The landing page's cards with their previews"]:::module
+    switcher["QuickSwitcher<br>src/client/drawings/catalog/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
+    switcherState["use-quick-switcher<br>src/client/drawings/catalog/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
+    shortcut["use-switcher-shortcut<br>src/client/drawings/catalog/use-switcher-shortcut.ts<br>Toggles the switcher on Ctrl+K or ⌘K"]:::module
+    previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
     icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards and the editor bar"]:::module
@@ -190,7 +194,10 @@ flowchart TD
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
-    list --> name & confirm & icons & link & api & search
+    list --> name & confirm & icons & link & previewImage & search
+    switcher --> icons & previewImage & switcherState
+    switcherState --> search
+    previewImage --> api
     drawings --> api
 ```
 
@@ -205,8 +212,23 @@ sends its new preview's summary to `use-drawings`, so the card changes its URL
 and the browser loads the new image. A card renames its drawing through
 `NameField` and deletes it only after `DeleteConfirmation`. `use-drawings`
 remembers which drawings it deleted, so `App` can ignore a last save that was
-still in flight and fails once the drawing is gone. `App` takes the back icon
-for its bar from `icons`.
+still in flight and fails once the drawing is gone. `App` takes the icons for
+its bar from `icons`.
+
+The editor view's bar has a "Switch drawing" button, and `use-switcher-shortcut`
+makes Ctrl+K or ⌘K toggle the same `QuickSwitcher` while the editor view is
+mounted. The hook listens in the capture phase and stops the event, so Excalidraw
+doesn't add a link on those keys. The switcher belongs to the catalog even though
+it shows over the editor, because it finds and creates drawings. It is a native
+modal `<dialog>`: the browser shows it above Excalidraw's layers, makes the page
+behind it inert and returns the focus when it closes. It stops key events at the
+dialog, and it sits outside Excalidraw's container, so they don't reach
+Excalidraw's shortcuts. It lists the
+matches from `search.ts` by `updatedAt`, newest first, and last offers to create
+the query as a new drawing unless a drawing has that name. Choosing a row calls
+`App`, which opens or creates the drawing as the landing page does. The editor
+remounts on `key={drawing.id}`, so its pending save is flushed as when leaving
+through "All drawings".
 
 [`styles.css`](../../src/client/styles.css) holds what the whole client shares:
 design tokens for colors from open-color, the palette Excalidraw draws with, and
