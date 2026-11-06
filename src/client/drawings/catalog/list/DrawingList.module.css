@@ -20,6 +20,22 @@
 	line-height: var(--leading-sm);
 }
 
+.tools {
+	display: flex;
+	align-items: stretch;
+	gap: var(--space-sm);
+	min-width: 0;
+}
+
+.sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 /* Looks like the rename field, in the body font. */
 .search {
 	box-sizing: border-box;
@@ -95,9 +111,11 @@
    own height and crop it. */
 .sheet img {
 	position: absolute;
-	inset: var(--space-md);
+	top: var(--space-sm);
+	left: var(--space-md);
 	width: calc(100% - 2 * var(--space-md));
-	height: calc(100% - 2 * var(--space-md));
+	/* The foot of the sheet belongs to the stamps. */
+	height: calc(100% - var(--space-sm) - 2rem);
 	object-fit: contain;
 }
 
@@ -193,6 +211,117 @@
 	}
 }
 
+/* The blank sheet rests while a stamp is in hand. */
+.resting {
+	opacity: 0.4;
+}
+
+/* With a stamp in hand: the pointer is the stamp, and the drawings without it
+   fade back so the stamped ones stand out. */
+.stampable {
+	width: 100%;
+	cursor: var(--stamp-cursor, pointer), pointer;
+}
+
+.sheetFrame {
+	display: block;
+}
+
+.stampable[aria-pressed="false"] .sheet img {
+	opacity: 0.35;
+}
+
+.stampable[aria-pressed="false"] .name {
+	color: var(--graphite);
+}
+
+.stampable[aria-pressed="true"] .sheet {
+	border-color: var(--graphite);
+}
+
+.stampable:is(:hover, :focus-visible) .sheet {
+	outline: var(--stroke-md) solid var(--selection);
+	outline-offset: 3px;
+}
+
+.imprint {
+	position: absolute;
+	top: 0;
+	right: var(--space-sm);
+	bottom: 2rem;
+	left: var(--space-sm);
+	display: grid;
+	place-items: center;
+}
+
+/* The imprint is the card's state, so it reads from across the page. */
+.imprint > span {
+	font-size: var(--text-xl);
+}
+
+/* What a click would leave, under the pointer only. */
+.ghost {
+	display: none;
+	opacity: 0.45;
+}
+
+.stampable:is(:hover, :focus-visible) .ghost {
+	display: grid;
+}
+
+.lifted {
+	opacity: 0;
+}
+
+/* The stamp lands: it comes down large and the sheet takes the blow. */
+@media (prefers-reduced-motion: no-preference) {
+	.imprint.landed {
+		animation: stamp-down 170ms cubic-bezier(0.3, 0, 0.2, 1);
+	}
+
+	.sheetFrame.landed {
+		animation: stamp-thud 170ms ease-out 110ms;
+	}
+
+	.imprint.lifted {
+		animation: stamp-lift 220ms ease-in;
+	}
+}
+
+@keyframes stamp-down {
+	from {
+		opacity: 0;
+		transform: scale(1.9);
+	}
+
+	65% {
+		opacity: 1;
+		transform: scale(0.97);
+	}
+
+	to {
+		transform: scale(1);
+	}
+}
+
+@keyframes stamp-thud {
+	40% {
+		transform: scale(0.985) translateY(1px);
+	}
+}
+
+@keyframes stamp-lift {
+	from {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	to {
+		opacity: 0;
+		transform: scale(1.25) translateY(-6px);
+	}
+}
+
 /* Small screens: two narrower columns of cards. */
 @media (max-width: 40rem) {
 	/* The search field goes under the heading at full width. */
@@ -203,8 +332,18 @@
 		margin-bottom: var(--space-md);
 	}
 
+	.tools {
+		position: relative;
+	}
+
+	.imprint > span {
+		font-size: var(--text-lg);
+	}
+
 	.search {
-		width: 100%;
+		flex: 1;
+		width: auto;
+		min-width: 0;
 	}
 
 	.list ul {

@@ -1,0 +1,146 @@
+.find {
+	box-sizing: border-box;
+	width: calc(100% - 2 * var(--space-sm));
+	margin: var(--space-sm);
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+.rows {
+	/* The landing page's list rules don't reach this far on purpose. */
+	display: block !important;
+	max-height: min(22rem, 50dvh);
+	margin: 0;
+	padding: 0 var(--space-xs) !important;
+	overflow-y: auto;
+	list-style: none;
+}
+
+.row {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: center;
+	gap: 0 !important;
+	border-radius: var(--radius-md);
+}
+
+.row:hover,
+.row:focus-within {
+	background: var(--hover);
+}
+
+.check {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	gap: var(--space-sm);
+	min-width: 0;
+	padding: var(--space-xs);
+	cursor: pointer;
+}
+
+.check input {
+	flex: none;
+	margin: 0;
+	accent-color: var(--selection);
+}
+
+.label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	font-family: var(--hand);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.count {
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+	color: var(--graphite);
+}
+
+.sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.tool {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 1.875rem;
+	height: 1.875rem;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--graphite);
+	cursor: pointer;
+}
+
+.tool svg {
+	width: 16px;
+	height: 16px;
+}
+
+.tool:hover {
+	background: var(--rule);
+	color: var(--ink);
+}
+
+.none {
+	margin: 0;
+	padding: var(--space-sm) var(--space-md);
+	color: var(--graphite);
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-sm);
+	margin-top: var(--space-xs);
+	padding: var(--space-xs) var(--space-sm);
+	border-top: var(--stroke-sm) solid var(--rule);
+}
+
+.new {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	min-width: 0;
+	padding: var(--space-xs);
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	cursor: pointer;
+}
+
+.new:hover {
+	background: var(--hover);
+}
+
+.new svg {
+	flex: none;
+	width: 16px;
+	height: 16px;
+}
+
+/* Fingers need taller rows. */
+@media (pointer: coarse), (max-width: 40rem) {
+	.check {
+		padding-block: var(--space-sm);
+	}
+
+	.tool {
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+}

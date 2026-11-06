@@ -1,0 +1,124 @@
+.filter {
+	position: absolute;
+	width: 0;
+	height: 0;
+}
+
+/* A rubber stamp pressed once: a worn inked edge with a trace of ink inside,
+   crisp text so a small label stays readable, never quite straight. */
+.stamp {
+	position: relative;
+	box-sizing: border-box;
+	display: inline-flex;
+	flex: none;
+	max-width: 100%;
+	padding: 0 calc(var(--space-xs) + 1px);
+	color: var(--stamp-ink);
+	font-family: var(--hand);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-md);
+	rotate: var(--tilt);
+}
+
+.stamp::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border: var(--stroke-md) solid var(--stamp-edge);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--stamp-edge) 9%, transparent);
+	filter: url("#stamp-ink");
+}
+
+.text {
+	position: relative;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The imprint across a whole sheet while the stamp is in hand. Large enough to
+   take the worn ink on the letters too, with a second edge like a date stamp. */
+.large {
+	padding: var(--space-xs) var(--space-sm);
+	font-size: var(--text-lg);
+	line-height: var(--leading-sm);
+}
+
+/* Over a preview the stamp needs paper behind it to stay readable. */
+.large::before {
+	background: color-mix(in srgb, var(--stamp-edge) 12%, var(--sheet));
+}
+
+.large::after {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	border: var(--stroke-sm) solid var(--stamp-edge);
+	border-radius: var(--radius-sm);
+	filter: url("#stamp-ink");
+}
+
+.large .text {
+	filter: url("#stamp-ink");
+}
+
+.pad {
+	flex: none;
+	width: 0.875rem;
+	height: 0.875rem;
+	border-radius: var(--radius-sm);
+	background: var(--pad);
+}
+
+/* The foot of the sheet, under the preview. */
+.strip {
+	position: absolute;
+	right: var(--space-sm);
+	bottom: var(--space-xs);
+	left: var(--space-sm);
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	height: 1.75rem;
+}
+
+.mark {
+	display: flex;
+	flex: none;
+	max-width: calc(100% - 2.25rem);
+}
+
+.mark:only-child {
+	max-width: 100%;
+}
+
+/* Keeps its width for measuring. */
+.markHidden {
+	position: relative;
+	display: flex;
+	flex: none;
+	visibility: hidden;
+}
+
+.fitted {
+	max-width: 100%;
+}
+
+.more {
+	position: absolute;
+	right: 0;
+	padding: 0 var(--space-xs);
+	background: var(--sheet);
+	color: var(--graphite);
+	font-family: var(--hand);
+	font-size: var(--text-sm);
+	cursor: pointer;
+}
+
+.more:hover {
+	color: var(--ink);
+	text-decoration: underline;
+}

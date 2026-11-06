@@ -54,3 +54,22 @@ export function SearchIcon() {
 		</svg>
 	);
 }
+
+export function StampIcon() {
+	return (
+		<svg aria-hidden="true" {...iconProps}>
+			<circle cx="12" cy="6" r="3" />
+			<path d="M10.5 9v4M13.5 9v4" />
+			<rect x="4" y="13" width="16" height="4" rx="1" />
+			<path d="M6 20.5h12" />
+		</svg>
+	);
+}
+
+export function CloseIcon() {
+	return (
+		<svg aria-hidden="true" {...iconProps} width={12} height={12}>
+			<path d="M6 6l12 12M18 6L6 18" />
+		</svg>
+	);
+}
