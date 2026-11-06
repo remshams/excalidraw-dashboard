@@ -269,6 +269,13 @@ export async function clickBesideSwitcher(page: Page): Promise<void> {
 	await page.mouse.click(5, 300);
 }
 
+/** Presses the mouse on the top edge of the open quick switcher. */
+export async function clickSwitcherEdge(page: Page): Promise<void> {
+	const box = await quickSwitcher(page).boundingBox();
+	if (!box) throw new Error("The quick switcher is not open");
+	await page.mouse.click(box.x + box.width / 2, box.y + 0.5);
+}
+
 /** Excalidraw's field for a link, which its own Ctrl+K opens on a selected shape. */
 export function editorLinkField(page: Page) {
 	return editor(page).getByPlaceholder("Type or paste your link here");
