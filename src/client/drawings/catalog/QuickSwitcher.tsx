@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useId } from "react";
 import type { DrawingSummary } from "../../../shared/types.ts";
-import { PlusIcon } from "./icons.tsx";
+import { PlusIcon, SearchIcon } from "./icons.tsx";
 import { PreviewImage } from "./PreviewImage.tsx";
 import styles from "./QuickSwitcher.module.css";
 import {
@@ -85,67 +85,79 @@ export function QuickSwitcher({
 				onClose();
 			}}
 		>
-			<input
-				className={styles.search}
-				role="combobox"
-				aria-label="Find or create a drawing"
-				aria-expanded="true"
-				aria-controls={`${ids}-results`}
-				aria-autocomplete="list"
-				aria-activedescendant={
-					results[selected] ? optionId(selected) : undefined
-				}
-				placeholder="Find or create a drawing…"
-				value={query}
-				onChange={(event) => search(event.target.value)}
-			/>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: it only keeps the focus in the search field, which handles the keyboard. */}
 			<div
-				id={`${ids}-results`}
-				className={styles.results}
-				role="listbox"
-				aria-label="Drawings"
-				// Keeps the focus in the search field.
-				onMouseDown={(event) => event.preventDefault()}
+				className={styles.page}
+				// Keeps the focus in the search field, so the arrow keys keep working. A
+				// press in the field itself still places the caret.
+				onMouseDown={(event) => {
+					if (!(event.target instanceof HTMLInputElement))
+						event.preventDefault();
+				}}
 			>
-				{results.map((result, index) => (
-					// biome-ignore lint/a11y/useKeyWithClickEvents: the search field handles the keyboard through aria-activedescendant.
-					<div
-						key={resultKey(result)}
-						id={optionId(index)}
-						className={styles.option}
-						role="option"
-						tabIndex={-1}
-						aria-selected={index === selected}
-						ref={
-							index === selected
-								? (row) => row?.scrollIntoView({ block: "nearest" })
-								: undefined
+				<div className={styles.line}>
+					<SearchIcon />
+					<input
+						className={styles.search}
+						role="combobox"
+						aria-label="Find or create a drawing"
+						aria-expanded="true"
+						aria-controls={`${ids}-results`}
+						aria-autocomplete="list"
+						aria-activedescendant={
+							results[selected] ? optionId(selected) : undefined
 						}
-						// Not mouseenter: that also fires when the arrow keys scroll a row
-						// under a pointer at rest, which would move the selection back.
-						onMouseMove={() => select(result)}
-						onClick={() => choose(result)}
-					>
-						{result.kind === "create" ? (
-							<>
-								<span className={`${styles.sheet} ${styles.blank}`}>
-									<PlusIcon />
-								</span>
-								<span className={styles.name}>Create “{result.name}”</span>
-							</>
-						) : (
-							<>
-								<span className={styles.sheet}>
-									<PreviewImage drawing={result.drawing} />
-								</span>
-								<span className={styles.name}>{result.drawing.name}</span>{" "}
-								{result.drawing.id === openDrawingId && (
-									<span className={styles.openLabel}>Open</span>
-								)}
-							</>
-						)}
-					</div>
-				))}
+						placeholder="Find or create a drawing…"
+						value={query}
+						onChange={(event) => search(event.target.value)}
+					/>
+				</div>
+				<div
+					id={`${ids}-results`}
+					className={styles.results}
+					role="listbox"
+					aria-label="Drawings"
+				>
+					{results.map((result, index) => (
+						// biome-ignore lint/a11y/useKeyWithClickEvents: the search field handles the keyboard through aria-activedescendant.
+						<div
+							key={resultKey(result)}
+							id={optionId(index)}
+							className={styles.option}
+							role="option"
+							tabIndex={-1}
+							aria-selected={index === selected}
+							ref={
+								index === selected
+									? (row) => row?.scrollIntoView({ block: "nearest" })
+									: undefined
+							}
+							// Not mouseenter: that also fires when the arrow keys scroll a row
+							// under a pointer at rest, which would move the selection back.
+							onMouseMove={() => select(result)}
+							onClick={() => choose(result)}
+						>
+							{result.kind === "create" ? (
+								<>
+									<span className={`${styles.sheet} ${styles.blank}`}>
+										<PlusIcon />
+									</span>
+									<span className={styles.name}>Create “{result.name}”</span>
+								</>
+							) : (
+								<>
+									<span className={styles.sheet}>
+										<PreviewImage drawing={result.drawing} />
+									</span>
+									<span className={styles.name}>{result.drawing.name}</span>{" "}
+									{result.drawing.id === openDrawingId && (
+										<span className={styles.openLabel}>Open</span>
+									)}
+								</>
+							)}
+						</div>
+					))}
+				</div>
 			</div>
 		</dialog>
 	);
