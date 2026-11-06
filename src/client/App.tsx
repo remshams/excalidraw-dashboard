@@ -1,14 +1,14 @@
 import { useCallback, useState } from "react";
 import type { Drawing, DrawingSummary } from "../shared/types.ts";
 import styles from "./App.module.css";
-import { DrawingList } from "./drawings/catalog/DrawingList.tsx";
 import { BackIcon, SearchIcon } from "./drawings/catalog/icons.tsx";
-import { QuickSwitcher } from "./drawings/catalog/QuickSwitcher.tsx";
-import { useDrawings } from "./drawings/catalog/use-drawings.ts";
+import { DrawingList } from "./drawings/catalog/list/DrawingList.tsx";
+import { QuickSwitcher } from "./drawings/catalog/switcher/QuickSwitcher.tsx";
 import {
 	switcherShortcutHint,
 	useSwitcherShortcut,
-} from "./drawings/catalog/use-switcher-shortcut.ts";
+} from "./drawings/catalog/switcher/use-switcher-shortcut.ts";
+import { useDrawings } from "./drawings/catalog/use-drawings.ts";
 import { DrawingLink } from "./drawings/DrawingLink.tsx";
 import { Editor } from "./drawings/editor/Editor.tsx";
 import { useDrawing } from "./drawings/editor/use-drawing.ts";

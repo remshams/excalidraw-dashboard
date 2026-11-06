@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useId } from "react";
-import type { DrawingSummary } from "../../../shared/types.ts";
-import { PlusIcon, SearchIcon } from "./icons.tsx";
-import { PreviewImage } from "./PreviewImage.tsx";
+import type { DrawingSummary } from "../../../../shared/types.ts";
+import { PlusIcon, SearchIcon } from "../icons.tsx";
+import { PreviewImage } from "../PreviewImage.tsx";
 import styles from "./QuickSwitcher.module.css";
 import {
 	resultKey,
