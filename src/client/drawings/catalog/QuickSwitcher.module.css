@@ -9,6 +9,9 @@
 	--search-text: 1.5rem;
 	/* Thicker than the focus ring elsewhere: one line has to do the work of four. */
 	--rule-focused: 3px;
+	/* Half the margin on each side of a row's edge: the band reaches out past the
+	   writing and stops short of the dialog's edge. */
+	--band-inset: calc(var(--margin) / 2);
 	/* The selected row, in a wash of the color the search line's rule has. */
 	--band: color-mix(in srgb, var(--selection) 14%, transparent);
 	/* A sheet of paper lying above the editor. */
@@ -122,11 +125,12 @@
 	display: flex;
 	align-items: center;
 	gap: var(--space-md);
-	padding: var(--space-sm) var(--margin);
+	margin-inline: var(--band-inset);
+	padding: var(--space-sm) var(--band-inset);
+	border-radius: var(--radius-md);
 	cursor: pointer;
 }
 
-/* Edge to edge, while the writing keeps to the margin. */
 .option[aria-selected="true"] {
 	background: var(--band);
 }
