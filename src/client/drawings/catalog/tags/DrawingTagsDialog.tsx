@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "../../../../shared/types.ts";
 import { PlusIcon } from "../icons.tsx";
-import { RemovableStamp } from "./ActiveFilter.tsx";
+import { RemovableStamp } from "./FilterShelf.tsx";
 import { moveInGrid } from "./grid-keys.ts";
 import { findTags, type Tag, useMockTags } from "./mock-tags.ts";
 import { Stamp } from "./Stamp.tsx";

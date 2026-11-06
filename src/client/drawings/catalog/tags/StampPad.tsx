@@ -10,26 +10,34 @@ import { TagForm } from "./TagForm.tsx";
 type StampPadProps = {
 	drawings: DrawingSummary[];
 	picked: Tag | null;
-	nudges: number;
+	/** What the last click did, or how many drawings wait for a tag. */
+	status: string;
+	canUndo: boolean;
+	/** Cards a stamping session keeps in view though they no longer match. */
+	lingering: number;
 	findRef: RefObject<HTMLInputElement | null>;
 	onPick: (tag: Tag) => void;
 	/** Moves the focus to the cards, after a pick from the keyboard. */
 	onGoToCards: () => void;
+	onUndo: () => void;
 	onClose: () => void;
 };
 
 /**
- * The docked stamp pad: every tag at a glance, one click picks the one to stamp.
- * It stays open beside the cards. At phone width it is a bottom sheet that folds
- * down to the picked tag.
+ * The stamp pad: every tag at a glance, one click picks the one to stamp. It lies
+ * along the bottom of the window, over the page rather than beside it, so no card
+ * moves when it opens. At phone width it folds down to the picked tag.
  */
 export function StampPad({
 	drawings,
 	picked,
-	nudges,
+	status,
+	canUndo,
+	lingering,
 	findRef,
 	onPick,
 	onGoToCards,
+	onUndo,
 	onClose,
 }: StampPadProps) {
 	const { tags, drawingCount } = useMockTags();
@@ -46,13 +54,6 @@ export function StampPad({
 		if (matchMedia("(pointer: coarse)").matches) pad.current?.focus();
 		else findRef.current?.focus();
 	}, [creating]);
-
-	// Clicking a card with no tag picked brings the attention here.
-	useEffect(() => {
-		if (nudges === 0) return;
-		setFolded(false);
-		findRef.current?.focus();
-	}, [nudges, findRef]);
 
 	const needle = find.trim().toLocaleLowerCase();
 	const shown = findTags(tags, find);
@@ -95,36 +96,91 @@ export function StampPad({
 			aria-label="Stamp pad"
 			className={`${styles.pad} ${folded && picked ? styles.folded : ""}`}
 		>
-			<div className={styles.head}>
+			<div className={styles.hand}>
 				<h2>Stamp drawings</h2>
-				<button type="button" className={styles.done} aria-keyshortcuts="Escape" onClick={onClose}>
+				{picked ? (
+					<div className={styles.inHand}>
+						<Stamp
+							label={picked.label}
+							color={picked.color}
+							seed={`pad${picked.id}`}
+							size="large"
+							inked
+						/>
+						<button type="button" className={styles.change} onClick={() => setFolded(false)}>
+							Change
+						</button>
+					</div>
+				) : (
+					<div className={styles.empty}>No tag picked</div>
+				)}
+				<p className={styles.tally}>
+					{picked
+						? `On ${drawingCount(drawings, picked.id)} of ${drawings.length} drawings`
+						: "Pick a tag. Drawings you click first get it too."}
+				</p>
+				{/* The page's status region announces this; here it is for the eye. */}
+				<p className={styles.status}>
+					<span aria-hidden="true" className={styles.statusText}>
+						{status || (picked ? "Click drawings to stamp or lift." : "")}
+					</span>
+					{canUndo ? (
+						<button
+							type="button"
+							data-stamp-undo
+							className={styles.undo}
+							aria-keyshortcuts="Control+Z"
+							title="Undo the last stamp or lift (Ctrl+Z)"
+							onClick={onUndo}
+						>
+							Undo
+						</button>
+					) : null}
+				</p>
+			</div>
+			<div className={styles.work}>
+			<div className={styles.line}>
+				{creating === null ? (
+					<>
+						<input
+							ref={findRef}
+							type="search"
+							className={styles.find}
+							aria-label="Find a tag to stamp"
+							placeholder="Find a tag…"
+							value={find}
+							onChange={(event) => setFind(event.target.value)}
+							onKeyDown={onFindKey}
+						/>
+						<button
+							type="button"
+							className={styles.create}
+							onClick={() => setCreating(find.trim())}
+						>
+							<PlusIcon />
+							{shown.length === 0 && needle ? `Create “${find.trim()}”` : "New tag"}
+						</button>
+						<p className={styles.keys}>
+							{lingering > 0
+								? lingering === 1
+									? "1 changed drawing no longer matches and stays until you finish."
+									: `${lingering} changed drawings no longer match and stay until you finish.`
+								: needle && shown.length > 0
+									? `Enter picks ${shown[0].label}`
+									: "On a drawing, type to find a tag. Arrows move, Space stamps."}
+						</p>
+					</>
+				) : null}
+				<button
+					type="button"
+					className={styles.done}
+					aria-keyshortcuts="Escape"
+					onClick={onClose}
+				>
 					Done
 					<kbd aria-hidden="true">Esc</kbd>
 				</button>
 			</div>
-			{picked ? (
-				<div className={styles.inHand}>
-					<Stamp
-						label={picked.label}
-						color={picked.color}
-						seed={`pad${picked.id}`}
-						size="large"
-					/>
-					<p>
-						<span className={styles.instruction}>Click drawings to stamp or lift.</span>
-						<span className={styles.tally}>
-							On {drawingCount(drawings, picked.id)} of {drawings.length} drawings
-						</span>
-					</p>
-					<button type="button" className={styles.change} onClick={() => setFolded(false)}>
-						Change
-					</button>
-				</div>
-			) : (
-				<p key={nudges} className={`${styles.prompt} ${nudges ? styles.nudged : ""}`}>
-					Pick a tag, then click drawings to stamp it.
-				</p>
-			)}
 			{creating !== null ? (
 				// biome-ignore lint/a11y/noStaticElementInteractions: Escape goes back to the tags and leaves the pad open.
 				<div
@@ -148,16 +204,6 @@ export function StampPad({
 				</div>
 			) : (
 				<div className={styles.choose}>
-					<input
-						ref={findRef}
-						type="search"
-						className={styles.find}
-						aria-label="Find a tag to stamp"
-						placeholder="Find a tag…"
-						value={find}
-						onChange={(event) => setFind(event.target.value)}
-						onKeyDown={onFindKey}
-					/>
 					{/* biome-ignore lint/a11y/noStaticElementInteractions: arrow keys move through the grid of radio buttons. */}
 					<div
 						ref={wells}
@@ -202,23 +248,9 @@ export function StampPad({
 					{shown.length === 0 ? (
 						<p className={styles.none}>No tag is called “{find.trim()}”.</p>
 					) : null}
-					<div className={styles.foot}>
-						<button
-							type="button"
-							className={styles.create}
-							onClick={() => setCreating(find.trim())}
-						>
-							<PlusIcon />
-							{shown.length === 0 && needle ? `Create “${find.trim()}”` : "New tag"}
-						</button>
-						<p className={styles.keys}>
-							{needle && shown.length > 0
-								? `Enter picks ${shown[0].label}`
-								: "On a drawing, type to find a tag. Arrows move, Space stamps."}
-						</p>
-					</div>
 				</div>
 			)}
+			</div>
 		</aside>
 	);
 }

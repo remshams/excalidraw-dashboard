@@ -31,20 +31,24 @@
 	filter: url("#stamp-ink");
 }
 
-/* Solid ink: darker, fuller, and readable in both colour schemes. */
+/* Solid ink: the tag in the filter or in hand. Paper-coloured letters on full ink
+   read the same in both colour schemes, and the fill differs from the outline at
+   a glance without relying on hue. */
 .inked {
-	color: var(--stamp-ink);
+	color: var(--sheet);
 }
 
 .inked::before {
-	background: var(--stamp-bg);
+	border-color: var(--stamp-fill);
+	background: var(--stamp-fill);
+	filter: url("#stamp-ink-full");
 }
 
 /* Fills a cell in a grid of tags. */
 .block {
 	display: flex;
 	width: 100%;
-	padding-block: 2px;
+	padding: 2px var(--space-xs);
 	/* A rack of stamps stays nearly straight, so the columns read as columns. */
 	rotate: calc(var(--tilt) * 0.25);
 }
@@ -68,6 +72,14 @@
 /* Over a preview the stamp needs paper behind it to stay readable. */
 .large::before {
 	background: color-mix(in srgb, var(--stamp-edge) 12%, var(--sheet));
+}
+
+.large.inked::before {
+	background: var(--stamp-fill);
+}
+
+.large.inked::after {
+	border-color: var(--sheet);
 }
 
 .large::after {
@@ -99,8 +111,17 @@
 	left: var(--space-sm);
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--space-xs);
 	height: 1.75rem;
+}
+
+.tags {
+	position: relative;
+	display: flex;
+	flex: 1;
+	align-items: center;
+	min-width: 0;
+	height: 100%;
 }
 
 .mark {
@@ -113,12 +134,16 @@
 	max-width: 100%;
 }
 
-/* Keeps its width for measuring. */
+/* Keeps its width for measuring, out of the line. */
 .markHidden {
-	position: relative;
+	position: absolute;
 	display: flex;
-	flex: none;
 	visibility: hidden;
+}
+
+/* The same room around a stamp as a toggle has. */
+.padded {
+	padding: 2px;
 }
 
 .fitted {
@@ -126,17 +151,87 @@
 }
 
 .more {
-	position: absolute;
-	right: 0;
+	flex: none;
 	padding: 0 var(--space-xs);
-	background: var(--sheet);
+	background: none;
 	color: var(--graphite);
 	font-family: var(--hand);
 	font-size: var(--text-sm);
+}
+
+.moreButton {
+	border: 0;
+	border-radius: var(--radius-md);
+	pointer-events: auto;
 	cursor: pointer;
 }
 
-.more:hover {
+.moreButton:hover {
 	color: var(--ink);
 	text-decoration: underline;
+}
+
+/* A stamp you can press: it straightens up under the pointer and takes some ink. */
+.toggle {
+	position: relative;
+	display: flex;
+	max-width: 100%;
+	padding: 2px;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	pointer-events: auto;
+	cursor: pointer;
+}
+
+.toggle:is(:hover, :focus-visible) .stamp {
+	rotate: 0deg;
+	translate: 0 -1px;
+}
+
+.toggle:is(:hover, :focus-visible) .stamp:not(.inked)::before {
+	background: var(--stamp-bg);
+}
+
+.toggle:active .stamp {
+	translate: 0 1px;
+}
+
+/* Names what a click does, the moment you point at a tag. */
+.toggle[data-tip]::after {
+	content: attr(data-tip);
+	position: absolute;
+	bottom: calc(100% + var(--space-xs));
+	left: 0;
+	z-index: 3;
+	padding: 0 var(--space-sm);
+	border-radius: var(--radius-md);
+	background: var(--ink);
+	color: var(--sheet);
+	font-size: var(--text-sm);
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.toggle[data-tip]:is(:hover, :focus-visible)::after {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.toggle .stamp {
+		transition:
+			rotate 90ms ease-out,
+			translate 90ms ease-out;
+	}
+
+	.toggle[data-tip]:hover::after {
+		transition: opacity 80ms linear 180ms;
+	}
+}
+
+@media (hover: none) {
+	.toggle[data-tip]::after {
+		display: none;
+	}
 }

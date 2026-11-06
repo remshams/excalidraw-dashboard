@@ -23,3 +23,13 @@ export function moveInGrid(
 	next?.focus();
 	return next;
 }
+
+/** Moves focus with the left and right arrow keys through a row of buttons. */
+export function moveInRow(event: KeyboardEvent, row: HTMLElement | null, selector: string) {
+	const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+	if (!row || !step) return;
+	event.preventDefault();
+	event.stopPropagation();
+	const items = [...row.querySelectorAll<HTMLElement>(selector)];
+	items[items.indexOf(document.activeElement as HTMLElement) + step]?.focus();
+}

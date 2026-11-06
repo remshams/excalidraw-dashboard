@@ -1,4 +1,11 @@
-import { type CSSProperties, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+	type CSSProperties,
+	type KeyboardEvent,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import type { DrawingSummary } from "../../../../shared/types.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { searchByName } from "../../search.ts";
@@ -6,10 +13,10 @@ import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
 import { PencilIcon, PlusIcon, StampIcon, TagIcon, TrashIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
-import { ActiveFilter } from "../tags/ActiveFilter.tsx";
 import { DrawingTagsDialog } from "../tags/DrawingTagsDialog.tsx";
+import { FilterShelf } from "../tags/FilterShelf.tsx";
 import { moveInGrid } from "../tags/grid-keys.ts";
-import { type Tag, useMockTags } from "../tags/mock-tags.ts";
+import { type Tag, tagColorVars, useMockTags } from "../tags/mock-tags.ts";
 import { InkFilter, SheetStamps, Stamp } from "../tags/Stamp.tsx";
 import { StampPad } from "../tags/StampPad.tsx";
 import { TagTray } from "../tags/TagTray.tsx";
@@ -51,12 +58,36 @@ export function DrawingList({
 	const padButton = useRef<HTMLButtonElement>(null);
 	const padFind = useRef<HTMLInputElement>(null);
 	const listRef = useRef<HTMLUListElement>(null);
+	const page = useRef<HTMLDivElement>(null);
+	const searchField = useRef<HTMLInputElement>(null);
+	const refocus = useRef<{ tagId: string; drawingId?: string } | null>(null);
 	const pad = useStampPad(() => padButton.current?.focus());
 	const close = () => setTask(null);
 
 	// A question on a card the filter hides would come back with it.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs when the filter changes.
 	useEffect(() => setTask(null), [selectedTagIds]);
+
+	// A tag moves within its row when it joins the filter, and a card can leave with
+	// the tag it lost. Focus stays on the tag: on that card, or else on the shelf.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs when the filter changes.
+	useLayoutEffect(() => {
+		const target = refocus.current;
+		refocus.current = null;
+		if (!target) return;
+		const toggle = `[data-tag-toggle="${target.tagId}"]`;
+		const onCard = target.drawingId
+			? page.current?.querySelector<HTMLElement>(
+					`[data-card="${target.drawingId}"] ${toggle}:not([data-hidden])`,
+				)
+			: null;
+		(onCard ?? page.current?.querySelector<HTMLElement>(`[data-filter-shelf] ${toggle}`))?.focus();
+	}, [selectedTagIds]);
+
+	const toggleFilter = (tagId: string, drawingId?: string) => {
+		refocus.current = { tagId, drawingId };
+		store.toggleSelected(tagId);
+	};
 
 	const filtered = store.filterBySelectedTags(drawings);
 	const inView = pad.open
@@ -72,11 +103,15 @@ export function DrawingList({
 		? shown.filter((drawing) => !filtered.includes(drawing)).length
 		: 0;
 	const narrowed = selected.length > 0 || searched !== "";
+	// Drawings the search would find if the filter weren't in the way.
+	const outside =
+		selected.length > 0 && searched ? searchByName(drawings, query).length : 0;
 
 	const goToCards = () => {
 		const cards = listRef.current;
-		const last = pad.fresh
-			? cards?.querySelector<HTMLElement>(`[data-stampable="${pad.fresh}"]`)
+		const lastId = pad.fresh[pad.fresh.length - 1];
+		const last = lastId
+			? cards?.querySelector<HTMLElement>(`[data-stampable="${lastId}"]`)
 			: null;
 		(last ?? cards?.querySelector<HTMLElement>("[data-stampable]"))?.focus();
 	};
@@ -93,6 +128,7 @@ export function DrawingList({
 
 	return (
 		<div
+			ref={page}
 			className={`${styles.list} ${pad.open ? styles.docked : ""}`}
 			style={
 				pad.cursor
@@ -105,6 +141,7 @@ export function DrawingList({
 				<h1>Drawings</h1>
 				<div className={styles.tools}>
 					<input
+						ref={searchField}
 						type="search"
 						className={styles.search}
 						aria-label="Search drawings"
@@ -138,19 +175,26 @@ export function DrawingList({
 				<StampPad
 					drawings={drawings}
 					picked={pad.picked}
-					nudges={pad.nudges}
+					status={pad.status}
+					canUndo={pad.canUndo}
+					lingering={lingering}
 					findRef={padFind}
 					onPick={pad.pick}
 					onGoToCards={goToCards}
+					onUndo={pad.undo}
 					onClose={pad.close}
 				/>
 			) : null}
-			<ActiveFilter
-				buttonRef={tagsButton}
+			<FilterShelf
 				searched={searched}
 				shown={shown.length}
 				total={drawings.length}
-				lingering={lingering}
+				clearable={shown.length > 0 || outside === 0}
+				onToggle={(tagId) => toggleFilter(tagId)}
+				onClear={() => {
+					page.current?.querySelector<HTMLElement>("[data-filter-shelf] button")?.focus();
+					store.clearSelected();
+				}}
 			/>
 			{/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: arrow keys and type-to-find while stamping; the cards are the controls. */}
 			<ul ref={listRef} className={styles.cards} aria-label="Drawings" onKeyDown={onCardsKey}>
@@ -170,11 +214,9 @@ export function DrawingList({
 							key={drawing.id}
 							drawing={drawing}
 							picked={pad.picked}
-							fresh={pad.fresh === drawing.id}
-							onStamp={() => {
-								if (pad.picked) pad.stamp(drawing);
-								else pad.nudge();
-							}}
+							fresh={pad.fresh.includes(drawing.id)}
+							waiting={pad.waiting.includes(drawing)}
+							onStamp={() => pad.stamp(drawing)}
 						/>
 					) : (
 						<DrawingCard
@@ -188,6 +230,7 @@ export function DrawingList({
 							onOpen={onOpen}
 							onStart={(kind) => setTask({ kind, id: drawing.id })}
 							onEditTags={() => setEditingId(drawing.id)}
+							onToggleTag={(tagId) => toggleFilter(tagId, drawing.id)}
 							onRename={(name) => {
 								close();
 								onRename(drawing.id, name);
@@ -203,21 +246,35 @@ export function DrawingList({
 			</ul>
 			{/* Always rendered, so screen readers announce the message when it
 			    appears. */}
-			<p role="status" className={styles.status}>
-				{shown.length === 0 ? noMatchMessage(searched, selected) : null}
-			</p>
-			{shown.length === 0 && narrowed ? (
-				<button
-					type="button"
-					className={styles.showAll}
-					onClick={() => {
-						setQuery("");
-						store.clearSelected();
-					}}
-				>
-					Show all drawings
-				</button>
-			) : null}
+			<div className={styles.empty}>
+				<p role="status" className={styles.status}>
+					{shown.length === 0 ? noMatchMessage(searched, selected, outside) : null}
+				</p>
+				{shown.length === 0 && selected.length > 0 && outside > 0 ? (
+					<button
+						type="button"
+						className={styles.showAll}
+						onClick={() => {
+							searchField.current?.focus();
+							store.clearSelected();
+						}}
+					>
+						Clear filter
+					</button>
+				) : shown.length === 0 && narrowed ? (
+					<button
+						type="button"
+						className={styles.showAll}
+						onClick={() => {
+							searchField.current?.focus();
+							setQuery("");
+							store.clearSelected();
+						}}
+					>
+						Show all drawings
+					</button>
+				) : null}
+			</div>
 			<p role="status" className={styles.sr}>
 				{pad.message ||
 					(narrowed && shown.length > 0
@@ -248,9 +305,16 @@ const orList = (tags: Tag[]) => {
 };
 
 /** Says why no drawing shows: what the search and the filter asked for together. */
-function noMatchMessage(searched: string, selected: Tag[]) {
+function noMatchMessage(searched: string, selected: Tag[], outside: number) {
 	if (searched && selected.length > 0) {
-		return `No drawing with ${orList(selected)} has “${searched}” in its name.`;
+		const without = selected.length === 1 ? "this tag" : "these tags";
+		const elsewhere =
+			outside === 0
+				? ""
+				: outside === 1
+					? ` 1 drawing without ${without} matches.`
+					: ` ${outside} drawings without ${without} match.`;
+		return `No drawing with ${orList(selected)} has “${searched}” in its name.${elsewhere}`;
 	}
 	if (searched) return `No drawing has “${searched}” in its name.`;
 	if (selected.length > 0) return `No drawing has ${orList(selected)}.`;
@@ -315,6 +379,7 @@ type DrawingCardProps = {
 	onOpen: (id: string | null) => void;
 	onStart: (task: CardTask) => void;
 	onEditTags: () => void;
+	onToggleTag: (tagId: string) => void;
 	onRename: (name: string) => void;
 	onDelete: () => void;
 	onCancel: () => void;
@@ -326,6 +391,7 @@ function DrawingCard({
 	onOpen,
 	onStart,
 	onEditTags,
+	onToggleTag,
 	onRename,
 	onDelete,
 	onCancel,
@@ -333,11 +399,23 @@ function DrawingCard({
 	const { id, name } = drawing;
 	const { tagsOf, selectedTagIds } = useMockTags();
 	const tags = selectedFirst(tagsOf(drawing), selectedTagIds);
+	// Outside the link: a click on a tag filters, a click on the sheet opens the drawing.
+	const stamps = (
+		<div className={styles.tagLayer} data-card={id}>
+			<SheetStamps
+				tags={tags}
+				seed={id}
+				matched={selectedTagIds}
+				filtering={{ drawingName: name, onToggle: onToggleTag, onShowAll: onEditTags }}
+			/>
+		</div>
+	);
 
 	if (task === "rename" || task === "delete") {
 		return (
 			<li>
-				<Sheet drawing={drawing} tags={tags} />
+				<Sheet drawing={drawing} />
+				{stamps}
 				{task === "rename" ? (
 					<NameField
 						label={`New name for ${name}`}
@@ -359,7 +437,7 @@ function DrawingCard({
 	return (
 		<li>
 			<DrawingLink drawingId={id} onOpen={onOpen} className={styles.open}>
-				<Sheet drawing={drawing} tags={tags} onShowAll={onEditTags} />
+				<Sheet drawing={drawing} />
 				<span className={styles.name}>{name}</span>
 				{tags.length > 0 ? (
 					<span className={styles.sr}>
@@ -367,6 +445,7 @@ function DrawingCard({
 					</span>
 				) : null}
 			</DrawingLink>
+			{stamps}
 			<span className={styles.actions}>
 				<button
 					type="button"
@@ -401,27 +480,26 @@ function DrawingCard({
 type StampableCardProps = {
 	drawing: DrawingSummary;
 	picked: Tag | null;
-	/** This card was the last one clicked, so it plays the stamp's landing. */
+	/** This card was just clicked, so it plays the stamp's landing or lift. */
 	fresh: boolean;
+	/** Clicked before a tag was picked: the pick will stamp it. */
+	waiting: boolean;
 	onStamp: () => void;
 };
 
-/** A card while the pad is open: a click stamps the picked tag or lifts it. */
-function StampableCard({ drawing, picked, fresh, onStamp }: StampableCardProps) {
+/**
+ * A card while the pad is open. All of it is one target, tags included: a click
+ * stamps the picked tag or lifts it, so a fast pass over the cards can't change the
+ * filter by accident. The tag in hand lands in the free end of the foot, where it
+ * covers none of the drawing.
+ */
+function StampableCard({ drawing, picked, fresh, waiting, onStamp }: StampableCardProps) {
 	const { tagsOf, selectedTagIds } = useMockTags();
 	const all = selectedFirst(tagsOf(drawing), selectedTagIds);
 	const stamped = picked !== null && all.some((tag) => tag.id === picked.id);
-	// The picked tag shows as the large imprint, so the foot of the sheet skips it.
 	const rest = all.filter((tag) => tag.id !== picked?.id);
-	const landing = fresh ? styles.landed : "";
-	const mark = picked ? (
-		<Stamp
-			label={picked.label}
-			color={picked.color}
-			seed={drawing.id + picked.id}
-			size="large"
-		/>
-	) : null;
+	const landing = stamped && fresh ? styles.landed : "";
+	const state = stamped ? "" : fresh ? styles.lifted : styles.ghost;
 
 	return (
 		<li>
@@ -429,31 +507,43 @@ function StampableCard({ drawing, picked, fresh, onStamp }: StampableCardProps) 
 				type="button"
 				data-stampable={drawing.id}
 				className={`${styles.open} ${styles.stampable}`}
-				aria-pressed={picked ? stamped : undefined}
-				aria-disabled={picked ? undefined : true}
+				style={
+					picked
+						? ({ "--stamped": tagColorVars(picked.color).fill } as CSSProperties)
+						: undefined
+				}
+				aria-pressed={picked ? stamped : waiting}
 				aria-label={
 					picked
 						? `Stamp ${drawing.name} with ${picked.label}`
-						: `${drawing.name}: pick a tag on the stamp pad first`
+						: `Mark ${drawing.name} to stamp with the tag you pick next`
 				}
 				onClick={onStamp}
 			>
-				<span className={`${styles.sheetFrame} ${stamped ? landing : ""}`}>
-					<Sheet drawing={drawing} tags={rest}>
-						{/* Under the pointer an unstamped card previews the stamp; a card just
-						    lifted plays the lift first, and keyed so it plays once. */}
-						{mark && !stamped ? (
-							<span className={`${styles.imprint} ${styles.ghost}`}>{mark}</span>
-						) : null}
-						{mark && stamped ? (
-							<span key="on" className={`${styles.imprint} ${landing}`}>
-								{mark}
-							</span>
-						) : mark && fresh ? (
-							<span key="off" className={`${styles.imprint} ${styles.lifted}`}>
-								{mark}
-							</span>
-						) : null}
+				<span className={`${styles.sheetFrame} ${landing}`}>
+					<Sheet drawing={drawing}>
+						<SheetStamps
+							tags={rest}
+							seed={drawing.id}
+							matched={selectedTagIds}
+							slot={
+								picked ? (
+									<span
+										key={stamped ? "on" : "off"}
+										className={`${styles.imprint} ${state} ${landing}`}
+									>
+										<Stamp
+											label={picked.label}
+											color={picked.color}
+											seed={drawing.id + picked.id}
+											inked={stamped || state === styles.lifted}
+										/>
+									</span>
+								) : waiting ? (
+									<span className={styles.waiting}>Waiting</span>
+								) : null
+							}
+						/>
 					</Sheet>
 				</span>
 				<span className={styles.name}>{drawing.name}</span>
@@ -464,27 +554,18 @@ function StampableCard({ drawing, picked, fresh, onStamp }: StampableCardProps) 
 
 type SheetProps = {
 	drawing: DrawingSummary;
-	tags: Tag[];
-	onShowAll?: () => void;
 	children?: React.ReactNode;
 };
 
 /**
- * The drawing's preview on a sheet of paper, with its tags along the foot. A
- * sheet without a preview stays blank above them.
+ * The drawing's preview on a sheet of paper. Its foot is kept free for the tags,
+ * which lie over it. A sheet without a preview stays blank above them.
  */
-function Sheet({ drawing, tags, onShowAll, children }: SheetProps) {
-	const { selectedTagIds } = useMockTags();
+function Sheet({ drawing, children }: SheetProps) {
 	return (
 		<span className={styles.sheet}>
 			<PreviewImage drawing={drawing} />
 			{children}
-			<SheetStamps
-				tags={tags}
-				seed={drawing.id}
-				matched={selectedTagIds}
-				onShowAll={onShowAll}
-			/>
 		</span>
 	);
 }

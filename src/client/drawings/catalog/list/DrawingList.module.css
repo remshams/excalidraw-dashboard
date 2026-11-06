@@ -5,17 +5,22 @@
 	margin: 0 auto;
 }
 
-/* The stamp pad is docked at the side and the cards keep the rest of the page. */
+/* The stamp pad lies over the page, so the page only gains room at its end: the
+   last cards can scroll out from under the pad, and no card moves. */
 .docked {
-	padding-right: calc(var(--pad-width) + var(--space-lg));
+	padding-bottom: 12rem;
 }
 
 @media (max-width: 48rem) {
-	/* The pad is a bottom sheet here; the last cards can scroll out from under it. */
 	.docked {
-		padding-right: 0;
 		padding-bottom: 55dvh;
 	}
+}
+
+/* That extra room can't bring in a scrollbar that would narrow the cards. */
+:global(html):has(.list) {
+	scrollbar-gutter: stable;
+	background: var(--desk);
 }
 
 /* The heading with the search field at the end of its line. */
@@ -24,7 +29,7 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--space-md);
-	margin-bottom: var(--space-lg);
+	margin-bottom: var(--space-sm);
 }
 
 .list h1 {
@@ -90,10 +95,17 @@
 	color: var(--graphite);
 }
 
+/* Takes no space while it has no message. */
+.empty:has(.status:not(:empty)) {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-sm);
+	margin-top: var(--space-lg);
+}
+
 .showAll {
-	align-self: flex-start;
-	margin-top: var(--space-sm);
-	padding: var(--space-xs) var(--space-sm);
+	padding: 0 var(--space-sm);
 	border: var(--stroke-sm) solid var(--graphite);
 	border-radius: var(--radius-md);
 	background: var(--sheet);
@@ -102,11 +114,6 @@
 
 .showAll:hover {
 	background: var(--hover);
-}
-
-/* The status takes no space while it has no message. */
-.status:not(:empty) {
-	margin-top: var(--space-lg);
 }
 
 .cards {
@@ -124,6 +131,26 @@
 	flex-direction: column;
 	gap: var(--space-sm);
 	min-width: 0;
+}
+
+/* A tag's hint stays on top of the card next to it. */
+.cards > li:hover,
+.cards > li:focus-within {
+	z-index: 2;
+}
+
+/* The tags of a card lie over the foot of its sheet: the same box and border, but
+   outside the card's link. Only the tags themselves take clicks. */
+.tagLayer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	z-index: 1;
+	box-sizing: border-box;
+	aspect-ratio: 4 / 3;
+	border: var(--stroke-sm) solid transparent;
+	pointer-events: none;
 }
 
 /* The link of a card and the button of the blank sheet look the same. */
@@ -269,10 +296,11 @@
 	opacity: 0.4;
 }
 
-/* With a tag picked on the pad: the pointer is the stamp, and the drawings
-   without the tag fade back so the stamped ones stand out. */
+/* With a tag picked on the pad the pointer is the stamp. The previews stay as they
+   are; the foot of the sheet says which drawings have the tag. */
 .stampable {
 	width: 100%;
+	scroll-margin-block: 4rem 14rem;
 	cursor: var(--stamp-cursor, pointer), pointer;
 }
 
@@ -280,21 +308,9 @@
 	display: block;
 }
 
-/* No tag picked yet: a click points at the pad instead of opening the drawing. */
-.stampable[aria-disabled="true"] {
-	cursor: default;
-}
-
-.stampable[aria-pressed="false"] .sheet img {
-	opacity: 0.35;
-}
-
-.stampable[aria-pressed="false"] .name {
-	color: var(--graphite);
-}
-
+/* A frame in the tag's ink finds the stamped drawings from across the page. */
 .stampable[aria-pressed="true"] .sheet {
-	border-color: var(--graphite);
+	box-shadow: inset 0 0 0 var(--stroke-md) var(--stamped, var(--selection));
 }
 
 .stampable:is(:hover, :focus-visible) .sheet {
@@ -303,42 +319,49 @@
 }
 
 .imprint {
-	position: absolute;
-	top: 0;
-	right: var(--space-sm);
-	bottom: 2rem;
-	left: var(--space-sm);
-	display: grid;
-	place-items: center;
+	display: flex;
+	flex: none;
+	max-width: 60%;
 }
 
-/* The imprint is the card's state, so it reads from across the page. */
 .imprint > span {
-	font-size: var(--text-xl);
+	font-size: var(--text-md);
 }
 
-/* What a click would leave, under the pointer only. */
+/* What a click would leave, under the pointer only. It keeps its room, so the
+   other tags don't shift. */
 .ghost {
-	display: none;
-	opacity: 0.45;
+	opacity: 0;
 }
 
 .stampable:is(:hover, :focus-visible) .ghost {
-	display: grid;
+	opacity: 1;
 }
 
 .lifted {
 	opacity: 0;
 }
 
-/* The stamp lands: it comes down large and the sheet takes the blow. */
+/* Clicked before a tag was picked: an empty stamp, dashed like the pad's. */
+.waiting {
+	flex: none;
+	padding: 0 var(--space-sm);
+	border: var(--stroke-md) dashed var(--selection);
+	border-radius: var(--radius-md);
+	color: var(--ink);
+	font-family: var(--hand);
+	font-size: var(--text-sm);
+}
+
+/* The stamp comes down large across the sheet for a moment, the sheet takes the
+   blow, and the ink stays in the foot where it hides nothing. */
 @media (prefers-reduced-motion: no-preference) {
 	.imprint.landed {
-		animation: stamp-down 170ms cubic-bezier(0.3, 0, 0.2, 1);
+		animation: stamp-down 190ms cubic-bezier(0.3, 0, 0.2, 1);
 	}
 
 	.sheetFrame.landed {
-		animation: stamp-thud 170ms ease-out 110ms;
+		animation: stamp-thud 170ms ease-out 130ms;
 	}
 
 	.imprint.lifted {
@@ -349,16 +372,16 @@
 @keyframes stamp-down {
 	from {
 		opacity: 0;
-		transform: scale(1.9);
+		transform: translate(-35%, -210%) scale(2.6);
 	}
 
-	65% {
+	70% {
 		opacity: 1;
-		transform: scale(0.97);
+		transform: translate(0, 0) scale(0.96);
 	}
 
 	to {
-		transform: scale(1);
+		transform: none;
 	}
 }
 
@@ -371,12 +394,12 @@
 @keyframes stamp-lift {
 	from {
 		opacity: 1;
-		transform: scale(1);
+		transform: none;
 	}
 
 	to {
 		opacity: 0;
-		transform: scale(1.25) translateY(-6px);
+		transform: translate(-6%, -80%) scale(1.3);
 	}
 }
 
@@ -393,10 +416,6 @@
 	.tools {
 		position: relative;
 		flex-wrap: wrap;
-	}
-
-	.imprint > span {
-		font-size: var(--text-lg);
 	}
 
 	.search {

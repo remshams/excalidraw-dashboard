@@ -25,6 +25,7 @@ export type Tag = { id: string; label: string; color: TagColor };
 /** CSS variables of a tag's colour, as defined in `styles.css`. */
 export const tagColorVars = (color: TagColor) => ({
 	bg: `var(--tag-${color}-bg)`,
+	fill: `var(--tag-${color}-fill)`,
 	ink: `var(--tag-${color}-ink)`,
 	solid: `var(--tag-${color}-solid)`,
 });
@@ -90,15 +91,70 @@ type State = {
 	/** Tag IDs by drawing ID; drawings not in here fall back to the seed by name. */
 	assignments: Record<string, string[]>;
 	selectedTagIds: string[];
+	/** The stamps on the row under the header, in their places on it. */
+	shelf: string[];
+	/** Tags last filtered by, newest first; decides which stamp leaves the shelf. */
+	recent: string[];
 	query: string;
 };
 
+const seedTags: Tag[] = SEED_TAGS.map(([label, color]) => ({ id: newId(), label, color }));
+const seedShelf = ["Work", "Personal", "Garden", "Travel", "Frontend", "Idea"].flatMap(
+	(label) => seedTags.find((tag) => tag.label === label)?.id ?? [],
+);
+
 let state: State = {
-	tags: SEED_TAGS.map(([label, color]) => ({ id: newId(), label, color })),
+	tags: seedTags,
 	assignments: {},
 	selectedTagIds: [],
+	shelf: seedShelf,
+	recent: seedShelf,
 	query: "",
 };
+
+const SHELF_SIZE = 6;
+
+/**
+ * The shelf after a tag joined the filter. Stamps keep their places, so a second
+ * click lands where the first did. The one exception keeps the filter together, so
+ * "or" can stand between its stamps: a stamp apart from them moves next to them.
+ */
+function shelfWith(tagId: string, selected: string[]) {
+	let shelf = state.shelf;
+	if (!shelf.includes(tagId)) {
+		const oldest = [...state.recent]
+			.reverse()
+			.find((id) => shelf.includes(id) && !selected.includes(id));
+		shelf =
+			shelf.length >= SHELF_SIZE && oldest
+				? shelf.map((id) => (id === oldest ? tagId : id))
+				: [...shelf, tagId];
+	}
+	return gathered(shelf, tagId, selected.filter((id) => id !== tagId));
+}
+
+/** Moves the tag behind the others if it stands apart from them. */
+function gathered(shelf: string[], tagId: string, others: string[]) {
+	if (others.length === 0) return shelf;
+	const places = others.map((id) => shelf.indexOf(id));
+	const place = shelf.indexOf(tagId);
+	if (place === Math.min(...places) - 1 || place === Math.max(...places) + 1) return shelf;
+	const last = shelf[Math.max(...places)];
+	const without = shelf.filter((id) => id !== tagId);
+	without.splice(without.indexOf(last) + 1, 0, tagId);
+	return without;
+}
+
+/** The shelf after a tag left the filter; the others stay together. */
+function shelfWithout(tagId: string, selected: string[]) {
+	const places = selected.map((id) => state.shelf.indexOf(id));
+	const inside =
+		places.length > 0 &&
+		state.shelf.indexOf(tagId) > Math.min(...places) &&
+		state.shelf.indexOf(tagId) < Math.max(...places);
+	const shelf = inside ? gathered(state.shelf, tagId, selected) : state.shelf;
+	return shelf.length > SHELF_SIZE ? shelf.filter((id) => id !== tagId) : shelf;
+}
 
 const listeners = new Set<() => void>();
 
@@ -172,12 +228,19 @@ const actions = {
 	/** Sets the landing page's search text. It survives opening a drawing. */
 	setQuery: (query: string) => setState({ query }),
 
-	toggleSelected: (tagId: string) =>
+	toggleSelected: (tagId: string) => {
+		if (state.selectedTagIds.includes(tagId)) {
+			const selectedTagIds = state.selectedTagIds.filter((id) => id !== tagId);
+			setState({ selectedTagIds, shelf: shelfWithout(tagId, selectedTagIds) });
+			return;
+		}
+		const selectedTagIds = [...state.selectedTagIds, tagId];
 		setState({
-			selectedTagIds: state.selectedTagIds.includes(tagId)
-				? state.selectedTagIds.filter((id) => id !== tagId)
-				: [...state.selectedTagIds, tagId],
-		}),
+			selectedTagIds,
+			shelf: shelfWith(tagId, selectedTagIds),
+			recent: [tagId, ...state.recent.filter((id) => id !== tagId)],
+		});
+	},
 
 	clearSelected: () => setState({ selectedTagIds: [] }),
 
@@ -209,6 +272,8 @@ const actions = {
 		setState({
 			tags: state.tags.filter((tag) => tag.id !== id),
 			selectedTagIds: state.selectedTagIds.filter((t) => t !== id),
+			shelf: state.shelf.filter((t) => t !== id),
+			recent: state.recent.filter((t) => t !== id),
 		});
 	},
 
@@ -255,6 +320,7 @@ export function useMockTags() {
 	return {
 		tags: current.tags,
 		selectedTagIds: current.selectedTagIds,
+		shelf: current.shelf,
 		query: current.query,
 		tagsOf,
 		filterBySelectedTags,

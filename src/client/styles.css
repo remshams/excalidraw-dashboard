@@ -24,30 +24,39 @@
 	--hover: #e9ecef;
 
 	/* PoC: tag colours from open-color. bg and ink are for a label on a tinted
-	   background, solid for a mark on its own. */
+	   background, solid for a mark on its own, fill under --sheet text for a tag
+	   pressed in full ink. */
 	--tag-red-bg: #ffc9c9;
 	--tag-red-ink: #862e2e;
+	--tag-red-fill: #c92a2a;
 	--tag-red-solid: #e03131;
 	--tag-orange-bg: #ffd8a8;
 	--tag-orange-ink: #7f3f0a;
+	--tag-orange-fill: #c2410c;
 	--tag-orange-solid: #e8590c;
 	--tag-yellow-bg: #ffec99;
 	--tag-yellow-ink: #6b5200;
+	--tag-yellow-fill: #8a6100;
 	--tag-yellow-solid: #f08c00;
 	--tag-green-bg: #b2f2bb;
 	--tag-green-ink: #1b5e2a;
+	--tag-green-fill: #237a36;
 	--tag-green-solid: #2f9e44;
 	--tag-teal-bg: #b2f2e4;
 	--tag-teal-ink: #0a5c4a;
+	--tag-teal-fill: #0b7285;
 	--tag-teal-solid: #0c8599;
 	--tag-blue-bg: #a5d8ff;
 	--tag-blue-ink: #0f4a80;
+	--tag-blue-fill: #1864ab;
 	--tag-blue-solid: #1971c2;
 	--tag-violet-bg: #d0bfff;
 	--tag-violet-ink: #49329a;
+	--tag-violet-fill: #5f3dc4;
 	--tag-violet-solid: #6741d9;
 	--tag-pink-bg: #fcc2d7;
 	--tag-pink-ink: #8a1f4d;
+	--tag-pink-fill: #a61e4d;
 	--tag-pink-solid: #d6336c;
 
 	/* Type. md is the body text size. */
@@ -104,27 +113,35 @@
 
 		--tag-red-bg: #5c1f1f;
 		--tag-red-ink: #ffc9c9;
+		--tag-red-fill: #ff8787;
 		--tag-red-solid: #ff8787;
 		--tag-orange-bg: #5c3414;
 		--tag-orange-ink: #ffd8a8;
+		--tag-orange-fill: #ffa94d;
 		--tag-orange-solid: #ffa94d;
 		--tag-yellow-bg: #574500;
 		--tag-yellow-ink: #ffec99;
+		--tag-yellow-fill: #ffd43b;
 		--tag-yellow-solid: #ffd43b;
 		--tag-green-bg: #1b4a25;
 		--tag-green-ink: #b2f2bb;
+		--tag-green-fill: #69db7c;
 		--tag-green-solid: #69db7c;
 		--tag-teal-bg: #0d4a42;
 		--tag-teal-ink: #b2f2e4;
+		--tag-teal-fill: #3bc9db;
 		--tag-teal-solid: #3bc9db;
 		--tag-blue-bg: #123f66;
 		--tag-blue-ink: #a5d8ff;
+		--tag-blue-fill: #4dabf7;
 		--tag-blue-solid: #4dabf7;
 		--tag-violet-bg: #3b2a7a;
 		--tag-violet-ink: #d0bfff;
+		--tag-violet-fill: #9775fa;
 		--tag-violet-solid: #9775fa;
 		--tag-pink-bg: #5e1c3a;
 		--tag-pink-ink: #fcc2d7;
+		--tag-pink-fill: #f783ac;
 		--tag-pink-solid: #f783ac;
 	}
 }
