@@ -182,10 +182,10 @@ failed preview is only logged, and the next open tries again.
 title: Modules of the catalog
 ---
 flowchart TD
-    list["DrawingList<br>src/client/drawings/catalog/DrawingList.tsx<br>The landing page's cards with their previews"]:::module
-    switcher["QuickSwitcher<br>src/client/drawings/catalog/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
-    switcherState["use-quick-switcher<br>src/client/drawings/catalog/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
-    shortcut["use-switcher-shortcut<br>src/client/drawings/catalog/use-switcher-shortcut.ts<br>Toggles the switcher on Ctrl+K or ⌘K"]:::module
+    list["DrawingList<br>src/client/drawings/catalog/list/DrawingList.tsx<br>The landing page's cards with their previews"]:::module
+    switcher["QuickSwitcher<br>src/client/drawings/catalog/switcher/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
+    switcherState["use-quick-switcher<br>src/client/drawings/catalog/switcher/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
+    shortcut["use-switcher-shortcut<br>src/client/drawings/catalog/switcher/use-switcher-shortcut.ts<br>Toggles the switcher on Ctrl+K or ⌘K"]:::module
     previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
@@ -200,6 +200,11 @@ flowchart TD
     previewImage --> api
     drawings --> api
 ```
+
+`list/` holds the landing page and `switcher/` the quick switcher. Directly in
+`catalog/` stay `PreviewImage` and `icons`, which both use, `use-drawings` for
+`App`, and `NameField` and `DeleteConfirmation`. Only `DrawingList` uses those two
+today, but neither depends on it.
 
 `App` renders `DrawingList` with the list from `use-drawings`. A search field
 next to the heading filters the cards through `search.ts`, and a status says
