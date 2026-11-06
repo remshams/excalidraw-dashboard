@@ -5,8 +5,6 @@
 	   The search text starts where the drawing names start. */
 	--column: 4rem;
 	--search-icon: 1.5rem;
-	/* Between the names' size and the large text: the main line, without shouting. */
-	--search-text: 1.5rem;
 	/* Thicker than the focus ring elsewhere: one line has to do the work of four. */
 	--rule-focused: 3px;
 	/* The room above the dialog and below its tallest size. A fixed top edge keeps the
@@ -99,7 +97,7 @@
 	color: var(--ink);
 	caret-color: var(--selection);
 	font-family: var(--hand);
-	font-size: var(--search-text);
+	font-size: var(--text-lg);
 	line-height: var(--leading-md);
 }
 
@@ -184,8 +182,8 @@
 	font-size: var(--text-sm);
 }
 
-/* The placeholder wouldn't fit a phone at the large size, and a lower dialog would
-   put its rows behind the on-screen keyboard. */
+/* The placeholder needs the narrower column on a phone, and a lower dialog would put
+   its rows behind the on-screen keyboard. */
 @media (max-width: 30rem) {
 	.switcher {
 		max-height: calc(100dvh - 2 * var(--space-lg));
@@ -193,7 +191,6 @@
 		--margin: var(--space-md);
 		--column: 3rem;
 		--search-icon: 1.25rem;
-		--search-text: var(--text-lg);
 	}
 
 	.page {
