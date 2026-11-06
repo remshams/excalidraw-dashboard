@@ -1,21 +1,34 @@
 .switcher {
-	/* The selected row's bar, as wide as a thick pencil line. */
-	--selected-bar: 0.25rem;
+	/* The writing margin: the search line and the rows both start here. */
+	--margin: var(--space-lg);
+	/* The column left of the writing: the sheets, and the search icon above them.
+	   The search text starts where the drawing names start. */
+	--column: 4rem;
+	--search-icon: 1.5rem;
+	/* Between the names' size and the large text: the main line, without shouting. */
+	--search-text: 1.5rem;
+	/* Thicker than the focus ring elsewhere: one line has to do the work of four. */
+	--rule-focused: 3px;
+	/* The selected row, in a wash of the color the search line's rule has. */
+	--band: color-mix(in srgb, var(--selection) 14%, transparent);
+	/* A sheet of paper lying above the editor. */
+	--lift: 0 var(--space-md) var(--space-xl) rgb(0 0 0 / 25%);
 	/* Dims the editor behind the dialog, in both themes. */
 	--backdrop: rgb(0 0 0 / 40%);
 
 	box-sizing: border-box;
-	/* No padding or inner box around the content: a press on the dialog element
-	   itself is always one on its backdrop. */
 	flex-direction: column;
 	width: min(36rem, 100% - 2 * var(--space-md));
 	max-height: calc(100dvh - 2 * var(--space-lg));
 	margin: var(--space-xl) auto auto;
+	/* No padding or border here: .page covers the dialog, so a press on the dialog
+	   element itself is always one on its backdrop. */
 	padding: 0;
 	overflow: hidden;
-	border: var(--stroke-sm) solid var(--rule);
+	border: 0;
 	border-radius: var(--radius-md);
-	background: var(--sheet);
+	background: none;
+	box-shadow: var(--lift);
 	color: var(--ink);
 }
 
@@ -27,49 +40,105 @@
 	background: var(--backdrop);
 }
 
-.search {
+/* A shrinking column, so only the rows scroll and the search line stays. */
+.page {
+	display: flex;
+	flex-direction: column;
+	flex-grow: 1;
+	min-height: 0;
+	padding-top: var(--space-lg);
+	overflow: hidden;
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+/* A line in a notebook: the writing sits on a rule, with no box around it. The
+   padding makes up for the thicker focused rule, so the rows don't move. */
+.line {
+	display: grid;
 	flex-shrink: 0;
+	grid-template-columns: var(--column) minmax(0, 1fr);
+	column-gap: var(--space-md);
+	align-items: center;
+	margin: 0 var(--margin);
+	padding-bottom: calc(
+		var(--space-sm) +
+		var(--rule-focused) -
+		var(--stroke-sm)
+	);
+	border-bottom: var(--stroke-sm) solid var(--rule);
+	color: var(--graphite);
+}
+
+/* The only focus indicator of the search field. Its thickness also shows in a
+   forced-colors mode, which replaces the color. */
+.line:focus-within {
+	padding-bottom: var(--space-sm);
+	border-bottom: var(--rule-focused) solid var(--selection);
+	color: var(--selection);
+}
+
+.line svg {
+	width: var(--search-icon);
+	height: var(--search-icon);
+}
+
+.search {
 	box-sizing: border-box;
 	width: 100%;
-	padding: var(--space-sm) var(--space-md);
+	padding: 0;
 	border: 0;
-	border-bottom: var(--stroke-sm) solid var(--rule);
 	background: none;
-	font-size: var(--text-lg);
+	color: var(--ink);
+	caret-color: var(--selection);
+	font-family: var(--hand);
+	font-size: var(--search-text);
+	line-height: var(--leading-md);
 }
 
-/* Inside the dialog, which clips what lies outside it. */
+.search::placeholder {
+	color: var(--graphite);
+	opacity: 1;
+}
+
+/* The rule under the line shows the focus instead of a ring. */
 .search:focus-visible {
-	outline-offset: -2px;
+	outline: none;
 }
 
+/* The whitespace around the rows lies inside the scroller, so a long list slides
+   under the rule and off the bottom of the page rather than stopping short. */
 .results {
 	min-height: 0;
+	padding: var(--space-lg) 0 var(--space-md);
 	overflow-y: auto;
+	scroll-padding-block: var(--space-md);
+	scrollbar-color: var(--rule) transparent;
+	scrollbar-width: thin;
 }
 
 .option {
 	display: flex;
 	align-items: center;
 	gap: var(--space-md);
-	padding: var(--space-sm) var(--space-md);
+	padding: var(--space-sm) var(--margin);
 	cursor: pointer;
 }
 
-/* Inset, so the bar takes no room from the row. */
+/* Edge to edge, while the writing keeps to the margin. */
 .option[aria-selected="true"] {
-	background: var(--hover);
-	box-shadow: inset var(--selected-bar) 0 0 var(--selection);
+	background: var(--band);
 }
 
-/* A small version of the sheet of paper on a card. */
+/* A small version of the sheet of paper on a card, lying on the page. */
 .sheet {
 	position: relative;
 	box-sizing: border-box;
 	display: grid;
 	flex-shrink: 0;
 	place-items: center;
-	width: 4rem;
+	width: var(--column);
 	aspect-ratio: 4 / 3;
 	overflow: hidden;
 	border: var(--stroke-sm) solid var(--rule);
@@ -106,4 +175,22 @@
 	flex-shrink: 0;
 	color: var(--graphite);
 	font-size: var(--text-sm);
+}
+
+/* The placeholder wouldn't fit a phone at the large size. */
+@media (max-width: 30rem) {
+	.switcher {
+		--margin: var(--space-md);
+		--column: 3rem;
+		--search-icon: 1.25rem;
+		--search-text: var(--text-lg);
+	}
+
+	.page {
+		padding-top: var(--space-md);
+	}
+
+	.results {
+		padding-top: var(--space-md);
+	}
 }

@@ -183,6 +183,19 @@ describe("QuickSwitcher", () => {
 		expect(fireEvent.mouseDown(row)).toBe(false);
 	});
 
+	it("keeps the focus in the search field on a press on a blank area", () => {
+		const { onClose } = setup();
+
+		expect(fireEvent.mouseDown(screen.getByRole("listbox"))).toBe(false);
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it("leaves a press in the search field to the browser, which places the caret", () => {
+		setup();
+
+		expect(fireEvent.mouseDown(search())).toBe(true);
+	});
+
 	it("closes when the browser cancels the dialog", () => {
 		const { onClose } = setup();
 
