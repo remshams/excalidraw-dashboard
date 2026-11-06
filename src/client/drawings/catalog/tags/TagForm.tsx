@@ -2,10 +2,10 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "../../../../shared/types.ts";
 import { TAG_COLORS, type Tag, type TagColor, tagColorVars, useMockTags } from "./mock-tags.ts";
 import { Stamp } from "./Stamp.tsx";
-import styles from "./StampForm.module.css";
+import styles from "./TagForm.module.css";
 
-type StampFormProps = {
-	/** The stamp to change, or none to cut a new one. */
+type TagFormProps = {
+	/** The tag to change, or none to create one. */
 	tag?: Tag;
 	initialLabel?: string;
 	drawings: DrawingSummary[];
@@ -15,14 +15,14 @@ type StampFormProps = {
 
 const capitalized = (word: string) => word[0].toUpperCase() + word.slice(1);
 
-/** Cuts a new stamp or changes one: label, colour and, for an existing one, delete. */
-export function StampForm({
+/** Creates a tag or changes one: label, colour and, for an existing one, delete. */
+export function TagForm({
 	tag,
 	initialLabel = "",
 	drawings,
 	onDone,
 	onCancel,
-}: StampFormProps) {
+}: TagFormProps) {
 	const { createTag, updateTag, deleteTag, drawingCount } = useMockTags();
 	const [label, setLabel] = useState(tag?.label ?? initialLabel);
 	const [color, setColor] = useState<TagColor>(tag?.color ?? "blue");
@@ -54,25 +54,25 @@ export function StampForm({
 		const count = drawingCount(drawings, tag.id);
 		return (
 			<div className={styles.form}>
-				<h2>Delete this stamp?</h2>
+				<h2>Delete this tag?</h2>
 				<p className={styles.preview}>
 					<Stamp label={tag.label} color={tag.color} seed={tag.id} size="large" />
 				</p>
 				<p className={styles.note}>
 					{count === 0
 						? "No drawing has it."
-						: `It comes off ${count} ${count === 1 ? "drawing" : "drawings"}. The drawings stay.`}
+						: `It is removed from ${count} ${count === 1 ? "drawing" : "drawings"}. The drawings stay.`}
 				</p>
 				<div className={styles.buttons}>
 					<button
 						type="button"
 						className={styles.danger}
 						onClick={() => {
-							deleteTag(tag.id, drawings);
+							deleteTag(tag.id);
 							onDone(null);
 						}}
 					>
-						Delete stamp
+						Delete tag
 					</button>
 					<button
 						ref={keep}
@@ -89,7 +89,7 @@ export function StampForm({
 
 	return (
 		<form className={styles.form} onSubmit={submit} noValidate>
-			<h2>{tag ? "Change stamp" : "New stamp"}</h2>
+			<h2>{tag ? "Change tag" : "New tag"}</h2>
 			<p className={styles.preview} aria-hidden="true">
 				<Stamp label={label.trim() || "Label"} color={color} seed={tag?.id ?? "new"} size="large" />
 			</p>
@@ -99,7 +99,7 @@ export function StampForm({
 					ref={input}
 					value={label}
 					aria-invalid={error !== null}
-					aria-describedby={error ? "stamp-error" : undefined}
+					aria-describedby={error ? "tag-error" : undefined}
 					onChange={(event) => {
 						setLabel(event.target.value);
 						setError(null);
@@ -107,12 +107,12 @@ export function StampForm({
 				/>
 			</label>
 			{error ? (
-				<p id="stamp-error" role="alert" className={styles.error}>
+				<p id="tag-error" role="alert" className={styles.error}>
 					{error}
 				</p>
 			) : null}
 			<fieldset className={styles.colors}>
-				<legend>Ink</legend>
+				<legend>Colour</legend>
 				{TAG_COLORS.map((option) => (
 					<label
 						key={option}
@@ -122,7 +122,7 @@ export function StampForm({
 					>
 						<input
 							type="radio"
-							name="stamp-color"
+							name="tag-color"
 							checked={color === option}
 							aria-label={capitalized(option)}
 							onChange={() => setColor(option)}
@@ -132,7 +132,7 @@ export function StampForm({
 			</fieldset>
 			<div className={styles.buttons}>
 				<button type="submit" className={styles.primary}>
-					{tag ? "Save stamp" : "Create stamp"}
+					{tag ? "Save tag" : "Create tag"}
 				</button>
 				<button type="button" className={styles.quiet} onClick={onCancel}>
 					Cancel

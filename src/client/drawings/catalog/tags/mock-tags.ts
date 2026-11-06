@@ -114,14 +114,25 @@ const subscribe = (listener: () => void) => {
 	};
 };
 
-const seededTagIds = (name: string) =>
-	(SEED_ASSIGNMENTS[name] ?? []).flatMap((label) => {
-		const tag = state.tags.find((candidate) => candidate.label === label);
-		return tag ? [tag.id] : [];
-	});
+/** Seed tags keep their IDs, so renaming a tag or a drawing leaves them in place. */
+const seedIdByLabel = new Map(state.tags.map((tag) => [tag.label, tag.id]));
+const seededByDrawing = new Map<string, string[]>();
+const claimedNames = new Set<string>();
+
+/** Only the first drawing with a seeded name gets the seed; a new namesake starts empty. */
+const seededTagIds = ({ id, name }: DrawingSummary) => {
+	let ids = seededByDrawing.get(id);
+	if (!ids) {
+		const labels = claimedNames.has(name) ? [] : (SEED_ASSIGNMENTS[name] ?? []);
+		claimedNames.add(name);
+		ids = labels.flatMap((label) => seedIdByLabel.get(label) ?? []);
+		seededByDrawing.set(id, ids);
+	}
+	return ids;
+};
 
 const tagIdsOf = (drawing: DrawingSummary) =>
-	state.assignments[drawing.id] ?? seededTagIds(drawing.name);
+	state.assignments[drawing.id] ?? seededTagIds(drawing);
 
 /** The error to show for a label, or null if it is valid. */
 function labelError(label: string, ignoredId?: string): string | null {
@@ -136,6 +147,21 @@ function labelError(label: string, ignoredId?: string): string | null {
 			tag.label.toLocaleLowerCase() === trimmed.toLocaleLowerCase(),
 	);
 	return taken ? `A tag named “${trimmed}” already exists.` : null;
+}
+
+/**
+ * The tags whose label contains the text, best match first, so that "work" with
+ * Enter picks Work rather than Network.
+ */
+export function findTags(tags: Tag[], text: string) {
+	const needle = text.trim().toLocaleLowerCase();
+	const rank = (tag: Tag) => {
+		const label = tag.label.toLocaleLowerCase();
+		return label === needle ? 0 : label.startsWith(needle) ? 1 : 2;
+	};
+	return tags
+		.filter((tag) => tag.label.toLocaleLowerCase().includes(needle))
+		.sort((a, b) => rank(a) - rank(b));
 }
 
 /** Sorted by label, the order every tag list should show. */
@@ -179,15 +205,9 @@ const actions = {
 	},
 
 	/** Deletes the tag and removes it from every drawing and from the filter. */
-	deleteTag: (id: string, drawings: DrawingSummary[]) => {
-		const assignments: Record<string, string[]> = {};
-		// Freeze the seed first: it looks tags up by label, and the tag goes away.
-		for (const drawing of drawings) {
-			assignments[drawing.id] = tagIdsOf(drawing).filter((t) => t !== id);
-		}
+	deleteTag: (id: string) => {
 		setState({
 			tags: state.tags.filter((tag) => tag.id !== id),
-			assignments,
 			selectedTagIds: state.selectedTagIds.filter((t) => t !== id),
 		});
 	},

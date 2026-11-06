@@ -1,0 +1,319 @@
+/* The pad: a sheet docked at the side, in front of the desk. */
+.pad {
+	position: fixed;
+	top: var(--space-md);
+	right: max(clamp(var(--space-md), 4vw, var(--space-xl)), calc((100vw - 80rem) / 2));
+	z-index: 10;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+	width: var(--pad-width);
+	max-height: calc(100dvh - 2 * var(--space-md));
+	padding: var(--space-md);
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-sm);
+	background: var(--sheet);
+	box-shadow:
+		0 1px 2px rgb(33 37 41 / 12%),
+		0 12px 28px rgb(33 37 41 / 14%);
+}
+
+.pad:focus {
+	outline: none;
+}
+
+.head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-sm);
+}
+
+.head h2 {
+	margin: 0;
+	font-family: var(--hand);
+	font-size: var(--text-lg);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-sm);
+}
+
+.done {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: var(--space-xs);
+	padding: 0 var(--space-sm);
+	border: var(--stroke-sm) solid var(--ink);
+	border-radius: var(--radius-md);
+	background: var(--ink);
+	color: var(--sheet);
+	cursor: pointer;
+}
+
+.done kbd {
+	font-family: inherit;
+	font-size: var(--text-sm);
+	opacity: 0.75;
+}
+
+/* The tag in use, as large as it lands on a card. */
+.inHand {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--space-sm);
+	min-height: 5.5rem;
+	padding-block: var(--space-xs);
+}
+
+.inHand p {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	font-size: var(--text-sm);
+	color: var(--graphite);
+}
+
+.tally {
+	font-weight: var(--weight-bold);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.change {
+	display: none;
+}
+
+/* Same dashes as the blank sheet: something is waiting to be filled in. */
+.prompt {
+	display: grid;
+	place-items: center;
+	box-sizing: border-box;
+	min-height: 5.5rem;
+	margin: 0;
+	padding: var(--space-sm);
+	border: var(--stroke-md) dashed var(--graphite);
+	border-radius: var(--radius-sm);
+	color: var(--graphite);
+	text-align: center;
+}
+
+.nudged {
+	border-color: var(--selection);
+	color: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.nudged {
+		animation: nudge 300ms ease-in-out;
+	}
+}
+
+@keyframes nudge {
+	25% {
+		transform: translateX(-4px);
+	}
+
+	75% {
+		transform: translateX(4px);
+	}
+}
+
+.choose,
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+	min-height: 0;
+}
+
+.form {
+	margin: 0 calc(-1 * var(--space-md)) calc(-1 * var(--space-md));
+	overflow-y: auto;
+	border-top: var(--stroke-sm) solid var(--rule);
+}
+
+.find {
+	box-sizing: border-box;
+	flex: none;
+	width: 100%;
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+/* Two columns, so all 24 tags show at once on a laptop. Padding leaves room for
+   the focus ring and the tilt, which the scrolling would otherwise clip. */
+.wells {
+	display: grid;
+	flex: 0 1 auto;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-xs) var(--space-sm);
+	min-height: 0;
+	padding: var(--space-xs);
+	overflow-y: auto;
+}
+
+.well {
+	position: relative;
+	display: flex;
+	min-width: 0;
+	padding-block: 2px;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+}
+
+.well input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.well:hover {
+	background: var(--hover);
+}
+
+.well:has(input:focus-visible) {
+	outline: var(--stroke-md) solid var(--selection);
+	outline-offset: 1px;
+}
+
+/* The match Enter would pick. */
+.next {
+	box-shadow: 0 0 0 var(--stroke-sm) var(--selection);
+}
+
+/* The picked tag keeps a tick, so the choice doesn't rest on colour alone. */
+.tick {
+	position: absolute;
+	top: 50%;
+	right: var(--space-xs);
+	display: grid;
+	color: var(--ink);
+	translate: 0 -50%;
+	pointer-events: none;
+}
+
+.none {
+	margin: 0;
+	color: var(--graphite);
+}
+
+.foot {
+	display: flex;
+	flex: none;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--space-xs);
+	padding-top: var(--space-xs);
+	border-top: var(--stroke-sm) solid var(--rule);
+}
+
+.create {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	padding: var(--space-xs);
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	cursor: pointer;
+}
+
+.create:hover {
+	background: var(--hover);
+}
+
+.create svg {
+	width: 16px;
+	height: 16px;
+}
+
+.keys {
+	margin: 0;
+	font-size: var(--text-sm);
+	color: var(--graphite);
+}
+
+/* No keyboard here, so no keyboard hints. */
+@media (pointer: coarse) {
+	.keys,
+	.done kbd {
+		display: none;
+	}
+}
+
+/* A bottom sheet: the cards stay reachable above it and scroll free of it. */
+@media (max-width: 48rem) {
+	.pad {
+		top: auto;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		width: auto;
+		max-height: 50dvh;
+		padding: var(--space-sm) var(--space-md);
+		border-width: var(--stroke-sm) 0 0;
+		border-radius: var(--radius-md) var(--radius-md) 0 0;
+		box-shadow: 0 -8px 24px rgb(33 37 41 / 18%);
+	}
+
+	.head h2 {
+		font-size: var(--text-md);
+	}
+
+	.done kbd,
+	.keys {
+		display: none;
+	}
+
+	.inHand {
+		flex-direction: row;
+		align-items: center;
+		min-height: 0;
+		padding: 0;
+	}
+
+	.inHand p {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.instruction {
+		display: none;
+	}
+
+	.prompt {
+		min-height: 0;
+	}
+
+	.wells {
+		grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+	}
+
+	.change {
+		display: none;
+		flex: none;
+		padding: 0 var(--space-sm);
+		border: var(--stroke-sm) solid var(--graphite);
+		border-radius: var(--radius-md);
+		background: none;
+		cursor: pointer;
+	}
+
+	/* Folded after a pick: one line with the tag, and all the room for the cards. */
+	.folded .change {
+		display: block;
+	}
+
+	.folded .choose,
+	.folded .form {
+		display: none;
+	}
+}

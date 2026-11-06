@@ -1,17 +1,19 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "../../../../shared/types.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { searchByName } from "../../search.ts";
 import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
-import { PencilIcon, PlusIcon, StampIcon, TrashIcon } from "../icons.tsx";
+import { PencilIcon, PlusIcon, StampIcon, TagIcon, TrashIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
+import { ActiveFilter } from "../tags/ActiveFilter.tsx";
+import { DrawingTagsDialog } from "../tags/DrawingTagsDialog.tsx";
+import { moveInGrid } from "../tags/grid-keys.ts";
 import { type Tag, useMockTags } from "../tags/mock-tags.ts";
 import { InkFilter, SheetStamps, Stamp } from "../tags/Stamp.tsx";
-import { StampBanner } from "../tags/StampBanner.tsx";
-import { StampEditor } from "../tags/StampEditor.tsx";
-import { ActiveStamps, StampFilter } from "../tags/StampFilter.tsx";
-import { useStampHand } from "../tags/use-stamp-hand.ts";
+import { StampPad } from "../tags/StampPad.tsx";
+import { TagTray } from "../tags/TagTray.tsx";
+import { useStampPad } from "../tags/use-stamp-pad.ts";
 import styles from "./DrawingList.module.css";
 
 type DrawingListProps = {
@@ -45,39 +47,56 @@ export function DrawingList({
 	const { query, setQuery, selectedTagIds, tags } = store;
 	const [task, setTask] = useState<OpenTask>(null);
 	const [editingId, setEditingId] = useState<string | null>(null);
-	const stampsButton = useRef<HTMLButtonElement>(null);
-	const search = useRef<HTMLInputElement>(null);
+	const tagsButton = useRef<HTMLButtonElement>(null);
+	const padButton = useRef<HTMLButtonElement>(null);
+	const padFind = useRef<HTMLInputElement>(null);
 	const listRef = useRef<HTMLUListElement>(null);
-	const hand = useStampHand(() => stampsButton.current?.focus());
+	const pad = useStampPad(() => padButton.current?.focus());
 	const close = () => setTask(null);
 
 	// A question on a card the filter hides would come back with it.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs when the filter changes.
 	useEffect(() => setTask(null), [selectedTagIds]);
 
-	// With a stamp in hand, keyboard users start at the first card.
-	const heldId = hand.held?.id;
-	useEffect(() => {
-		if (heldId) listRef.current?.querySelector<HTMLElement>("[data-stampable]")?.focus();
-	}, [heldId]);
-
 	const filtered = store.filterBySelectedTags(drawings);
-	const inView = hand.held
+	const inView = pad.open
 		? drawings.filter(
-				(drawing) => filtered.includes(drawing) || hand.touched.has(drawing.id),
+				(drawing) => filtered.includes(drawing) || pad.touched.has(drawing.id),
 			)
 		: filtered;
 	const shown = searchByName(inView, query);
 	const searched = query.trim();
 	const selected = tags.filter((tag) => selectedTagIds.includes(tag.id));
 	const editing = drawings.find((drawing) => drawing.id === editingId);
+	const lingering = selected.length
+		? shown.filter((drawing) => !filtered.includes(drawing)).length
+		: 0;
+	const narrowed = selected.length > 0 || searched !== "";
+
+	const goToCards = () => {
+		const cards = listRef.current;
+		const last = pad.fresh
+			? cards?.querySelector<HTMLElement>(`[data-stampable="${pad.fresh}"]`)
+			: null;
+		(last ?? cards?.querySelector<HTMLElement>("[data-stampable]"))?.focus();
+	};
+
+	// With the pad open: arrows move between cards, typing goes to the pad's find field.
+	const onCardsKey = (event: KeyboardEvent) => {
+		if (!pad.open) return;
+		if (moveInGrid(event, listRef.current, "[data-stampable]")) return;
+		const typed = event.key.length === 1 && event.key !== " ";
+		if (typed && !event.altKey && !event.ctrlKey && !event.metaKey) {
+			padFind.current?.focus();
+		}
+	};
 
 	return (
 		<div
-			className={styles.list}
+			className={`${styles.list} ${pad.open ? styles.docked : ""}`}
 			style={
-				hand.cursor
-					? ({ "--stamp-cursor": hand.cursor } as CSSProperties)
+				pad.cursor
+					? ({ "--stamp-cursor": pad.cursor } as CSSProperties)
 					: undefined
 			}
 		>
@@ -86,7 +105,6 @@ export function DrawingList({
 				<h1>Drawings</h1>
 				<div className={styles.tools}>
 					<input
-						ref={search}
 						type="search"
 						className={styles.search}
 						aria-label="Search drawings"
@@ -98,28 +116,47 @@ export function DrawingList({
 							close();
 						}}
 					/>
-					<StampFilter
-						drawings={drawings}
-						buttonRef={stampsButton}
-						onPickUp={(tag) => {
+					<TagTray drawings={drawings} buttonRef={tagsButton} />
+					<button
+						ref={padButton}
+						type="button"
+						className={styles.padButton}
+						aria-expanded={pad.open}
+						aria-controls={pad.open ? "stamp-pad" : undefined}
+						onClick={() => {
 							close();
-							hand.pickUp(tag);
+							if (pad.open) pad.close();
+							else pad.start();
 						}}
-					/>
+					>
+						<StampIcon />
+						Stamp drawings
+					</button>
 				</div>
 			</header>
-			<ActiveStamps buttonRef={stampsButton} />
-			{hand.held ? (
-				<StampBanner
-					tag={hand.held}
-					count={store.drawingCount(drawings, hand.held.id)}
-					onPutDown={hand.putDown}
+			{pad.open ? (
+				<StampPad
+					drawings={drawings}
+					picked={pad.picked}
+					nudges={pad.nudges}
+					findRef={padFind}
+					onPick={pad.pick}
+					onGoToCards={goToCards}
+					onClose={pad.close}
 				/>
 			) : null}
-			<ul ref={listRef} aria-label="Drawings">
+			<ActiveFilter
+				buttonRef={tagsButton}
+				searched={searched}
+				shown={shown.length}
+				total={drawings.length}
+				lingering={lingering}
+			/>
+			{/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: arrow keys and type-to-find while stamping; the cards are the controls. */}
+			<ul ref={listRef} className={styles.cards} aria-label="Drawings" onKeyDown={onCardsKey}>
 				<NewDrawingCard
 					creating={task?.kind === "create"}
-					inert={hand.held !== null}
+					inert={pad.open}
 					onStart={() => setTask({ kind: "create" })}
 					onCreate={(name) => {
 						close();
@@ -128,13 +165,16 @@ export function DrawingList({
 					onCancel={close}
 				/>
 				{shown.map((drawing) =>
-					hand.held ? (
+					pad.open ? (
 						<StampableCard
 							key={drawing.id}
 							drawing={drawing}
-							held={hand.held}
-							fresh={hand.fresh === drawing.id}
-							onStamp={() => hand.stamp(drawing)}
+							picked={pad.picked}
+							fresh={pad.fresh === drawing.id}
+							onStamp={() => {
+								if (pad.picked) pad.stamp(drawing);
+								else pad.nudge();
+							}}
 						/>
 					) : (
 						<DrawingCard
@@ -147,7 +187,7 @@ export function DrawingList({
 							}
 							onOpen={onOpen}
 							onStart={(kind) => setTask({ kind, id: drawing.id })}
-							onEditStamps={() => setEditingId(drawing.id)}
+							onEditTags={() => setEditingId(drawing.id)}
 							onRename={(name) => {
 								close();
 								onRename(drawing.id, name);
@@ -166,18 +206,33 @@ export function DrawingList({
 			<p role="status" className={styles.status}>
 				{shown.length === 0 ? noMatchMessage(searched, selected) : null}
 			</p>
+			{shown.length === 0 && narrowed ? (
+				<button
+					type="button"
+					className={styles.showAll}
+					onClick={() => {
+						setQuery("");
+						store.clearSelected();
+					}}
+				>
+					Show all drawings
+				</button>
+			) : null}
 			<p role="status" className={styles.sr}>
-				{hand.message}
+				{pad.message ||
+					(narrowed && shown.length > 0
+						? `${shown.length} of ${drawings.length} drawings shown.`
+						: "")}
 			</p>
 			{editing ? (
-				<StampEditor
+				<DrawingTagsDialog
 					drawing={editing}
 					drawings={drawings}
 					onClose={() => {
 						setEditingId(null);
-						// The card may have left the filter with the stamp it lost.
+						// The card may have left the filter with the tag it lost.
 						if (document.activeElement === document.body) {
-							stampsButton.current?.focus();
+							tagsButton.current?.focus();
 						}
 					}}
 				/>
@@ -186,24 +241,32 @@ export function DrawingList({
 	);
 }
 
-/** Says why no drawing shows, or nothing if nothing narrows the list. */
+const orList = (tags: Tag[]) => {
+	const labels = tags.map((tag) => tag.label);
+	if (labels.length === 1) return `the ${labels[0]} tag`;
+	return `${labels.slice(0, -1).join(", ")} or ${labels[labels.length - 1]}`;
+};
+
+/** Says why no drawing shows: what the search and the filter asked for together. */
 function noMatchMessage(searched: string, selected: Tag[]) {
-	const stamps =
-		selected.length === 1
-			? `the ${selected[0].label} stamp`
-			: "any of the selected stamps";
 	if (searched && selected.length > 0) {
-		return `No drawing named “${searched}” has ${stamps}.`;
+		return `No drawing with ${orList(selected)} has “${searched}” in its name.`;
 	}
-	if (searched) return `No drawing is named “${searched}”.`;
-	if (selected.length > 0) return `No drawing has ${stamps}.`;
+	if (searched) return `No drawing has “${searched}” in its name.`;
+	if (selected.length > 0) return `No drawing has ${orList(selected)}.`;
 	return null;
 }
+
+/** The tags of a card with the ones the filter selected first, so a match never hides behind "+N". */
+const selectedFirst = (tags: Tag[], selected: readonly string[]) => [
+	...tags.filter((tag) => selected.includes(tag.id)),
+	...tags.filter((tag) => !selected.includes(tag.id)),
+];
 
 type NewDrawingCardProps = {
 	/** Whether the card asks for the new drawing's name. */
 	creating: boolean;
-	/** With a stamp in hand the blank sheet takes no clicks. */
+	/** While the stamp pad is open the blank sheet takes no clicks. */
 	inert: boolean;
 	onStart: () => void;
 	onCreate: (name: string) => void;
@@ -251,7 +314,7 @@ type DrawingCardProps = {
 	task: CardTask | null;
 	onOpen: (id: string | null) => void;
 	onStart: (task: CardTask) => void;
-	onEditStamps: () => void;
+	onEditTags: () => void;
 	onRename: (name: string) => void;
 	onDelete: () => void;
 	onCancel: () => void;
@@ -262,13 +325,14 @@ function DrawingCard({
 	task,
 	onOpen,
 	onStart,
-	onEditStamps,
+	onEditTags,
 	onRename,
 	onDelete,
 	onCancel,
 }: DrawingCardProps) {
 	const { id, name } = drawing;
-	const tags = useMockTags().tagsOf(drawing);
+	const { tagsOf, selectedTagIds } = useMockTags();
+	const tags = selectedFirst(tagsOf(drawing), selectedTagIds);
 
 	if (task === "rename" || task === "delete") {
 		return (
@@ -295,11 +359,11 @@ function DrawingCard({
 	return (
 		<li>
 			<DrawingLink drawingId={id} onOpen={onOpen} className={styles.open}>
-				<Sheet drawing={drawing} tags={tags} onShowAll={onEditStamps} />
+				<Sheet drawing={drawing} tags={tags} onShowAll={onEditTags} />
 				<span className={styles.name}>{name}</span>
 				{tags.length > 0 ? (
 					<span className={styles.sr}>
-						{`, stamps: ${tags.map((tag) => tag.label).join(", ")}`}
+						{`, tags: ${tags.map((tag) => tag.label).join(", ")}`}
 					</span>
 				) : null}
 			</DrawingLink>
@@ -307,11 +371,11 @@ function DrawingCard({
 				<button
 					type="button"
 					className={styles.icon}
-					aria-label={`Change stamps on ${name}`}
-					title="Change stamps"
-					onClick={onEditStamps}
+					aria-label={`Change tags of ${name}`}
+					title="Change tags"
+					onClick={onEditTags}
 				>
-					<StampIcon />
+					<TagIcon />
 				</button>
 				<button
 					type="button"
@@ -336,48 +400,56 @@ function DrawingCard({
 
 type StampableCardProps = {
 	drawing: DrawingSummary;
-	held: Tag;
+	picked: Tag | null;
 	/** This card was the last one clicked, so it plays the stamp's landing. */
 	fresh: boolean;
 	onStamp: () => void;
 };
 
-/** A card while a stamp is in hand: a click stamps it or lifts the stamp. */
-function StampableCard({ drawing, held, fresh, onStamp }: StampableCardProps) {
-	const tags = useMockTags().tagsOf(drawing);
-	const stamped = tags.some((tag) => tag.id === held.id);
+/** A card while the pad is open: a click stamps the picked tag or lifts it. */
+function StampableCard({ drawing, picked, fresh, onStamp }: StampableCardProps) {
+	const { tagsOf, selectedTagIds } = useMockTags();
+	const all = selectedFirst(tagsOf(drawing), selectedTagIds);
+	const stamped = picked !== null && all.some((tag) => tag.id === picked.id);
+	// The picked tag shows as the large imprint, so the foot of the sheet skips it.
+	const rest = all.filter((tag) => tag.id !== picked?.id);
 	const landing = fresh ? styles.landed : "";
-	const mark = (
+	const mark = picked ? (
 		<Stamp
-			label={held.label}
-			color={held.color}
-			seed={drawing.id + held.id}
+			label={picked.label}
+			color={picked.color}
+			seed={drawing.id + picked.id}
 			size="large"
 		/>
-	);
+	) : null;
 
 	return (
 		<li>
 			<button
 				type="button"
-				data-stampable
+				data-stampable={drawing.id}
 				className={`${styles.open} ${styles.stampable}`}
-				aria-pressed={stamped}
-				aria-label={`${drawing.name}: ${held.label} stamp`}
+				aria-pressed={picked ? stamped : undefined}
+				aria-disabled={picked ? undefined : true}
+				aria-label={
+					picked
+						? `Stamp ${drawing.name} with ${picked.label}`
+						: `${drawing.name}: pick a tag on the stamp pad first`
+				}
 				onClick={onStamp}
 			>
 				<span className={`${styles.sheetFrame} ${stamped ? landing : ""}`}>
-					<Sheet drawing={drawing} tags={tags}>
+					<Sheet drawing={drawing} tags={rest}>
 						{/* Under the pointer an unstamped card previews the stamp; a card just
 						    lifted plays the lift first, and keyed so it plays once. */}
-						{stamped ? null : (
+						{mark && !stamped ? (
 							<span className={`${styles.imprint} ${styles.ghost}`}>{mark}</span>
-						)}
-						{stamped ? (
+						) : null}
+						{mark && stamped ? (
 							<span key="on" className={`${styles.imprint} ${landing}`}>
 								{mark}
 							</span>
-						) : fresh ? (
+						) : mark && fresh ? (
 							<span key="off" className={`${styles.imprint} ${styles.lifted}`}>
 								{mark}
 							</span>
@@ -398,15 +470,21 @@ type SheetProps = {
 };
 
 /**
- * The drawing's preview on a sheet of paper, with its stamps along the foot. A
+ * The drawing's preview on a sheet of paper, with its tags along the foot. A
  * sheet without a preview stays blank above them.
  */
 function Sheet({ drawing, tags, onShowAll, children }: SheetProps) {
+	const { selectedTagIds } = useMockTags();
 	return (
 		<span className={styles.sheet}>
 			<PreviewImage drawing={drawing} />
 			{children}
-			<SheetStamps tags={tags} seed={drawing.id} onShowAll={onShowAll} />
+			<SheetStamps
+				tags={tags}
+				seed={drawing.id}
+				matched={selectedTagIds}
+				onShowAll={onShowAll}
+			/>
 		</span>
 	);
 }

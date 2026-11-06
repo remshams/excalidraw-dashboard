@@ -31,6 +31,24 @@
 	filter: url("#stamp-ink");
 }
 
+/* Solid ink: darker, fuller, and readable in both colour schemes. */
+.inked {
+	color: var(--stamp-ink);
+}
+
+.inked::before {
+	background: var(--stamp-bg);
+}
+
+/* Fills a cell in a grid of tags. */
+.block {
+	display: flex;
+	width: 100%;
+	padding-block: 2px;
+	/* A rack of stamps stays nearly straight, so the columns read as columns. */
+	rotate: calc(var(--tilt) * 0.25);
+}
+
 .text {
 	position: relative;
 	min-width: 0;

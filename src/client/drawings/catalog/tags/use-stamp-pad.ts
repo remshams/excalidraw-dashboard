@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "../../../../shared/types.ts";
 import { type Tag, type TagColor, useMockTags } from "./mock-tags.ts";
 
-/** A rubber stamp as a pointer, in the ink of the stamp in hand. */
+/** A rubber stamp as a pointer, in the colour of the picked tag. */
 function stampCursor(color: TagColor) {
 	const ink = getComputedStyle(document.documentElement)
 		.getPropertyValue(`--tag-${color}-solid`)
@@ -12,62 +12,76 @@ function stampCursor(color: TagColor) {
 }
 
 /**
- * The stamp in hand: while one is held, a click on a card stamps the drawing or
- * lifts the stamp. Cards touched in this pass stay in view, even if lifting the
- * stamp takes them out of the filter.
+ * The stamping session: while the pad is open a click on a card stamps the picked
+ * tag on the drawing or lifts it. Cards changed in this session stay in view, even
+ * if lifting the tag takes them out of the filter. The pad remembers the last tag.
  */
-export function useStampHand(onPutDown: () => void) {
+export function useStampPad(onClose: () => void) {
 	const { tags, tagsOf, toggleDrawingTag } = useMockTags();
-	const [heldId, setHeldId] = useState<string | null>(null);
+	const [open, setOpen] = useState(false);
+	const [pickedId, setPickedId] = useState<string | null>(null);
 	const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
 	const [fresh, setFresh] = useState<string | null>(null);
 	const [message, setMessage] = useState("");
-	const held = tags.find((tag) => tag.id === heldId) ?? null;
+	const [nudges, setNudges] = useState(0);
+	const lastPicked = useRef<string | null>(null);
+	const picked = open ? (tags.find((tag) => tag.id === pickedId) ?? null) : null;
 
-	const putDown = useCallback(() => {
-		setHeldId(null);
+	const close = useCallback(() => {
+		setOpen(false);
 		setTouched(new Set());
 		setFresh(null);
-		setMessage("Stamp put down.");
-		onPutDown();
-	}, [onPutDown]);
+		setMessage("Stamp pad closed.");
+		onClose();
+	}, [onClose]);
 
 	useEffect(() => {
-		if (!heldId) return;
+		if (!open) return;
 		const escape = (event: KeyboardEvent) => {
 			if (event.key !== "Escape") return;
 			const target = event.target as HTMLInputElement;
 			// Escape first clears a search field that has text.
 			if (target.type === "search" && target.value) return;
-			putDown();
+			close();
 		};
 		document.addEventListener("keydown", escape);
 		return () => document.removeEventListener("keydown", escape);
-	}, [heldId, putDown]);
+	}, [open, close]);
 
 	return {
-		held,
+		open,
+		picked,
 		touched,
 		fresh,
 		message,
-		cursor: held ? stampCursor(held.color) : undefined,
-		pickUp: (tag: Tag) => {
-			setHeldId(tag.id);
-			setTouched(new Set());
-			setFresh(null);
-			setMessage(`Holding the ${tag.label} stamp.`);
+		nudges,
+		cursor: picked ? stampCursor(picked.color) : undefined,
+		start: () => {
+			setOpen(true);
+			setPickedId(lastPicked.current);
+			setMessage("Stamp pad open.");
 		},
-		putDown,
+		close,
+		pick: (tag: Tag) => {
+			lastPicked.current = tag.id;
+			setPickedId(tag.id);
+			setFresh(null);
+			setMessage(`Picked ${tag.label}.`);
+		},
+		nudge: () => {
+			setNudges((count) => count + 1);
+			setMessage("Pick a tag on the stamp pad first.");
+		},
 		stamp: (drawing: DrawingSummary) => {
-			if (!held) return;
-			const had = tagsOf(drawing).some((tag) => tag.id === held.id);
-			toggleDrawingTag(drawing, held.id);
+			if (!picked) return;
+			const had = tagsOf(drawing).some((tag) => tag.id === picked.id);
+			toggleDrawingTag(drawing, picked.id);
 			setTouched((ids) => new Set(ids).add(drawing.id));
 			setFresh(drawing.id);
 			setMessage(
 				had
-					? `Lifted ${held.label} off ${drawing.name}.`
-					: `Stamped ${drawing.name} with ${held.label}.`,
+					? `Lifted ${picked.label} off ${drawing.name}.`
+					: `Stamped ${drawing.name} with ${picked.label}.`,
 			);
 		},
 	};

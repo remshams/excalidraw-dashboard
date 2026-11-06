@@ -1,6 +1,21 @@
 .list {
+	--pad-width: 19rem;
+	box-sizing: border-box;
 	max-width: 80rem;
 	margin: 0 auto;
+}
+
+/* The stamp pad is docked at the side and the cards keep the rest of the page. */
+.docked {
+	padding-right: calc(var(--pad-width) + var(--space-lg));
+}
+
+@media (max-width: 48rem) {
+	/* The pad is a bottom sheet here; the last cards can scroll out from under it. */
+	.docked {
+		padding-right: 0;
+		padding-bottom: 55dvh;
+	}
 }
 
 /* The heading with the search field at the end of its line. */
@@ -27,6 +42,30 @@
 	min-width: 0;
 }
 
+/* The second job next to the search: looks like the Tags button, says what it does. */
+.padButton {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: var(--space-xs);
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+	font-family: var(--hand);
+	cursor: pointer;
+}
+
+.padButton:hover {
+	background: var(--hover);
+}
+
+.padButton[aria-expanded="true"] {
+	border-color: var(--ink);
+	background: var(--ink);
+	color: var(--sheet);
+}
+
 .sr {
 	position: absolute;
 	width: 1px;
@@ -51,12 +90,26 @@
 	color: var(--graphite);
 }
 
+.showAll {
+	align-self: flex-start;
+	margin-top: var(--space-sm);
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+	cursor: pointer;
+}
+
+.showAll:hover {
+	background: var(--hover);
+}
+
 /* The status takes no space while it has no message. */
 .status:not(:empty) {
 	margin-top: var(--space-lg);
 }
 
-.list ul {
+.cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
 	gap: var(--space-lg);
@@ -65,7 +118,7 @@
 	list-style: none;
 }
 
-.list li {
+.cards > li {
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -191,8 +244,8 @@
 	opacity: 0;
 }
 
-.list li:hover .actions,
-.list li:focus-within .actions {
+.cards > li:hover .actions,
+.cards > li:focus-within .actions {
 	opacity: 1;
 }
 
@@ -211,13 +264,13 @@
 	}
 }
 
-/* The blank sheet rests while a stamp is in hand. */
+/* The blank sheet rests while the stamp pad is open. */
 .resting {
 	opacity: 0.4;
 }
 
-/* With a stamp in hand: the pointer is the stamp, and the drawings without it
-   fade back so the stamped ones stand out. */
+/* With a tag picked on the pad: the pointer is the stamp, and the drawings
+   without the tag fade back so the stamped ones stand out. */
 .stampable {
 	width: 100%;
 	cursor: var(--stamp-cursor, pointer), pointer;
@@ -225,6 +278,11 @@
 
 .sheetFrame {
 	display: block;
+}
+
+/* No tag picked yet: a click points at the pad instead of opening the drawing. */
+.stampable[aria-disabled="true"] {
+	cursor: default;
 }
 
 .stampable[aria-pressed="false"] .sheet img {
@@ -334,6 +392,7 @@
 
 	.tools {
 		position: relative;
+		flex-wrap: wrap;
 	}
 
 	.imprint > span {
@@ -341,12 +400,12 @@
 	}
 
 	.search {
-		flex: 1;
+		flex: 1 0 100%;
 		width: auto;
 		min-width: 0;
 	}
 
-	.list ul {
+	.cards {
 		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
 		gap: var(--space-md);
 	}

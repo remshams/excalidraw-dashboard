@@ -17,8 +17,9 @@ const tiltOf = (seed: string, reach = 3) => {
 };
 
 const inkVars = (color: TagColor, seed: string, reach?: number) => {
-	const { ink, solid } = tagColorVars(color);
+	const { bg, ink, solid } = tagColorVars(color);
 	return {
+		"--stamp-bg": bg,
 		"--stamp-ink": ink,
 		"--stamp-edge": solid,
 		"--tilt": tiltOf(seed, reach),
@@ -56,6 +57,10 @@ type StampProps = {
 	/** Keeps the angle stable for this stamp on this sheet. */
 	seed: string;
 	size?: "small" | "large";
+	/** Solid ink: the tag that is picked or that made the drawing match. */
+	inked?: boolean;
+	/** Fills its cell, for a grid of tags. */
+	block?: boolean;
 	className?: string;
 };
 
@@ -64,11 +69,13 @@ export function Stamp({
 	color,
 	seed,
 	size = "small",
+	inked = false,
+	block = false,
 	className = "",
 }: StampProps) {
 	return (
 		<span
-			className={`${styles.stamp} ${size === "large" ? styles.large : ""} ${className}`}
+			className={`${styles.stamp} ${size === "large" ? styles.large : ""} ${inked ? styles.inked : ""} ${block ? styles.block : ""} ${className}`}
 			style={inkVars(color, seed, size === "large" ? 4 : 3)}
 		>
 			<span className={styles.text}>{label}</span>
@@ -89,15 +96,17 @@ export function InkPad({ color }: { color: TagColor }) {
 type SheetStampsProps = {
 	tags: Tag[];
 	seed: string;
-	/** Clicking the "+3" opens the drawing's stamps instead of the drawing. */
+	/** The tags that made this drawing match the filter; they come first in `tags`. */
+	matched?: readonly string[];
+	/** Clicking the "+3" opens the drawing's tags instead of the drawing. */
 	onShowAll?: () => void;
 };
 
 const MORE_WIDTH = 34;
 const GAP = 4;
 
-/** The stamps in one line along the foot of a sheet; what doesn't fit is "+3". */
-export function SheetStamps({ tags, seed, onShowAll }: SheetStampsProps) {
+/** The tags in one line along the foot of a sheet; what doesn't fit is "+3". */
+export function SheetStamps({ tags, seed, matched = [], onShowAll }: SheetStampsProps) {
 	const ref = useRef<HTMLSpanElement>(null);
 	const [fit, setFit] = useState(tags.length);
 	const key = tags.map((tag) => tag.id + tag.label).join();
@@ -146,12 +155,13 @@ export function SheetStamps({ tags, seed, onShowAll }: SheetStampsProps) {
 						label={tag.label}
 						color={tag.color}
 						seed={seed + tag.id}
+						inked={matched.includes(tag.id)}
 						className={styles.fitted}
 					/>
 				</span>
 			))}
 			{hidden.length > 0 ? (
-				// biome-ignore lint/a11y/noStaticElementInteractions: a pointer shortcut; the card's stamp button is the accessible way.
+				// biome-ignore lint/a11y/noStaticElementInteractions: a pointer shortcut; the card's tags button is the accessible way.
 				// biome-ignore lint/a11y/useKeyWithClickEvents: as above.
 				<span
 					className={styles.more}

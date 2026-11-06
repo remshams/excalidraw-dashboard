@@ -13,7 +13,7 @@
 	line-height: var(--leading-sm);
 }
 
-/* The stamp as it will look, on a patch of bare paper. */
+/* The tag as it will look, on a patch of bare paper. */
 .preview {
 	display: grid;
 	place-items: center;
@@ -60,9 +60,10 @@
 	color: var(--signal);
 }
 
+/* All eight in one line, also in the narrow stamp pad. */
 .colors {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(8, minmax(0, 1.75rem));
 	gap: var(--space-sm);
 	margin: 0;
 	padding: 0;
@@ -78,8 +79,7 @@
 
 .color {
 	position: relative;
-	width: 1.75rem;
-	height: 1.75rem;
+	aspect-ratio: 1;
 	border-radius: var(--radius-md);
 	cursor: pointer;
 }
@@ -94,7 +94,7 @@
 	cursor: pointer;
 }
 
-/* The chosen ink: ring and a white centre, so it doesn't rely on colour. */
+/* The chosen colour: ring and a white centre, so it doesn't rely on colour. */
 .color:has(input:checked) {
 	outline: var(--stroke-md) solid var(--ink);
 	outline-offset: 2px;

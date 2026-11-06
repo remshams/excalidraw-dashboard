@@ -1,0 +1,132 @@
+.dialog {
+	width: min(30rem, calc(100vw - 2 * var(--space-md)));
+	/* Anchored at the top, so it doesn't jump as the tags to add narrow down. */
+	margin-block: 10dvh auto;
+	padding: var(--space-md);
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-sm);
+	background: var(--sheet);
+	color: var(--ink);
+	box-shadow: 0 12px 28px rgb(33 37 41 / 22%);
+}
+
+.dialog::backdrop {
+	background: rgb(33 37 41 / 35%);
+}
+
+.dialog h2 {
+	margin: 0 0 var(--space-sm);
+	overflow-wrap: anywhere;
+	font-family: var(--hand);
+	font-size: var(--text-lg);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-sm);
+}
+
+/* The pile already on the drawing, on a patch of the desk. */
+.current {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-xs);
+	min-height: 2.5rem;
+	margin-bottom: var(--space-sm);
+	padding: var(--space-xs);
+	border-radius: var(--radius-sm);
+	background: var(--desk);
+}
+
+.empty {
+	padding-inline: var(--space-xs);
+	color: var(--graphite);
+}
+
+.find {
+	box-sizing: border-box;
+	width: 100%;
+	margin-bottom: var(--space-sm);
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+.available {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--space-xs) var(--space-sm);
+	max-height: 50dvh;
+	padding: var(--space-xs);
+	overflow-y: auto;
+}
+
+.well {
+	display: flex;
+	min-width: 0;
+	padding: 2px 0;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	cursor: copy;
+}
+
+.well:hover {
+	background: var(--hover);
+}
+
+.next {
+	box-shadow: 0 0 0 var(--stroke-sm) var(--selection);
+}
+
+.none {
+	margin: 0;
+	color: var(--graphite);
+}
+
+.foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-sm);
+	margin-top: var(--space-sm);
+	padding-top: var(--space-sm);
+	border-top: var(--stroke-sm) solid var(--rule);
+}
+
+.create {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	min-width: 0;
+	padding: var(--space-xs);
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	cursor: pointer;
+}
+
+.create:hover {
+	background: var(--hover);
+}
+
+.create svg {
+	flex: none;
+	width: 16px;
+	height: 16px;
+}
+
+.done {
+	flex: none;
+	padding: var(--space-xs) var(--space-md);
+	border: var(--stroke-sm) solid var(--ink);
+	border-radius: var(--radius-md);
+	background: var(--ink);
+	color: var(--sheet);
+	cursor: pointer;
+}
+
+@media (max-width: 40rem) {
+	.available {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
