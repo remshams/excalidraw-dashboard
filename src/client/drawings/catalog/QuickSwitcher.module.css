@@ -1,9 +1,7 @@
 .switcher {
 	/* The writing margin: the search line and the rows both start here. */
 	--margin: var(--space-lg);
-	/* The column left of the writing: the sheets, and the search icon above them.
-	   The search text starts where the drawing names start. */
-	--column: 4rem;
+	--sheet-width: 4rem;
 	--search-icon: 1.5rem;
 	/* Thicker than the focus ring elsewhere: one line has to do the work of four. */
 	--rule-focused: 3px;
@@ -62,8 +60,8 @@
 .line {
 	display: grid;
 	flex-shrink: 0;
-	grid-template-columns: var(--column) minmax(0, 1fr);
-	column-gap: var(--space-md);
+	grid-template-columns: auto minmax(0, 1fr);
+	column-gap: var(--space-sm);
 	align-items: center;
 	margin: 0 var(--margin);
 	padding-bottom: calc(
@@ -143,7 +141,7 @@
 	display: grid;
 	flex-shrink: 0;
 	place-items: center;
-	width: var(--column);
+	width: var(--sheet-width);
 	aspect-ratio: 4 / 3;
 	overflow: hidden;
 	border: var(--stroke-sm) solid var(--rule);
@@ -182,14 +180,12 @@
 	font-size: var(--text-sm);
 }
 
-/* The placeholder needs the narrower column on a phone, and a lower dialog would put
-   its rows behind the on-screen keyboard. */
+/* A lower dialog would put the rows behind a phone's on-screen keyboard. */
 @media (max-width: 30rem) {
 	.switcher {
 		max-height: calc(100dvh - 2 * var(--space-lg));
 		margin-top: var(--space-xl);
 		--margin: var(--space-md);
-		--column: 3rem;
 		--search-icon: 1.25rem;
 	}
 
