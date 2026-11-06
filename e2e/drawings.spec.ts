@@ -10,6 +10,7 @@ import {
 } from "./drawings-api.ts";
 import {
 	clickBesideSwitcher,
+	clickSwitcherEdge,
 	createDrawing,
 	deleteDrawing,
 	dismissErrorMessage,
@@ -560,6 +561,14 @@ test("the quick switcher closes and keeps keys from Excalidraw", async ({
 		await page.keyboard.press("Escape");
 		await expect(quickSwitcher(page)).toHaveCount(0);
 		await expect(switchDrawingButton(page)).toBeFocused();
+	});
+
+	await test.step("a click on the switcher's edge leaves it open with the focus in the search", async () => {
+		await switchDrawingButton(page).click();
+		await clickSwitcherEdge(page);
+		await expect(quickSwitcher(page)).toBeVisible();
+		await expect(switcherSearch(page)).toBeFocused();
+		await page.keyboard.press("Escape");
 	});
 
 	await test.step("a click outside closes the switcher and gives the button its focus back", async () => {
