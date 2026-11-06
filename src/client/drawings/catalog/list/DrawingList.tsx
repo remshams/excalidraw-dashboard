@@ -1,12 +1,12 @@
 import { useState } from "react";
-import type { DrawingSummary } from "../../../shared/types.ts";
-import { DrawingLink } from "../DrawingLink.tsx";
-import { searchByName } from "../search.ts";
-import { DeleteConfirmation } from "./DeleteConfirmation.tsx";
+import type { DrawingSummary } from "../../../../shared/types.ts";
+import { DrawingLink } from "../../DrawingLink.tsx";
+import { searchByName } from "../../search.ts";
+import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
+import { PencilIcon, PlusIcon, TrashIcon } from "../icons.tsx";
+import { NameField } from "../NameField.tsx";
+import { PreviewImage } from "../PreviewImage.tsx";
 import styles from "./DrawingList.module.css";
-import { PencilIcon, PlusIcon, TrashIcon } from "./icons.tsx";
-import { NameField } from "./NameField.tsx";
-import { PreviewImage } from "./PreviewImage.tsx";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];

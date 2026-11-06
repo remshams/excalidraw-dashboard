@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import type { DrawingSummary } from "../../../shared/types.ts";
-import { searchByName } from "../search.ts";
+import type { DrawingSummary } from "../../../../shared/types.ts";
+import { searchByName } from "../../search.ts";
 
 export type SwitcherResult =
 	| { kind: "drawing"; drawing: DrawingSummary }
