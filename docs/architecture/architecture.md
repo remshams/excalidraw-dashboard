@@ -136,14 +136,14 @@ Its foreign keys delete a drawing's rows when the drawing or the tag goes.
 `tag-store` owns the `tags` table, whose `label_key` column holds the label in
 lower case under a `UNIQUE` constraint.
 
-Each aggregate has one route module, an application service for its HTTP use
-cases. `drawing-routes` serves the drawing, its preview and its set of tag IDs,
-and `tag-routes` serves the tags. They check each request, the tag routes against
-the rules in [`src/shared/tags.ts`](../../src/shared/tags.ts), which the client
-will check too. `app` mounts both under `/api`, answers any other API path with
-404 and serves the client build. `index` is the composition root and holds no
-logic worth testing. Nothing
-enforces the dependencies inside the server beyond code review.
+Each aggregate has one route module. `drawing-routes` serves the drawing, its
+preview and its set of tag IDs, and checks the tag IDs and the preview's type and
+size. `tag-routes` serves the tags and checks their bodies against the rules in
+[`src/shared/tags.ts`](../../src/shared/tags.ts), which the client will check
+too. `app` mounts both under `/api`, answers any other API path with 404 and
+serves the client build. `index` is the composition root and holds no logic
+worth testing. Nothing enforces the dependencies inside the server beyond code
+review.
 
 ```mermaid
 ---
@@ -424,8 +424,9 @@ types.
 
 Vitest runs three projects from [`vite.config.ts`](../../vite.config.ts):
 - `server` tests the API through `app.request` against an in-memory SQLite
-  database, in one test file per route module, including the cascades when a
-  tag or a drawing is deleted. `test-api.ts` gives each test a fresh database
+  database, in one test file per route module plus `app.test.ts` for the API
+  404 and the client build, including the cascades when a tag or a drawing is
+  deleted. `test-api.ts` gives each test a fresh database
   and holds the request helpers.
   `database.test.ts` opens database files from before numbered migrations, with
   and without previews, in a temporary folder, to test the upgrade.
