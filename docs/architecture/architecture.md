@@ -89,7 +89,7 @@ title: Zones of the code base
 ---
 flowchart TD
     client["client<br>src/client/<br>React UI: landing page and editor"]:::module
-    server["server<br>src/server/<br>HTTP API and drawing repository"]:::module
+    server["server<br>src/server/<br>HTTP API and the drawing and tag repositories"]:::module
     shared["shared<br>src/shared/<br>API types and the tag rules"]:::module
     e2e["e2e<br>e2e/<br>Black-box tests through the UI and API"]:::module
     client --> shared
@@ -454,8 +454,7 @@ Chromium.
   test copies a drawn scene into a drawing created through the API, so that
   drawing has no preview yet.
 - [`tags-api.spec.ts`](../../e2e/tags-api.spec.ts) covers tags through the
-  HTTP API: creating, renaming and deleting a tag, refusing a label that is
-  taken in another case, and assigning tags to a drawing without changing its
+  HTTP API: creating, renaming and deleting a tag, and assigning tags to a drawing without changing its
   `updatedAt`, until deleting a tag removes it from the drawing. The tag UI
   doesn't exist yet.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
