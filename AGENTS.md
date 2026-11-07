@@ -129,8 +129,8 @@ behavior that must keep working. Update the skill with
   test itself, named after what the user does or sees, so the test and its report
   read as a scenario.
 - Put user actions, shared checks and locators in plain helpers without
-  `test.step`: `e2e/drawings-ui.ts` for the UI and `e2e/drawings-api.ts` for the
-  HTTP API.
+  `test.step`, one file per feature and interface: `e2e/drawings-ui.ts` for the
+  UI, and `e2e/drawings-api.ts` and `e2e/tags-api.ts` for the HTTP API.
 - The tests share one server and database and run one at a time. Give every
   drawing and tag a unique name with `uniqueName` from `e2e/unique-name.ts`, and
   don't assume a list is empty.
