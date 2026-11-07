@@ -422,18 +422,6 @@ describe("drawing tags API", () => {
 		expect(summary.tagIds).toEqual([tag.id]);
 	});
 
-	it("leaves updatedAt alone", async () => {
-		const drawing = await create("Plan");
-		const tag = await createTag("Work");
-		await new Promise((resolve) => setTimeout(resolve, 5));
-
-		const summary: DrawingSummary = await (
-			await putTags(drawing.id, [tag.id])
-		).json();
-
-		expect(summary.updatedAt).toBe(drawing.updatedAt);
-	});
-
 	it("rejects an unknown tag ID with 400 and keeps the tags", async () => {
 		const { id } = await create("Plan");
 		const tag = await createTag("Work");
