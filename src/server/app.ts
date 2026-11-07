@@ -1,23 +1,70 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type {
 	CreateDrawingRequest,
 	UpdateDrawingRequest,
 } from "../shared/drawings.ts";
+import {
+	type DrawingTagsRequest,
+	isTagColor,
+	MAX_TAG_LABEL_LENGTH,
+	type TagRequest,
+	tagLabelProblem,
+} from "../shared/tags.ts";
 import type { DrawingStore } from "./drawing-store.ts";
+import type { TagStore } from "./tag-store.ts";
 
 /** Previews are small images; a real one stays far below this. */
 const MAX_PREVIEW_BYTES = 2 * 1024 * 1024;
+
+type Invalid = { invalid: string };
+
+/** The JSON body, or undefined if it isn't valid JSON. */
+const readJson = (c: Context): Promise<unknown> =>
+	c.req.json().catch(() => undefined);
+
+const LABEL_PROBLEMS = {
+	empty: "A tag needs a label",
+	"too-long": `A tag label has at most ${MAX_TAG_LABEL_LENGTH} characters`,
+};
+
+function parseTagRequest(body: unknown): TagRequest | Invalid {
+	const { label, color } = (body ?? {}) as Partial<Record<string, unknown>>;
+	if (typeof label !== "string") {
+		return { invalid: "Send the tag as JSON with a label and a color" };
+	}
+	const problem = tagLabelProblem(label);
+	if (problem) return { invalid: LABEL_PROBLEMS[problem] };
+	if (!isTagColor(color)) return { invalid: "Unknown tag colour" };
+	return { label, color };
+}
+
+function parseDrawingTagsRequest(body: unknown): DrawingTagsRequest | Invalid {
+	const { tagIds } = (body ?? {}) as Partial<Record<string, unknown>>;
+	const valid =
+		Array.isArray(tagIds) && tagIds.every((id) => typeof id === "string");
+	return valid
+		? { tagIds }
+		: { invalid: "Send the tags as JSON with an array of tag IDs" };
+}
+
+const labelTaken = (c: Context, { label }: TagRequest) =>
+	c.text(`A tag named "${label.trim()}" already exists`, 409);
+
+type Stores = { drawings: DrawingStore; tags: TagStore };
 
 type AppOptions = {
 	/** Directory of the Vite build. When set, the app also serves the client. */
 	staticDir?: string;
 };
 
-export function createApp(store: DrawingStore, options: AppOptions = {}) {
+export function createApp(
+	{ drawings: store, tags }: Stores,
+	options: AppOptions = {},
+) {
 	const api = new Hono()
 		.get("/drawings", (c) => c.json(store.list()))
 		.post("/drawings", async (c) => {
@@ -71,6 +118,32 @@ export function createApp(store: DrawingStore, options: AppOptions = {}) {
 			const drawing = store.setPreview(c.req.param("id"), null);
 			return drawing ? c.json(drawing) : c.notFound();
 		})
+		.put("/drawings/:id/tags", async (c) => {
+			const request = parseDrawingTagsRequest(await readJson(c));
+			if ("invalid" in request) return c.text(request.invalid, 400);
+			const drawing = store.setTags(c.req.param("id"), request.tagIds);
+			if (drawing === "unknown-tag") {
+				return c.text("A tag ID names no tag", 400);
+			}
+			return drawing ? c.json(drawing) : c.notFound();
+		})
+		.get("/tags", (c) => c.json(tags.list()))
+		.post("/tags", async (c) => {
+			const request = parseTagRequest(await readJson(c));
+			if ("invalid" in request) return c.text(request.invalid, 400);
+			const tag = tags.create(request);
+			return tag === "label-taken" ? labelTaken(c, request) : c.json(tag, 201);
+		})
+		.put("/tags/:id", async (c) => {
+			const request = parseTagRequest(await readJson(c));
+			if ("invalid" in request) return c.text(request.invalid, 400);
+			const tag = tags.update(c.req.param("id"), request);
+			if (tag === "label-taken") return labelTaken(c, request);
+			return tag ? c.json(tag) : c.notFound();
+		})
+		.delete("/tags/:id", (c) =>
+			tags.delete(c.req.param("id")) ? c.body(null, 204) : c.notFound(),
+		)
 		// Without this, the client's fallback below would answer an unknown API path with index.html.
 		.all("*", (c) => c.notFound());
 
