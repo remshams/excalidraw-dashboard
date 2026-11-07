@@ -56,12 +56,11 @@ function createTags(db: DatabaseSync): void {
 const MIGRATIONS: Migration[] = [createDrawings, createTags];
 
 /** Runs `work` in a transaction and rolls it back if `work` throws. */
-export function inTransaction<T>(db: DatabaseSync, work: () => T): T {
+export function inTransaction(db: DatabaseSync, work: () => void): void {
 	db.exec("BEGIN");
 	try {
-		const result = work();
+		work();
 		db.exec("COMMIT");
-		return result;
 	} catch (error) {
 		db.exec("ROLLBACK");
 		throw error;
