@@ -425,9 +425,10 @@ describe("drawing tags API", () => {
 	it("rejects an unknown tag ID with 400 and keeps the tags", async () => {
 		const { id } = await create("Plan");
 		const tag = await createTag("Work");
+		const other = await createTag("Idea");
 		await putTags(id, [tag.id]);
 
-		const response = await putTags(id, [tag.id, "missing"]);
+		const response = await putTags(id, [other.id, "missing"]);
 
 		expect(response.status).toBe(400);
 		expect(await response.text()).toBe("A tag ID names no tag");
@@ -445,7 +446,9 @@ describe("drawing tags API", () => {
 	});
 
 	it("returns 404 for an unknown drawing", async () => {
-		expect((await putTags("missing", [])).status).toBe(404);
+		const tag = await createTag("Work");
+
+		expect((await putTags("missing", [tag.id])).status).toBe(404);
 	});
 
 	it("removes a deleted tag from every drawing", async () => {
