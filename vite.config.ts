@@ -33,6 +33,13 @@ export default defineConfig({
 					include: ["src/server/**/*.test.ts"],
 				},
 			},
+			{
+				test: {
+					name: "shared",
+					environment: "node",
+					include: ["src/shared/**/*.test.ts"],
+				},
+			},
 		],
 	},
 });
