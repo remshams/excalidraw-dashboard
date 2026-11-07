@@ -132,8 +132,8 @@ behavior that must keep working. Update the skill with
   `test.step`: `e2e/drawings-ui.ts` for the UI and `e2e/drawings-api.ts` for the
   HTTP API.
 - The tests share one server and database and run one at a time. Give every
-  drawing a unique name with `uniqueName` from `drawings.spec.ts`, and don't
-  assume the list is empty.
+  drawing and tag a unique name with `uniqueName` from `e2e/unique-name.ts`, and
+  don't assume a list is empty.
 
 ## GitHub issues
 
