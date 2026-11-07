@@ -77,58 +77,9 @@ export async function storedPreviewType(
 	return response.headers()["content-type"] ?? null;
 }
 
-// The tags HTTP API. Tags belong to the dashboard; a drawing keeps the IDs of
-// its tags.
-
-type StoredTag = { id: string; label: string; color: string };
+// A drawing keeps the IDs of its tags, so assigning them is a drawing route.
 
 type StoredSummary = { id: string; updatedAt: string; tagIds: string[] };
-
-/** Creates a tag with `POST /api/tags` and returns its ID. */
-export async function createTagThroughApi(
-	request: APIRequestContext,
-	label: string,
-	color = "blue",
-): Promise<string> {
-	const response = await request.post("/api/tags", {
-		data: { label, color },
-	});
-	expect(response.status()).toBe(201);
-	const tag: StoredTag = await response.json();
-	return tag.id;
-}
-
-/** Changes a tag's label and colour with `PUT /api/tags/:id`. */
-export async function changeTagThroughApi(
-	request: APIRequestContext,
-	id: string,
-	label: string,
-	color: string,
-): Promise<void> {
-	const response = await request.put(`/api/tags/${id}`, {
-		data: { label, color },
-	});
-	expect(response.ok()).toBe(true);
-}
-
-/** Deletes a tag with `DELETE /api/tags/:id`. */
-export async function deleteTagThroughApi(
-	request: APIRequestContext,
-	id: string,
-): Promise<void> {
-	const response = await request.delete(`/api/tags/${id}`);
-	expect(response.status()).toBe(204);
-}
-
-/** The stored tag with the ID, or undefined if there is none. */
-export async function storedTag(
-	request: APIRequestContext,
-	id: string,
-): Promise<StoredTag | undefined> {
-	const response = await request.get("/api/tags");
-	const tags: StoredTag[] = await response.json();
-	return tags.find((tag) => tag.id === id);
-}
 
 /** Replaces a drawing's tags with `PUT /api/drawings/:id/tags`. */
 export async function assignTagsThroughApi(

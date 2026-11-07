@@ -1,13 +1,15 @@
 import { expect, test } from "@playwright/test";
 import {
 	assignTagsThroughApi,
-	changeTagThroughApi,
 	createDrawingThroughApi,
+	storedSummary,
+} from "./drawings-api.ts";
+import {
+	changeTagThroughApi,
 	createTagThroughApi,
 	deleteTagThroughApi,
-	storedSummary,
 	storedTag,
-} from "./drawings-api.ts";
+} from "./tags-api.ts";
 import { uniqueName } from "./unique-name.ts";
 
 test("create, rename and delete a tag", async ({ request }) => {
