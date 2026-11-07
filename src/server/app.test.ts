@@ -1,22 +1,16 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { rebuildApp, request, setUpTestApi } from "./test-api.ts";
+import { afterAll, describe, expect, it } from "vitest";
+import { request, setUpTestApi } from "./test-api.ts";
 
-setUpTestApi();
+const staticDir = mkdtempSync(join(tmpdir(), "client-build-"));
+writeFileSync(join(staticDir, "index.html"), "<p>client</p>");
+afterAll(() => rmSync(staticDir, { recursive: true }));
+
+setUpTestApi({ staticDir });
 
 describe("client build", () => {
-	let staticDir: string;
-
-	beforeEach(() => {
-		staticDir = mkdtempSync(join(tmpdir(), "client-build-"));
-		writeFileSync(join(staticDir, "index.html"), "<p>client</p>");
-		rebuildApp({ staticDir });
-	});
-
-	afterEach(() => rmSync(staticDir, { recursive: true }));
-
 	it("serves the client for a drawing's path", async () => {
 		const response = await request("/drawings/some-id");
 
