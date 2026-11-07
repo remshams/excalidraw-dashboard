@@ -13,24 +13,19 @@ import { openTagStore } from "./tag-store.ts";
 let db: DatabaseSync;
 let app: ReturnType<typeof createApp>;
 
-const buildApp = (options?: Parameters<typeof createApp>[1]) =>
-	createApp(
-		{ drawings: openDrawingStore(db), tags: openTagStore(db) },
-		options,
-	);
-
-/** Gives each test of the file a fresh in-memory database and an app on it. */
-export function setUpTestApi(): void {
+/**
+ * Gives each test of the file a fresh in-memory database and an app on it,
+ * created with `options`, such as a client build to serve.
+ */
+export function setUpTestApi(options?: Parameters<typeof createApp>[1]): void {
 	beforeEach(() => {
 		db = openDatabase(":memory:");
-		app = buildApp();
+		app = createApp(
+			{ drawings: openDrawingStore(db), tags: openTagStore(db) },
+			options,
+		);
 	});
 	afterEach(() => db.close());
-}
-
-/** Builds the app again with options, such as a client build to serve. */
-export function rebuildApp(options: Parameters<typeof createApp>[1]): void {
-	app = buildApp(options);
 }
 
 /** The test's database, to check what the API stored. */
