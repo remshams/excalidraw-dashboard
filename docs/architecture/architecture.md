@@ -361,7 +361,7 @@ on a preview return the drawing summary; they change `previewUpdatedAt`, not
 `updatedAt`. Clients are to add `?v=<previewUpdatedAt>` to the preview URL ([ADR
 0001](adr/0001-version-preview-urls.md)). Scenes have no body limit, because
 scenes with embedded images can be large.
-[`src/shared/types.ts`](../../src/shared/types.ts) holds the request and
+[`src/shared/drawings.ts`](../../src/shared/drawings.ts) holds the request and
 response types.
 
 ## Configuration

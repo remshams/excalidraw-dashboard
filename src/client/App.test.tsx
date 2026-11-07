@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Drawing } from "../shared/types.ts";
+import type { Drawing } from "../shared/drawings.ts";
 import { App } from "./App.tsx";
 import * as api from "./drawings/api.ts";
 

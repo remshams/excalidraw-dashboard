@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Drawing, DrawingSummary } from "../shared/types.ts";
+import type { Drawing, DrawingSummary } from "../shared/drawings.ts";
 import { createApp } from "./app.ts";
 import { type DrawingStore, openDrawingStore } from "./drawing-store.ts";
 

@@ -2,7 +2,7 @@ import type {
 	Drawing,
 	DrawingSummary,
 	UpdateDrawingRequest,
-} from "../../shared/types.ts";
+} from "../../shared/drawings.ts";
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	const response = await fetch(`/api${path}`, {
