@@ -106,13 +106,18 @@ title: Modules of the server
 ---
 flowchart TD
     index["index<br>src/server/index.ts<br>Reads the configuration and starts the server"]:::module
-    app["app<br>src/server/app.ts<br>Routes the HTTP API, checks requests, serves the client build"]:::module
+    app["app<br>src/server/app.ts<br>Mounts the route modules under /api and serves the client build"]:::module
+    drawingRoutes["drawing-routes<br>src/server/drawing-routes.ts<br>HTTP routes of drawings, previews and their tags"]:::module
+    tagRoutes["tag-routes<br>src/server/tag-routes.ts<br>HTTP routes of tags"]:::module
+    request["request<br>src/server/request.ts<br>Reads JSON bodies without throwing"]:::module
     database["database<br>src/server/database.ts<br>Opens SQLite and runs the migrations"]:::module
     store["drawing-store<br>src/server/drawing-store.ts<br>Repository of drawings and their tag IDs"]:::module
     tagStore["tag-store<br>src/server/tag-store.ts<br>Repository of tags"]:::module
     shared["shared<br>src/shared/<br>API types and the tag rules"]:::module
     index --> app & database & store & tagStore
-    app --> store & tagStore & shared
+    app --> drawingRoutes & tagRoutes
+    drawingRoutes --> request & store & shared
+    tagRoutes --> request & tagStore & shared
     store --> database & shared
     tagStore --> database & shared
 ```
@@ -131,9 +136,13 @@ Its foreign keys delete a drawing's rows when the drawing or the tag goes.
 `tag-store` owns the `tags` table, whose `label_key` column holds the label in
 lower case under a `UNIQUE` constraint.
 
-`app` checks each request against the rules in
-[`src/shared/tags.ts`](../../src/shared/tags.ts), which the client will check
-too. `index` is the composition root and holds no logic worth testing. Nothing
+Each aggregate has one route module, an application service for its HTTP use
+cases. `drawing-routes` serves the drawing, its preview and its set of tag IDs,
+and `tag-routes` serves the tags. They check each request, the tag routes against
+the rules in [`src/shared/tags.ts`](../../src/shared/tags.ts), which the client
+will check too. `app` mounts both under `/api`, answers any other API path with
+404 and serves the client build. `index` is the composition root and holds no
+logic worth testing. Nothing
 enforces the dependencies inside the server beyond code review.
 
 ```mermaid
@@ -287,7 +296,7 @@ sequenceDiagram
     participant Editor as Editor, Excalidraw and use-autosave
     participant Scheduler as save-scheduler
     participant Api as api
-    participant Server as app and drawing-store
+    participant Server as drawing-routes and drawing-store
     App->>Api: list drawings
     Api->>Server: GET /api/drawings
     Server-->>Api: drawing summaries
@@ -324,7 +333,7 @@ sequenceDiagram
     participant App as App and use-drawings
     participant Autosave as Editor and use-autosave
     participant Preview as use-preview and preview
-    participant Server as app and drawing-store
+    participant Server as drawing-routes and drawing-store
     User->>App: goes back to all drawings
     App->>Autosave: unmount
     Autosave->>Server: flushes the pending save, PUT /api/drawings/:id
@@ -351,7 +360,7 @@ sequenceDiagram
     actor User
     participant App as App, DrawingList and use-drawings
     participant Editor as Editor and save-scheduler
-    participant Server as app and drawing-store
+    participant Server as drawing-routes and drawing-store
     User->>App: goes back to all drawings
     App->>Editor: unmount
     Editor->>Server: flushes the pending save, PUT /api/drawings/:id
@@ -415,7 +424,9 @@ types.
 
 Vitest runs three projects from [`vite.config.ts`](../../vite.config.ts):
 - `server` tests the API through `app.request` against an in-memory SQLite
-  database, including the cascades when a tag or a drawing is deleted.
+  database, in one test file per route module, including the cascades when a
+  tag or a drawing is deleted. `test-api.ts` gives each test a fresh database
+  and holds the request helpers.
   `database.test.ts` opens database files from before numbered migrations, with
   and without previews, in a temporary folder, to test the upgrade.
 - `shared` tests the tag label and colour rules.
