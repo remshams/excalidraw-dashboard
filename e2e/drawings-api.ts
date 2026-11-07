@@ -1,4 +1,8 @@
-import { type APIRequestContext, expect } from "@playwright/test";
+import {
+	type APIRequestContext,
+	type APIResponse,
+	expect,
+} from "@playwright/test";
 
 // The drawings HTTP API, which tests use to set up drawings and to read what
 // the server stored. The types cover only the fields the tests read.
@@ -75,4 +79,86 @@ export async function storedPreviewType(
 	expect(response.ok()).toBe(true);
 	expect((await response.body()).length).toBeGreaterThan(0);
 	return response.headers()["content-type"] ?? null;
+}
+
+// The tags HTTP API. Tags belong to the dashboard; a drawing keeps the IDs of
+// its tags.
+
+type StoredTag = { id: string; label: string; color: string };
+
+type StoredSummary = { id: string; updatedAt: string; tagIds: string[] };
+
+/** Sends `POST /api/tags` and returns the response, whatever its status. */
+export function postTag(
+	request: APIRequestContext,
+	label: string,
+	color = "blue",
+): Promise<APIResponse> {
+	return request.post("/api/tags", { data: { label, color } });
+}
+
+/** Creates a tag with `POST /api/tags` and returns its ID. */
+export async function createTagThroughApi(
+	request: APIRequestContext,
+	label: string,
+	color = "blue",
+): Promise<string> {
+	const response = await postTag(request, label, color);
+	expect(response.status()).toBe(201);
+	const tag: StoredTag = await response.json();
+	return tag.id;
+}
+
+/** Changes a tag's label and colour with `PUT /api/tags/:id`. */
+export async function changeTagThroughApi(
+	request: APIRequestContext,
+	id: string,
+	label: string,
+	color: string,
+): Promise<void> {
+	const response = await request.put(`/api/tags/${id}`, {
+		data: { label, color },
+	});
+	expect(response.ok()).toBe(true);
+}
+
+/** Deletes a tag with `DELETE /api/tags/:id`. */
+export async function deleteTagThroughApi(
+	request: APIRequestContext,
+	id: string,
+): Promise<void> {
+	const response = await request.delete(`/api/tags/${id}`);
+	expect(response.status()).toBe(204);
+}
+
+/** The stored tag with the ID, or undefined if there is none. */
+export async function storedTag(
+	request: APIRequestContext,
+	id: string,
+): Promise<StoredTag | undefined> {
+	const response = await request.get("/api/tags");
+	const tags: StoredTag[] = await response.json();
+	return tags.find((tag) => tag.id === id);
+}
+
+/** Replaces a drawing's tags with `PUT /api/drawings/:id/tags`. */
+export async function assignTagsThroughApi(
+	request: APIRequestContext,
+	id: string,
+	tagIds: string[],
+): Promise<void> {
+	const response = await request.put(`/api/drawings/${id}/tags`, {
+		data: { tagIds },
+	});
+	expect(response.ok()).toBe(true);
+}
+
+/** A drawing's summary as the list of drawings shows it. */
+export async function storedSummary(
+	request: APIRequestContext,
+	id: string,
+): Promise<StoredSummary | undefined> {
+	const response = await request.get("/api/drawings");
+	const drawings: StoredSummary[] = await response.json();
+	return drawings.find((drawing) => drawing.id === id);
 }
