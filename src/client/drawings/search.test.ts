@@ -8,6 +8,7 @@ const drawing = (name: string): DrawingSummary => ({
 	createdAt: "",
 	updatedAt: "",
 	previewUpdatedAt: null,
+	tagIds: [],
 });
 
 const drawings = [

@@ -13,6 +13,7 @@ const plan = (name = "Plan"): Drawing => ({
 	createdAt: "",
 	updatedAt: "",
 	previewUpdatedAt: null,
+	tagIds: [],
 });
 
 /** A load the test finishes by hand, to control when its response arrives. */

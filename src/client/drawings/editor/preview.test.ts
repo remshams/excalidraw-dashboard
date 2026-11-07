@@ -13,6 +13,7 @@ const stored = {
 	createdAt: "2026-01-01T00:00:00.000Z",
 	updatedAt: "2026-01-02T00:00:00.000Z",
 	previewUpdatedAt: "2026-01-03T00:00:00.000Z",
+	tagIds: [],
 };
 
 const scene = (elements: { id: string; isDeleted: boolean }[]) =>
@@ -28,6 +29,7 @@ beforeEach(() => {
 	vi.mocked(api.deletePreview).mockResolvedValue({
 		...stored,
 		previewUpdatedAt: null,
+		tagIds: [],
 	});
 });
 

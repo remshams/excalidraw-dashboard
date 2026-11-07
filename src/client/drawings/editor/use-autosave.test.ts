@@ -12,6 +12,7 @@ const drawing: Drawing = {
 	createdAt: "2026-01-01T00:00:00.000Z",
 	updatedAt: "2026-01-01T00:00:00.000Z",
 	previewUpdatedAt: null,
+	tagIds: [],
 	scene: "stored",
 };
 const savedSummary = { ...drawing, updatedAt: "2026-01-02T00:00:00.000Z" };
@@ -30,6 +31,7 @@ beforeEach(() => {
 		createdAt: drawing.createdAt,
 		updatedAt: savedSummary.updatedAt,
 		previewUpdatedAt: null,
+		tagIds: [],
 	});
 });
 

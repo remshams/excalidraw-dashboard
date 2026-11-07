@@ -14,6 +14,7 @@ const summary = (
 	createdAt: "",
 	updatedAt: "",
 	previewUpdatedAt,
+	tagIds: [],
 });
 
 const drawings = [
