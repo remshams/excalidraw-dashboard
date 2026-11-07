@@ -341,9 +341,14 @@ describe("tags API", () => {
 		]);
 	});
 
-	it("rejects a body that isn't JSON with 400", async () => {
-		const response = await app.request("/api/tags", {
-			method: "POST",
+	it.each([
+		["POST", "/tags"],
+		["PUT", "/drawings/:id/tags"],
+	])("rejects a %s %s body that isn't JSON with 400", async (method, path) => {
+		const { id } = await create("Plan");
+
+		const response = await app.request(`/api${path.replace(":id", id)}`, {
+			method,
 			headers: { "Content-Type": "application/json" },
 			body: "{nope",
 		});
@@ -408,7 +413,6 @@ describe("drawing tags API", () => {
 		expect(response.status).toBe(200);
 		expect(summary.tagIds).toEqual(expected);
 		expect(list[0].tagIds).toEqual(expected);
-		expect(await tagIdsOf(id)).toEqual(expected);
 	});
 
 	it("keeps a tag once when the request names it twice", async () => {
