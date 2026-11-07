@@ -5,12 +5,16 @@ named drawings. A React client embeds `@excalidraw/excalidraw` and autosaves
 each drawing to a small Hono server, which stores it in SQLite through
 `node:sqlite`. Node 24 runs the server's TypeScript directly; only the client
 has a build step. Each drawing can have a preview image, whose URL carries a
-version ([ADR 0001](adr/0001-version-preview-urls.md)).
+version ([ADR 0001](adr/0001-version-preview-urls.md)), and any number of tags.
+Numbered migrations keep the database schema up to date
+([ADR 0002](adr/0002-number-schema-migrations.md)).
 
 ## Domain language
 
-- **Drawing**: an entity with an ID, a name, timestamps and a scene. It is the
-  aggregate root: its name and scene change only through the drawing.
+- **Drawing**: an entity with an ID, a name, timestamps, a scene and a set of tag
+  IDs. It is the aggregate root: its name, scene, preview and tags change only
+  through the drawing. Assigning tags isn't an edit, so it leaves `updatedAt`
+  alone.
 - **Scene**: a value object, the Excalidraw scene serialized with
   `serializeAsJSON(..., "local")`. It matches an exported `.excalidraw` file. A
   new drawing has no scene yet.
@@ -18,7 +22,13 @@ version ([ADR 0001](adr/0001-version-preview-urls.md)).
   belongs to the drawing; setting a new one replaces it. `previewUpdatedAt`
   records when it was last set.
 - **Drawing summary**: a drawing without its scene or preview image, as a card
-  on the landing page shows it.
+  on the landing page shows it. It carries the drawing's tag IDs.
+- **Tag**: an entity with an ID, a label and a colour, and the root of its own
+  aggregate. Tags belong to the dashboard, not to one drawing; a drawing refers
+  to them by ID. A label is trimmed, 1 to 30 characters long and unique when
+  case is ignored. The colour is one of 8 open-color hues. Tags are dashboard
+  data: they live in the database and never in a scene, so an exported
+  `.excalidraw` file carries none.
 
 ## Context
 
@@ -32,7 +42,7 @@ flowchart TD
     db[("Drawing database<br>SQLite file drawings.db")]:::store
     cdn["esm.sh<br>CDN for Excalidraw's canvas fonts"]:::external
     user -->|creates, renames, deletes and draws| dashboard
-    dashboard -->|reads and writes drawings| db
+    dashboard -->|reads and writes drawings and tags| db
     dashboard -->|loads canvas fonts over HTTPS| cdn
 ```
 
@@ -40,7 +50,7 @@ Excalidraw's code is bundled into the client, so it isn't an external system.
 Its canvas fonts are not: no asset path is set, so Excalidraw loads them from
 esm.sh when the canvas shows text.
 
-The database holds every drawing. A file copy of `DATA_DIR` is a consistent
+The database holds every drawing and tag. A file copy of `DATA_DIR` is a consistent
 backup only while the server is stopped; a live backup uses SQLite's
 `VACUUM INTO`. The browser stores nothing; the URL names the open drawing.
 
@@ -80,7 +90,7 @@ title: Zones of the code base
 flowchart TD
     client["client<br>src/client/<br>React UI: landing page and editor"]:::module
     server["server<br>src/server/<br>HTTP API and drawing repository"]:::module
-    shared["shared<br>src/shared/<br>Request and response types of the API"]:::module
+    shared["shared<br>src/shared/<br>API types and the tag rules"]:::module
     e2e["e2e<br>e2e/<br>Black-box tests through the UI and API"]:::module
     client --> shared
     server --> shared
@@ -96,19 +106,35 @@ title: Modules of the server
 ---
 flowchart TD
     index["index<br>src/server/index.ts<br>Reads the configuration and starts the server"]:::module
-    app["app<br>src/server/app.ts<br>Routes the HTTP API and serves the client build"]:::module
-    store["drawing-store<br>src/server/drawing-store.ts<br>Repository: owns all SQL"]:::module
-    shared["shared<br>src/shared/<br>API types"]:::module
-    index --> app & store
-    app --> store & shared
-    store --> shared
+    app["app<br>src/server/app.ts<br>Routes the HTTP API, checks requests, serves the client build"]:::module
+    database["database<br>src/server/database.ts<br>Opens SQLite and runs the migrations"]:::module
+    store["drawing-store<br>src/server/drawing-store.ts<br>Repository of drawings and their tag IDs"]:::module
+    tagStore["tag-store<br>src/server/tag-store.ts<br>Repository of tags"]:::module
+    shared["shared<br>src/shared/<br>API types and the tag rules"]:::module
+    index --> app & database & store & tagStore
+    app --> store & tagStore & shared
+    store --> database & shared
+    tagStore --> database & shared
 ```
 
-`drawing-store` is the repository for drawings; no other module contains SQL.
+`database` opens the SQLite file and brings its schema up to date. Each
+migration runs once, in its own transaction, and `PRAGMA user_version` records
+the last one ([ADR 0002](adr/0002-number-schema-migrations.md)). `drawing-store`
+and `tag-store` are the repositories; apart from the migrations, no other module
+contains SQL. `index` opens one database and hands it to both.
+
 A drawing row holds the name, the timestamps, the scene as JSON text and the
-preview as a BLOB. Only the preview route reads the BLOB. When the repository
-opens a database created before previews, it adds the missing columns.
-`index` is the composition root and holds no logic worth testing. Nothing
+preview as a BLOB. Only the preview route reads the BLOB. The `drawing_tags`
+table holds which drawings carry which tags. It belongs to the drawing aggregate,
+so `drawing-store` writes it, and the summary queries read the tag IDs from it.
+Its foreign keys delete a drawing's rows when the drawing or the tag goes.
+`tag-store` owns the `tags` table, whose `label_key` column holds the label in
+lower case under a `UNIQUE` constraint; a taken label becomes a 409.
+
+`app` checks each request against the rules in
+[`src/shared/tags.ts`](../../src/shared/tags.ts), which the client will check
+too, and answers a bad body with 400. `index` is the composition root and holds
+no logic worth testing. Nothing
 enforces the dependencies inside the server beyond code review.
 
 ```mermaid
@@ -354,6 +380,11 @@ the edit is lost.
 | `/api/drawings/:id/preview` | GET    | The PNG preview, cached as immutable            |
 | `/api/drawings/:id/preview` | PUT    | Store an `image/png` body of at most 2 MB       |
 | `/api/drawings/:id/preview` | DELETE | Remove the preview                              |
+| `/api/drawings/:id/tags`    | PUT    | Replace the drawing's tags with `{ tagIds }`    |
+| `/api/tags`                 | GET    | List tags, sorted by label with case ignored    |
+| `/api/tags`                 | POST   | Create a tag from `{ label, color }`            |
+| `/api/tags/:id`             | PUT    | Change a tag's label and colour; both required  |
+| `/api/tags/:id`             | DELETE | Delete a tag and remove it from every drawing   |
 
 Unknown drawings, and a drawing without a preview, answer 404. Preview uploads
 answer 415 for another content type and 413 above 2 MB. The `PUT` and `DELETE`
@@ -361,8 +392,16 @@ on a preview return the drawing summary; they change `previewUpdatedAt`, not
 `updatedAt`. Clients are to add `?v=<previewUpdatedAt>` to the preview URL ([ADR
 0001](adr/0001-version-preview-urls.md)). Scenes have no body limit, because
 scenes with embedded images can be large.
-[`src/shared/drawings.ts`](../../src/shared/drawings.ts) holds the request and
-response types.
+
+Unknown tags answer 404. A tag body that isn't JSON, lacks a label, breaks the
+label rules or names an unknown colour answers 400, and so does an assignment
+with an unknown tag ID, which then changes nothing. A label another tag has,
+ignoring case, answers 409. Errors are plain text. `PUT /api/drawings/:id/tags`
+returns the drawing summary and leaves `updatedAt` alone; a tag ID sent twice
+counts once. Summaries list tag IDs sorted by ID; clients sort them for display.
+[`src/shared/drawings.ts`](../../src/shared/drawings.ts) and
+[`src/shared/tags.ts`](../../src/shared/tags.ts) hold the request and response
+types.
 
 ## Configuration
 
@@ -374,10 +413,12 @@ response types.
 
 ## Tests and quality gates
 
-Vitest runs two projects from [`vite.config.ts`](../../vite.config.ts):
+Vitest runs three projects from [`vite.config.ts`](../../vite.config.ts):
 - `server` tests the API through `app.request` against an in-memory SQLite
-  database. `drawing-store.test.ts` opens a database file with the schema from
-  before previews, in a temporary folder, to test the upgrade.
+  database, including the cascades when a tag or a drawing is deleted.
+  `database.test.ts` opens database files from before numbered migrations, with
+  and without previews, in a temporary folder, to test the upgrade.
+- `shared` tests the tag label and colour rules.
 - `client` tests in jsdom with Testing Library. Component tests mock `api.ts`
   and replace `Editor.tsx`, since Excalidraw does not render in jsdom. The
   editor hooks and `preview.ts` are tested with `api.ts` and Excalidraw's
@@ -412,6 +453,11 @@ Chromium.
   would, then dismisses the error message above the editor. The preview-on-open
   test copies a drawn scene into a drawing created through the API, so that
   drawing has no preview yet.
+- [`tags-api.spec.ts`](../../e2e/tags-api.spec.ts) covers tags through the
+  HTTP API: creating, renaming and deleting a tag, refusing a label that is
+  taken in another case, and assigning tags to a drawing without changing its
+  `updatedAt`, until deleting a tag removes it from the drawing. The tag UI
+  doesn't exist yet.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
   Excalidraw logo as its icon and that the server serves it as an SVG.
 - Each test groups its actions and checks into `test.step` blocks, so the test
@@ -419,7 +465,10 @@ Chromium.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
   actions for the drawings UI, and
   [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings,
-  stores scenes, and reads stored scenes and previews through the HTTP API. Neither defines steps.
+  stores scenes, and reads stored scenes and previews through the HTTP API. It
+  also creates, changes, deletes and assigns tags and reads them back. Neither
+  defines steps. [`unique-name.ts`](../../e2e/unique-name.ts) gives every
+  drawing and tag a name no other test uses.
 
 The tests are black-box. They run with `pnpm e2e` and in the `e2e` CI job, not
 in `pnpm check`.
