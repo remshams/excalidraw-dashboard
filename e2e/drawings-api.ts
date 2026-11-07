@@ -1,8 +1,4 @@
-import {
-	type APIRequestContext,
-	type APIResponse,
-	expect,
-} from "@playwright/test";
+import { type APIRequestContext, expect } from "@playwright/test";
 
 // The drawings HTTP API, which tests use to set up drawings and to read what
 // the server stored. The types cover only the fields the tests read.
@@ -88,22 +84,15 @@ type StoredTag = { id: string; label: string; color: string };
 
 type StoredSummary = { id: string; updatedAt: string; tagIds: string[] };
 
-/** Sends `POST /api/tags` and returns the response, whatever its status. */
-export function postTag(
-	request: APIRequestContext,
-	label: string,
-	color = "blue",
-): Promise<APIResponse> {
-	return request.post("/api/tags", { data: { label, color } });
-}
-
 /** Creates a tag with `POST /api/tags` and returns its ID. */
 export async function createTagThroughApi(
 	request: APIRequestContext,
 	label: string,
 	color = "blue",
 ): Promise<string> {
-	const response = await postTag(request, label, color);
+	const response = await request.post("/api/tags", {
+		data: { label, color },
+	});
 	expect(response.status()).toBe(201);
 	const tag: StoredTag = await response.json();
 	return tag.id;
