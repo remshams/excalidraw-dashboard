@@ -26,9 +26,8 @@ const toSummary = (row: Row): DrawingSummary => ({
 // Every query but the preview's own names its columns, so the blob is read only
 // when a client asks for the image.
 const SUMMARY_COLUMNS = `id, name, created_at, updated_at, preview_updated_at,
-	(SELECT json_group_array(tag_id) FROM (
-		SELECT tag_id FROM drawing_tags WHERE drawing_id = drawings.id ORDER BY tag_id
-	)) AS tag_ids`;
+	(SELECT json_group_array(tag_id ORDER BY tag_id) FROM drawing_tags
+		WHERE drawing_id = drawings.id) AS tag_ids`;
 
 /**
  * The repository of the drawing aggregate: drawings with their scene, preview

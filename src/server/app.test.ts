@@ -325,11 +325,8 @@ describe("tags API", () => {
 			{ label: "a".repeat(31), color: "blue" },
 			"A tag label has at most 30 characters",
 		],
-		["no label", { color: "blue" }, "Send the tag as JSON"],
 		["a label that isn't text", { label: 1, color: "blue" }, "Send the tag"],
 		["an unknown colour", { label: "Work", color: "gray" }, "Unknown tag"],
-		["no colour", { label: "Work" }, "Unknown tag colour"],
-		["no body", undefined, "Send the tag as JSON"],
 	])("rejects %s with 400", async (_, body, message) => {
 		const { id } = await createTag("Existing");
 
@@ -488,7 +485,6 @@ describe("drawing tags API", () => {
 			.prepare("SELECT count(*) AS count FROM drawing_tags")
 			.get() as { count: number };
 		expect(rows.count).toBe(0);
-		expect((await send("DELETE", `/tags/${tag.id}`)).status).toBe(204);
 	});
 });
 

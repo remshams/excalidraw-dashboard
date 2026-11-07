@@ -5,8 +5,8 @@ import { isUniqueError } from "./database.ts";
 
 /**
  * The repository of the tag aggregate. It checks that labels are unique when
- * case is ignored; the label and colour rules are checked before. `db` must come
- * from `openDatabase`.
+ * case is ignored. Callers check the label and colour rules first and pass a
+ * trimmed label. `db` must come from `openDatabase`.
  */
 export function openTagStore(db: DatabaseSync) {
 	const listStmt = db.prepare(
@@ -37,9 +37,9 @@ export function openTagStore(db: DatabaseSync) {
 		},
 
 		create({ label, color }: TagRequest): Tag | "label-taken" {
-			const tag = { id: randomUUID(), label: label.trim(), color };
+			const tag = { id: randomUUID(), label, color };
 			return unlessLabelTaken(() => {
-				insertStmt.run(tag.id, tag.label, tagLabelKey(label), color);
+				insertStmt.run(tag.id, label, tagLabelKey(label), color);
 				return tag;
 			});
 		},
@@ -49,9 +49,9 @@ export function openTagStore(db: DatabaseSync) {
 			id: string,
 			{ label, color }: TagRequest,
 		): Tag | undefined | "label-taken" {
-			const tag = { id, label: label.trim(), color };
+			const tag = { id, label, color };
 			return unlessLabelTaken(() =>
-				updateStmt.run(tag.label, tagLabelKey(label), color, id).changes === 0
+				updateStmt.run(label, tagLabelKey(label), color, id).changes === 0
 					? undefined
 					: tag,
 			);
