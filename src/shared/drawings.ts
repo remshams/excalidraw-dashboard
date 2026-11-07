@@ -8,6 +8,8 @@ export type DrawingSummary = {
 	 * must add it to the preview URL as a version; see ADR 0001.
 	 */
 	previewUpdatedAt: string | null;
+	/** The IDs of the drawing's tags, sorted by ID. Clients sort them for display. */
+	tagIds: string[];
 };
 
 export type Drawing = DrawingSummary & {
