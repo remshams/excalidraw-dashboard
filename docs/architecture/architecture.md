@@ -50,8 +50,8 @@ Excalidraw's code is bundled into the client, so it isn't an external system.
 Its canvas fonts are not: no asset path is set, so Excalidraw loads them from
 esm.sh when the canvas shows text.
 
-The database holds every drawing and tag. A file copy of `DATA_DIR` is a consistent
-backup only while the server is stopped; a live backup uses SQLite's
+The database holds every drawing and tag. A file copy of `DATA_DIR` is a
+consistent backup only while the server is stopped; a live backup uses SQLite's
 `VACUUM INTO`. The browser stores nothing; the URL names the open drawing.
 
 ## Processes
@@ -129,12 +129,11 @@ table holds which drawings carry which tags. It belongs to the drawing aggregate
 so `drawing-store` writes it, and the summary queries read the tag IDs from it.
 Its foreign keys delete a drawing's rows when the drawing or the tag goes.
 `tag-store` owns the `tags` table, whose `label_key` column holds the label in
-lower case under a `UNIQUE` constraint; a taken label becomes a 409.
+lower case under a `UNIQUE` constraint.
 
 `app` checks each request against the rules in
 [`src/shared/tags.ts`](../../src/shared/tags.ts), which the client will check
-too, and answers a bad body with 400. `index` is the composition root and holds
-no logic worth testing. Nothing
+too. `index` is the composition root and holds no logic worth testing. Nothing
 enforces the dependencies inside the server beyond code review.
 
 ```mermaid
@@ -454,9 +453,9 @@ Chromium.
   test copies a drawn scene into a drawing created through the API, so that
   drawing has no preview yet.
 - [`tags-api.spec.ts`](../../e2e/tags-api.spec.ts) covers tags through the
-  HTTP API: creating, renaming and deleting a tag, and assigning tags to a drawing without changing its
-  `updatedAt`, until deleting a tag removes it from the drawing. The tag UI
-  doesn't exist yet.
+  HTTP API: creating, renaming and deleting a tag, assigning tags to a drawing
+  without changing its `updatedAt`, and that deleting a tag removes it from the
+  drawing. The tag UI doesn't exist yet.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
   Excalidraw logo as its icon and that the server serves it as an SVG.
 - Each test groups its actions and checks into `test.step` blocks, so the test
