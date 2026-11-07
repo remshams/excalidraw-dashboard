@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
 	createDrawingThroughApi,
@@ -44,12 +43,7 @@ import {
 	switcherRows,
 	switcherSearch,
 } from "./drawings-ui.ts";
-
-// The tests share one server and database. A unique name keeps each test's
-// drawings apart from the others and from earlier runs, such as "Plan 1a2b3c4d".
-function uniqueName(base: string): string {
-	return `${base} ${randomUUID().slice(0, 8)}`;
-}
+import { uniqueName } from "./unique-name.ts";
 
 test("create a drawing", async ({ page }) => {
 	const name = uniqueName("Plan");
