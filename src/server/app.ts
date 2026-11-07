@@ -39,7 +39,7 @@ function parseTagRequest(body: unknown): TagRequest | Invalid {
 	const problem = tagLabelProblem(label);
 	if (problem) return { invalid: LABEL_PROBLEMS[problem] };
 	if (!isTagColor(color)) return { invalid: "Unknown tag colour" };
-	return { label, color };
+	return { label: label.trim(), color };
 }
 
 function parseDrawingTagsRequest(body: unknown): DrawingTagsRequest | Invalid {
@@ -52,7 +52,7 @@ function parseDrawingTagsRequest(body: unknown): DrawingTagsRequest | Invalid {
 }
 
 const labelTaken = (c: Context, { label }: TagRequest) =>
-	c.text(`A tag named "${label.trim()}" already exists`, 409);
+	c.text(`A tag named "${label}" already exists`, 409);
 
 type Stores = { drawings: DrawingStore; tags: TagStore };
 

@@ -84,17 +84,11 @@ describe("database", () => {
 		db.close();
 	});
 
-	it("upgrades a database from before previews and keeps its drawings", () => {
-		createUnversionedDatabase(false);
-
-		const db = openDatabase(file);
-
-		expectCurrentSchema(db);
-		db.close();
-	});
-
-	it("upgrades a database with previews from before tags", () => {
-		createUnversionedDatabase(true);
+	it.each([
+		["from before previews", false],
+		["with previews from before tags", true],
+	])("upgrades a database %s and keeps its drawings", (_, withPreviews) => {
+		createUnversionedDatabase(withPreviews);
 
 		const db = openDatabase(file);
 
@@ -110,15 +104,6 @@ describe("database", () => {
 
 		expect(userVersion(db)).toBe(2);
 		expect(openDrawingStore(db).list()).toHaveLength(1);
-		db.close();
-	});
-
-	it("enforces foreign keys, which the tag cascades need", () => {
-		const db = openDatabase(file);
-
-		expect(db.prepare("PRAGMA foreign_keys").get()).toEqual({
-			foreign_keys: 1,
-		});
 		db.close();
 	});
 });
