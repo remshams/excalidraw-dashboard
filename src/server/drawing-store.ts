@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import type { Drawing, DrawingSummary } from "../shared/types.ts";
+import type { Drawing, DrawingSummary } from "../shared/drawings.ts";
 
 type Row = {
 	id: string;

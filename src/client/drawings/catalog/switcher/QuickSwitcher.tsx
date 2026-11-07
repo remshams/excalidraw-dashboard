@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useId } from "react";
-import type { DrawingSummary } from "../../../../shared/types.ts";
+import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import { PlusIcon, SearchIcon } from "../icons.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
 import styles from "./QuickSwitcher.module.css";

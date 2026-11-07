@@ -6,7 +6,7 @@ import { bodyLimit } from "hono/body-limit";
 import type {
 	CreateDrawingRequest,
 	UpdateDrawingRequest,
-} from "../shared/types.ts";
+} from "../shared/drawings.ts";
 import type { DrawingStore } from "./drawing-store.ts";
 
 /** Previews are small images; a real one stays far below this. */

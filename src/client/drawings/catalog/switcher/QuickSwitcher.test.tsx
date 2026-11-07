@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "../../../../shared/types.ts";
+import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import { QuickSwitcher } from "./QuickSwitcher.tsx";
 
 const summary = (
