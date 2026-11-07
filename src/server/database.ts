@@ -81,6 +81,7 @@ export const isForeignKeyError = (error: unknown): boolean =>
 export const isUniqueError = (error: unknown): boolean =>
 	hasErrorCode(error, SQLITE_CONSTRAINT_UNIQUE);
 
+/** Runs every migration above the database's `user_version`, in order. */
 function migrate(db: DatabaseSync): void {
 	const { user_version: version } = db.prepare("PRAGMA user_version").get() as {
 		user_version: number;

@@ -31,6 +31,7 @@ const LABEL_PROBLEMS = {
 	"too-long": `A tag label has at most ${MAX_TAG_LABEL_LENGTH} characters`,
 };
 
+/** The tag from a POST or PUT body, with a trimmed label, or why it is invalid. */
 function parseTagRequest(body: unknown): TagRequest | Invalid {
 	const { label, color } = (body ?? {}) as Partial<Record<string, unknown>>;
 	if (typeof label !== "string") {
@@ -42,6 +43,7 @@ function parseTagRequest(body: unknown): TagRequest | Invalid {
 	return { label: label.trim(), color };
 }
 
+/** The tag IDs from a `PUT /drawings/:id/tags` body, or why it is invalid. */
 function parseDrawingTagsRequest(body: unknown): DrawingTagsRequest | Invalid {
 	const { tagIds } = (body ?? {}) as Partial<Record<string, unknown>>;
 	const valid =
