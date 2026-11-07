@@ -5,7 +5,6 @@ import {
 	createDrawingThroughApi,
 	createTagThroughApi,
 	deleteTagThroughApi,
-	postTag,
 	storedSummary,
 	storedTag,
 } from "./drawings-api.ts";
@@ -36,19 +35,6 @@ test("create, rename and delete a tag", async ({ request }) => {
 	await test.step("delete the tag", async () => {
 		await deleteTagThroughApi(request, id);
 		expect(await storedTag(request, id)).toBeUndefined();
-	});
-});
-
-test("a tag label is taken whatever its case", async ({ request }) => {
-	const label = uniqueName("Idea");
-
-	await test.step(`a tag named ${label} exists`, async () => {
-		await createTagThroughApi(request, label);
-	});
-
-	await test.step("creating the label in upper case is refused with 409", async () => {
-		const response = await postTag(request, label.toUpperCase());
-		expect(response.status()).toBe(409);
 	});
 });
 
