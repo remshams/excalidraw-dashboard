@@ -60,6 +60,7 @@ const drawing = (id: string, name: string): Drawing => ({
 	createdAt: "",
 	updatedAt: "",
 	previewUpdatedAt: null,
+	tagIds: [],
 });
 
 /** A failure the test sends once it has done what should come first. */

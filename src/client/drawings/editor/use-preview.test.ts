@@ -18,6 +18,7 @@ const drawing: Drawing = {
 	createdAt: "2026-01-01T00:00:00.000Z",
 	updatedAt: "2026-01-02T00:00:00.000Z",
 	previewUpdatedAt: "2026-01-02T00:00:00.000Z",
+	tagIds: [],
 	scene: "stored",
 };
 const edited: SavedScene = {

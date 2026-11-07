@@ -78,6 +78,7 @@ describe("drawings API client", () => {
 				createdAt: "",
 				updatedAt: "",
 				previewUpdatedAt: "2026-01-02T03:04:05.000Z",
+				tagIds: [],
 			}),
 		).toBe("/api/drawings/1/preview?v=2026-01-02T03%3A04%3A05.000Z");
 	});
@@ -90,6 +91,7 @@ describe("drawings API client", () => {
 				createdAt: "",
 				updatedAt: "",
 				previewUpdatedAt: null,
+				tagIds: [],
 			}),
 		).toBeNull();
 	});
