@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
 import type { Drawing, DrawingSummary } from "../shared/drawings.ts";
+import { inTransaction, isForeignKeyError } from "./database.ts";
 
 type Row = {
 	id: string;
@@ -9,6 +10,8 @@ type Row = {
 	created_at: string;
 	updated_at: string;
 	preview_updated_at: string | null;
+	/** A JSON array of the drawing's tag IDs. */
+	tag_ids: string;
 };
 
 const toSummary = (row: Row): DrawingSummary => ({
@@ -17,53 +20,21 @@ const toSummary = (row: Row): DrawingSummary => ({
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
 	previewUpdatedAt: row.preview_updated_at,
+	tagIds: JSON.parse(row.tag_ids),
 });
 
 // Every query but the preview's own names its columns, so the blob is read only
 // when a client asks for the image.
-const SUMMARY_COLUMNS = "id, name, created_at, updated_at, preview_updated_at";
-
-const SCHEMA = `
-	PRAGMA journal_mode = WAL;
-	CREATE TABLE IF NOT EXISTS drawings (
-		id TEXT PRIMARY KEY,
-		name TEXT NOT NULL,
-		scene TEXT,
-		created_at TEXT NOT NULL,
-		updated_at TEXT NOT NULL,
-		preview BLOB,
-		preview_updated_at TEXT
-	);
-`;
+const SUMMARY_COLUMNS = `id, name, created_at, updated_at, preview_updated_at,
+	(SELECT json_group_array(tag_id) FROM (
+		SELECT tag_id FROM drawing_tags WHERE drawing_id = drawings.id ORDER BY tag_id
+	)) AS tag_ids`;
 
 /**
- * Adds the columns that databases created before previews lack. Safe to run on
- * every start. Switch to numbered migrations with `PRAGMA user_version` once a
- * second schema change comes along; this becomes migration 1.
+ * The repository of the drawing aggregate: drawings with their scene, preview
+ * and set of tag IDs. `db` must come from `openDatabase`.
  */
-function addMissingColumns(db: DatabaseSync): void {
-	const columns = new Set(
-		db
-			.prepare("PRAGMA table_info(drawings)")
-			.all()
-			.map((column) => column.name),
-	);
-	for (const [name, type] of [
-		["preview", "BLOB"],
-		["preview_updated_at", "TEXT"],
-	]) {
-		if (!columns.has(name)) {
-			db.exec(`ALTER TABLE drawings ADD COLUMN ${name} ${type}`);
-		}
-	}
-}
-
-/** Opens the SQLite database at `file`, or an in-memory one for `":memory:"`. */
-export function openDrawingStore(file: string) {
-	const db = new DatabaseSync(file);
-	db.exec(SCHEMA);
-	addMissingColumns(db);
-
+export function openDrawingStore(db: DatabaseSync) {
 	const listStmt = db.prepare(
 		`SELECT ${SUMMARY_COLUMNS} FROM drawings ORDER BY name COLLATE NOCASE`,
 	);
@@ -83,9 +54,17 @@ export function openDrawingStore(file: string) {
 	const setPreviewStmt = db.prepare(
 		"UPDATE drawings SET preview = ?, preview_updated_at = ? WHERE id = ?",
 	);
+	const clearTagsStmt = db.prepare(
+		"DELETE FROM drawing_tags WHERE drawing_id = ?",
+	);
+	const addTagStmt = db.prepare(
+		"INSERT OR IGNORE INTO drawing_tags (drawing_id, tag_id) VALUES (?, ?)",
+	);
 
-	const summary = (id: string): DrawingSummary =>
-		toSummary(getStmt.get(id) as Row);
+	const summary = (id: string): DrawingSummary | undefined => {
+		const row = getStmt.get(id) as Row | undefined;
+		return row && toSummary(row);
+	};
 
 	return {
 		list(): DrawingSummary[] {
@@ -108,6 +87,7 @@ export function openDrawingStore(file: string) {
 				createdAt: now,
 				updatedAt: now,
 				previewUpdatedAt: null,
+				tagIds: [],
 			};
 		},
 
@@ -148,12 +128,31 @@ export function openDrawingStore(file: string) {
 			return result.changes === 0 ? undefined : summary(id);
 		},
 
-		delete(id: string): boolean {
-			return deleteStmt.run(id).changes > 0;
+		/**
+		 * Replaces the drawing's set of tags. Leaves `updatedAt` alone, as a new
+		 * preview does. Returns undefined for an unknown drawing and
+		 * "unknown-tag" if a tag ID names no tag; either way nothing changes.
+		 */
+		setTags(
+			id: string,
+			tagIds: string[],
+		): DrawingSummary | undefined | "unknown-tag" {
+			if (!summary(id)) return undefined;
+			try {
+				inTransaction(db, () => {
+					clearTagsStmt.run(id);
+					for (const tagId of tagIds) addTagStmt.run(id, tagId);
+				});
+			} catch (error) {
+				if (isForeignKeyError(error)) return "unknown-tag";
+				throw error;
+			}
+			return summary(id);
 		},
 
-		close(): void {
-			db.close();
+		/** Deletes the drawing; the database removes its tag assignments with it. */
+		delete(id: string): boolean {
+			return deleteStmt.run(id).changes > 0;
 		},
 	};
 }

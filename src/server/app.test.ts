@@ -2,11 +2,15 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { DatabaseSync } from "node:sqlite";
 import type { Drawing, DrawingSummary } from "../shared/drawings.ts";
+import type { Tag } from "../shared/tags.ts";
 import { createApp } from "./app.ts";
-import { type DrawingStore, openDrawingStore } from "./drawing-store.ts";
+import { openDatabase } from "./database.ts";
+import { openDrawingStore } from "./drawing-store.ts";
+import { openTagStore } from "./tag-store.ts";
 
-let store: DrawingStore;
+let db: DatabaseSync;
 let app: ReturnType<typeof createApp>;
 
 const send = (method: string, path: string, body?: unknown) =>
@@ -37,12 +41,17 @@ const getPreview = (id: string, version = "") =>
 const create = async (name: string): Promise<Drawing> =>
 	(await send("POST", "/drawings", { name })).json();
 
-beforeEach(() => {
-	store = openDrawingStore(":memory:");
-	app = createApp(store);
+const stores = () => ({
+	drawings: openDrawingStore(db),
+	tags: openTagStore(db),
 });
 
-afterEach(() => store.close());
+beforeEach(() => {
+	db = openDatabase(":memory:");
+	app = createApp(stores());
+});
+
+afterEach(() => db.close());
 
 describe("drawings API", () => {
 	it("creates a drawing without a scene", async () => {
@@ -241,13 +250,255 @@ describe("drawing previews API", () => {
 	);
 });
 
+const createTag = async (label: string, color = "blue"): Promise<Tag> =>
+	(await send("POST", "/tags", { label, color })).json();
+
+const putTags = (id: string, tagIds: unknown) =>
+	send("PUT", `/drawings/${id}/tags`, { tagIds });
+
+const listTags = async (): Promise<Tag[]> =>
+	(await send("GET", "/tags")).json();
+
+const tagIdsOf = async (id: string): Promise<string[]> =>
+	((await (await send("GET", `/drawings/${id}`)).json()) as Drawing).tagIds;
+
+describe("tags API", () => {
+	it("creates a tag with a trimmed label", async () => {
+		const response = await send("POST", "/tags", {
+			label: " Work ",
+			color: "blue",
+		});
+
+		expect(response.status).toBe(201);
+		expect(await response.json()).toEqual({
+			id: expect.any(String),
+			label: "Work",
+			color: "blue",
+		});
+	});
+
+	it("lists tags by label, ignoring case", async () => {
+		await createTag("beta");
+		await createTag("Alpha");
+
+		expect((await listTags()).map((tag) => tag.label)).toEqual([
+			"Alpha",
+			"beta",
+		]);
+	});
+
+	it("changes a tag's label and colour", async () => {
+		const { id } = await createTag("Work");
+
+		const response = await send("PUT", `/tags/${id}`, {
+			label: "Job",
+			color: "red",
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ id, label: "Job", color: "red" });
+		expect(await listTags()).toEqual([{ id, label: "Job", color: "red" }]);
+	});
+
+	it("renames a tag to its own label in another case", async () => {
+		const { id } = await createTag("work");
+
+		const response = await send("PUT", `/tags/${id}`, {
+			label: "Work",
+			color: "blue",
+		});
+
+		expect(response.status).toBe(200);
+	});
+
+	it("deletes a tag", async () => {
+		const { id } = await createTag("Work");
+
+		expect((await send("DELETE", `/tags/${id}`)).status).toBe(204);
+		expect(await listTags()).toEqual([]);
+	});
+
+	it.each([
+		["a blank label", { label: "  ", color: "blue" }, "A tag needs a label"],
+		[
+			"a label over 30 characters",
+			{ label: "a".repeat(31), color: "blue" },
+			"A tag label has at most 30 characters",
+		],
+		["no label", { color: "blue" }, "Send the tag as JSON"],
+		["a label that isn't text", { label: 1, color: "blue" }, "Send the tag"],
+		["an unknown colour", { label: "Work", color: "gray" }, "Unknown tag"],
+		["no colour", { label: "Work" }, "Unknown tag colour"],
+		["no body", undefined, "Send the tag as JSON"],
+	])("rejects %s with 400", async (_, body, message) => {
+		const { id } = await createTag("Existing");
+
+		const created = await send("POST", "/tags", body);
+		const changed = await send("PUT", `/tags/${id}`, body);
+
+		expect(created.status).toBe(400);
+		expect(await created.text()).toContain(message);
+		expect(changed.status).toBe(400);
+		expect(await listTags()).toEqual([
+			{ id, label: "Existing", color: "blue" },
+		]);
+	});
+
+	it("rejects a body that isn't JSON with 400", async () => {
+		const response = await app.request("/api/tags", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: "{nope",
+		});
+
+		expect(response.status).toBe(400);
+	});
+
+	it("rejects a label another tag has, ignoring case, with 409", async () => {
+		await createTag("Ärger");
+		const { id } = await createTag("Work");
+
+		const created = await send("POST", "/tags", {
+			label: " ärger ",
+			color: "red",
+		});
+		const renamed = await send("PUT", `/tags/${id}`, {
+			label: "ÄRGER",
+			color: "red",
+		});
+
+		expect(created.status).toBe(409);
+		expect(await created.text()).toBe('A tag named "ärger" already exists');
+		expect(renamed.status).toBe(409);
+		expect((await listTags()).map((tag) => tag.label).sort()).toEqual([
+			"Work",
+			"Ärger",
+		]);
+	});
+
+	it.each([
+		["PUT", { label: "Work", color: "blue" }],
+		["DELETE", undefined],
+	])("returns 404 for %s on an unknown tag", async (method, body) => {
+		expect((await send(method, "/tags/missing", body)).status).toBe(404);
+	});
+});
+
+describe("drawing tags API", () => {
+	it("starts a drawing without tags", async () => {
+		const drawing = await create("Plan");
+
+		expect(drawing.tagIds).toEqual([]);
+		expect(await tagIdsOf(drawing.id)).toEqual([]);
+	});
+
+	it("replaces a drawing's tags and lists them sorted by ID", async () => {
+		const { id } = await create("Plan");
+		const tagIds = [
+			(await createTag("Work")).id,
+			(await createTag("Idea")).id,
+			(await createTag("Draft")).id,
+		];
+		await putTags(id, tagIds.slice(0, 2));
+
+		const response = await putTags(id, tagIds.slice(1));
+		const summary: DrawingSummary = await response.json();
+		const list: DrawingSummary[] = await (
+			await send("GET", "/drawings")
+		).json();
+
+		const expected = tagIds.slice(1).sort();
+		expect(response.status).toBe(200);
+		expect(summary.tagIds).toEqual(expected);
+		expect(list[0].tagIds).toEqual(expected);
+		expect(await tagIdsOf(id)).toEqual(expected);
+	});
+
+	it("keeps a tag once when the request names it twice", async () => {
+		const { id } = await create("Plan");
+		const tag = await createTag("Work");
+
+		const summary: DrawingSummary = await (
+			await putTags(id, [tag.id, tag.id])
+		).json();
+
+		expect(summary.tagIds).toEqual([tag.id]);
+	});
+
+	it("leaves updatedAt alone", async () => {
+		const drawing = await create("Plan");
+		const tag = await createTag("Work");
+		await new Promise((resolve) => setTimeout(resolve, 5));
+
+		const summary: DrawingSummary = await (
+			await putTags(drawing.id, [tag.id])
+		).json();
+
+		expect(summary.updatedAt).toBe(drawing.updatedAt);
+	});
+
+	it("rejects an unknown tag ID with 400 and keeps the tags", async () => {
+		const { id } = await create("Plan");
+		const tag = await createTag("Work");
+		await putTags(id, [tag.id]);
+
+		const response = await putTags(id, [tag.id, "missing"]);
+
+		expect(response.status).toBe(400);
+		expect(await response.text()).toBe("A tag ID names no tag");
+		expect(await tagIdsOf(id)).toEqual([tag.id]);
+	});
+
+	it.each([
+		["no tag IDs", undefined],
+		["tag IDs that aren't a list", "tag"],
+		["a tag ID that isn't text", [1]],
+	])("rejects %s with 400", async (_, tagIds) => {
+		const { id } = await create("Plan");
+
+		expect((await putTags(id, tagIds)).status).toBe(400);
+	});
+
+	it("returns 404 for an unknown drawing", async () => {
+		expect((await putTags("missing", [])).status).toBe(404);
+	});
+
+	it("removes a deleted tag from every drawing", async () => {
+		const plan = await create("Plan");
+		const sketch = await create("Sketch");
+		const work = await createTag("Work");
+		const idea = await createTag("Idea");
+		await putTags(plan.id, [work.id, idea.id]);
+		await putTags(sketch.id, [work.id]);
+
+		await send("DELETE", `/tags/${work.id}`);
+
+		expect(await tagIdsOf(plan.id)).toEqual([idea.id]);
+		expect(await tagIdsOf(sketch.id)).toEqual([]);
+	});
+
+	it("removes a deleted drawing's tag assignments", async () => {
+		const { id } = await create("Plan");
+		const tag = await createTag("Work");
+		await putTags(id, [tag.id]);
+
+		await send("DELETE", `/drawings/${id}`);
+
+		const rows = db
+			.prepare("SELECT count(*) AS count FROM drawing_tags")
+			.get() as { count: number };
+		expect(rows.count).toBe(0);
+		expect((await send("DELETE", `/tags/${tag.id}`)).status).toBe(204);
+	});
+});
+
 describe("client build", () => {
 	let staticDir: string;
 
 	beforeEach(() => {
 		staticDir = mkdtempSync(join(tmpdir(), "client-build-"));
 		writeFileSync(join(staticDir, "index.html"), "<p>client</p>");
-		app = createApp(store, { staticDir });
+		app = createApp(stores(), { staticDir });
 	});
 
 	afterEach(() => rmSync(staticDir, { recursive: true }));
