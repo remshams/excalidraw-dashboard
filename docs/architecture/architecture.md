@@ -424,12 +424,12 @@ types.
 
 Vitest runs three projects from [`vite.config.ts`](../../vite.config.ts):
 - `server` tests the API through `app.request` against an in-memory SQLite
-  database, in one test file per route module plus `app.test.ts` for the API
-  404 and the client build, including the cascades when a tag or a drawing is
-  deleted. `test-api.ts` gives each test a fresh database
-  and holds the request helpers.
-  `database.test.ts` opens database files from before numbered migrations, with
-  and without previews, in a temporary folder, to test the upgrade.
+  database, including the cascades when a tag or a drawing is deleted. Each
+  route module has its own test file, and `app.test.ts` covers the API 404 and
+  the client build. `test-api.ts` gives each test a fresh database and holds the
+  request helpers. `database.test.ts` opens database files from before numbered
+  migrations, with and without previews, in a temporary folder, to test the
+  upgrade.
 - `shared` tests the tag label and colour rules.
 - `client` tests in jsdom with Testing Library. Component tests mock `api.ts`
   and replace `Editor.tsx`, since Excalidraw does not render in jsdom. The
