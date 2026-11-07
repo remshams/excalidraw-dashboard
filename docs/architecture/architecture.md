@@ -464,9 +464,9 @@ Chromium.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
   actions for the drawings UI, and
   [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings,
-  stores scenes, and reads stored scenes and previews through the HTTP API. It
-  also creates, changes, deletes and assigns tags and reads them back. Neither
-  defines steps. [`unique-name.ts`](../../e2e/unique-name.ts) gives every
+  stores scenes, assigns tags, and reads stored scenes, previews and summaries
+  through the HTTP API. [`tags-api.ts`](../../e2e/tags-api.ts) creates, changes
+  and deletes tags and reads them back. None of them defines steps. [`unique-name.ts`](../../e2e/unique-name.ts) gives every
   drawing and tag a name no other test uses.
 
 The tests are black-box. They run with `pnpm e2e` and in the `e2e` CI job, not
