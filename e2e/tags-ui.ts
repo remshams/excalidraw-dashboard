@@ -35,3 +35,23 @@ export function tagTrayStatus(page: Page) {
 export async function pressBesideTagTray(page: Page): Promise<void> {
 	await page.mouse.click(5, 5);
 }
+
+/** The form's field for the tag's label. */
+export function tagLabelField(page: Page) {
+	return tagTray(page).getByRole("textbox", { name: "Label" });
+}
+
+/** A button in the tray, such as New tag or Save tag. */
+export function trayButton(page: Page, name: string) {
+	return tagTray(page).getByRole("button", { name, exact: true });
+}
+
+/** A colour in the form. */
+export function tagColor(page: Page, name: string) {
+	return tagTray(page).getByRole("radio", { name });
+}
+
+/** Why the form refused a label. */
+export function tagFormError(page: Page) {
+	return tagTray(page).getByRole("alert");
+}
