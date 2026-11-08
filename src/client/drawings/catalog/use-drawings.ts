@@ -41,8 +41,18 @@ export function useDrawings(onError: (error: unknown) => void) {
 		setDrawings((list) => list.filter((d) => d.id !== id));
 	};
 
+	/** Takes a deleted tag off the drawings that carry it, as the server already did. */
+	const forgetTag = (tagId: string) => {
+		setDrawings((list) =>
+			list.map((d) => ({
+				...d,
+				tagIds: d.tagIds.filter((id) => id !== tagId),
+			})),
+		);
+	};
+
 	/** Whether this app deleted the drawing, so later errors about it don't matter. */
 	const wasDeleted = (id: string) => deletedIds.current.has(id);
 
-	return { drawings, replace, create, rename, remove, wasDeleted };
+	return { drawings, replace, create, rename, remove, forgetTag, wasDeleted };
 }
