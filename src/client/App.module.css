@@ -1,8 +1,9 @@
 /* Landing page */
 
 /* Keeps the cards in place when a scrollbar comes or goes, such as when the Tags
-   tray stops the page from scrolling. */
+   tray stops the page from scrolling. The gutter shows the root's background. */
 :root:has(.gallery) {
+	background: var(--desk);
 	scrollbar-gutter: stable;
 }
 
