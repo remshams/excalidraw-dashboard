@@ -534,6 +534,40 @@ test("a press under the tray's sheet closes it", async ({ page }) => {
 	});
 });
 
+test("a failed change stays in the form and can be tried again", async ({
+	page,
+}) => {
+	const label = uniqueName("Retry");
+
+	await test.step("the server fails while a new tag is sent", async () => {
+		await page.route("**/api/tags", (route) =>
+			route.request().method() === "POST"
+				? route.fulfill({ status: 500, body: "Boom" })
+				: route.continue(),
+		);
+		await page.goto("/");
+		await tagsButton(page).click();
+		await trayButton(page, "New tag").click();
+		await tagLabelField(page).fill(label);
+		await trayButton(page, "Create tag").click();
+	});
+
+	await test.step("the form says so and keeps the label", async () => {
+		await expect(tagFormError(page)).toHaveText(
+			"The change failed. Try again.",
+		);
+		await expect(tagLabelField(page)).toHaveValue(label);
+		await expect(tagLabelField(page)).toBeFocused();
+	});
+
+	await test.step("trying again after the server recovers creates the tag", async () => {
+		await page.unroute("**/api/tags");
+		await page.keyboard.press("Enter");
+		await expect(tagTrayStatus(page)).toHaveText(`${label} created.`);
+		await expect(page.getByRole("alert")).toHaveCount(0);
+	});
+});
+
 test("the form fits a short window", async ({ page }) => {
 	await test.step("open a new tag in a short window", async () => {
 		await page.setViewportSize({ width: 1280, height: 320 });
