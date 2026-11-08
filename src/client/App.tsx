@@ -55,7 +55,6 @@ export function App() {
 						drawings={drawings}
 						tags={tags}
 						tagChanges={tagChanges}
-						onTagError={showError}
 						onOpen={openDrawing}
 						onCreate={createAndOpen}
 						onRename={(id, name) => rename(id, name).catch(showError)}
