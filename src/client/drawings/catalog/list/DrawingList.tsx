@@ -7,13 +7,18 @@ import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
 import { PencilIcon, PlusIcon, TrashIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
+import { TagInkFilter } from "../tags/TagMark.tsx";
 import { TagTray } from "../tags/TagTray.tsx";
+import type { TagChanges } from "../tags/use-tags.ts";
 import styles from "./DrawingList.module.css";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];
 	/** Every tag, or null while they load or when loading failed. */
 	tags: Tag[] | null;
+	tagChanges: TagChanges;
+	/** Reports a tag change that failed for a reason other than the tag itself. */
+	onTagError: (error: unknown) => void;
 	onOpen: (id: string | null) => void;
 	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
@@ -35,6 +40,8 @@ type OpenTask = { kind: "create" } | { kind: CardTask; id: string } | null;
 export function DrawingList({
 	drawings,
 	tags,
+	tagChanges,
+	onTagError,
 	onOpen,
 	onCreate,
 	onRename,
@@ -63,7 +70,13 @@ export function DrawingList({
 							close();
 						}}
 					/>
-					<TagTray tags={tags} drawings={drawings} />
+					<TagTray
+						tags={tags}
+						drawings={drawings}
+						changes={tagChanges}
+						onError={onTagError}
+					/>
+					<TagInkFilter />
 				</div>
 			</header>
 			<ul className={styles.cards} aria-label="Drawings">
