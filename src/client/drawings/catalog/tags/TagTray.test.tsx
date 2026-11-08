@@ -1,8 +1,16 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { useState } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
-import type { Tag } from "../../../../shared/tags.ts";
+import type { Tag, TagRequest } from "../../../../shared/tags.ts";
+import { ApiError } from "../../api.ts";
 import { TagTray } from "./TagTray.tsx";
 
 const tags: Tag[] = [
@@ -26,13 +34,36 @@ const drawings = [
 	drawing("3", []),
 ];
 
+const changes = { create: vi.fn(), update: vi.fn(), remove: vi.fn() };
+const onError = vi.fn();
+
+beforeEach(() => vi.resetAllMocks());
+
+const trayProps = { drawings, changes, onError };
+
+/** A tray whose tags take in a created one, as `useTags` does. */
+function TrayWithStoredTags() {
+	const [stored, setStored] = useState(tags);
+	const storing = {
+		...changes,
+		create: async (request: TagRequest) => {
+			const created: Tag = await changes.create(request);
+			setStored((list) => [...list, created]);
+			return created;
+		},
+	};
+	return <TagTray {...trayProps} tags={stored} changes={storing} />;
+}
+
 async function openTray(shownTags: Tag[] | null = tags) {
 	const user = userEvent.setup();
-	render(<TagTray tags={shownTags} drawings={drawings} />);
+	render(<TagTray tags={shownTags} {...trayProps} />);
 	await user.click(tagsButton());
 	return user;
 }
 
+const button = (name: string) => screen.getByRole("button", { name });
+const labelField = () => screen.getByRole("textbox", { name: "Label" });
 const tagsButton = () => screen.getByRole("button", { name: "Tags" });
 const tray = () => screen.queryByRole("dialog", { name: "Tags" });
 const findField = () => screen.getByRole("searchbox", { name: "Find a tag" });
@@ -43,7 +74,7 @@ const rowOf = (label: string) =>
 
 describe("TagTray", () => {
 	it("stays closed until the Tags button opens it", async () => {
-		render(<TagTray tags={tags} drawings={drawings} />);
+		render(<TagTray tags={tags} {...trayProps} />);
 
 		expect(tray()).toBeNull();
 		expect(tagsButton()).toHaveAttribute("aria-haspopup", "dialog");
@@ -159,5 +190,208 @@ describe("TagTray", () => {
 		await user.click(tagsButton());
 
 		expect(findField()).toHaveValue("");
+	});
+
+	describe("creating a tag", () => {
+		it("offers New tag, or to create the text nothing matches", async () => {
+			const user = await openTray();
+			expect(button("New tag")).toBeVisible();
+
+			await user.type(findField(), " garden ");
+
+			expect(button("Create “garden”")).toBeVisible();
+		});
+
+		it("has no way to create a tag when the tags aren't loaded", async () => {
+			const user = await openTray(null);
+
+			expect(screen.queryByRole("button", { name: "New tag" })).toBeNull();
+
+			await user.type(findField(), "garden{Enter}");
+
+			expect(screen.queryByRole("textbox", { name: "Label" })).toBeNull();
+		});
+
+		it("creates a tag in the form and focuses its row in the list", async () => {
+			const created: Tag = { id: "n", label: "Garden", color: "blue" };
+			changes.create.mockResolvedValue(created);
+			render(<TrayWithStoredTags />);
+			const user = userEvent.setup();
+			await user.click(tagsButton());
+
+			await user.click(button("New tag"));
+			expect(labelField()).toHaveFocus();
+			await user.type(labelField(), "Garden");
+			await user.click(button("Create tag"));
+
+			expect(changes.create).toHaveBeenCalledWith({
+				label: "Garden",
+				color: "blue",
+			});
+			await waitFor(() => expect(button("Change Garden")).toHaveFocus());
+			expect(screen.getByRole("status")).toHaveTextContent("Garden created.");
+		});
+
+		it("clears the find text after creating from it", async () => {
+			const created: Tag = { id: "n", label: "Garden", color: "blue" };
+			changes.create.mockResolvedValue(created);
+			const user = await openTray();
+
+			await user.type(findField(), "Garden");
+			await user.click(button("Create “Garden”"));
+			expect(labelField()).toHaveValue("Garden");
+			await user.click(button("Create tag"));
+
+			expect(await screen.findByRole("searchbox")).toHaveValue("");
+		});
+
+		it("opens the form with Enter only when nothing matches", async () => {
+			const user = await openTray();
+
+			await user.type(findField(), "work{Enter}");
+			expect(screen.queryByRole("textbox", { name: "Label" })).toBeNull();
+
+			await user.clear(findField());
+			await user.type(findField(), "garden{Enter}");
+			expect(labelField()).toHaveValue("garden");
+		});
+	});
+
+	it("keeps the Enter that opens the form from also submitting it", async () => {
+		const user = await openTray();
+		await user.type(findField(), "garden");
+
+		// A cancelled key press never reaches the form's field that has the focus by then.
+		const notCancelled = fireEvent.keyDown(findField(), { key: "Enter" });
+
+		expect(notCancelled).toBe(false);
+		expect(labelField()).toHaveValue("garden");
+		expect(changes.create).not.toHaveBeenCalled();
+	});
+
+	describe("changing a tag", () => {
+		it("saves the new label and colour through one change", async () => {
+			changes.update.mockResolvedValue({
+				id: "c",
+				label: "Job",
+				color: "red",
+			});
+			const user = await openTray();
+
+			await user.click(button("Change Work"));
+			await user.clear(labelField());
+			await user.type(labelField(), " Job ");
+			await user.click(screen.getByRole("radio", { name: "Red" }));
+			await user.click(button("Save tag"));
+
+			expect(changes.update).toHaveBeenCalledWith("c", {
+				label: "Job",
+				color: "red",
+			});
+			expect(await screen.findByRole("status")).toHaveTextContent("Job saved.");
+		});
+
+		it("goes back to the list when the tag is gone", async () => {
+			changes.update.mockRejectedValue(new ApiError("", 404, ""));
+			const user = await openTray();
+
+			await user.click(button("Change Work"));
+			await user.click(button("Save tag"));
+
+			expect(await screen.findByRole("status")).toHaveTextContent(
+				"This tag was deleted elsewhere.",
+			);
+			expect(findField()).toHaveFocus();
+		});
+
+		it("reports a failure that isn't about the tag and keeps the form", async () => {
+			const failure = new ApiError("PUT failed with 500", 500, "");
+			changes.update.mockRejectedValue(failure);
+			const user = await openTray();
+
+			await user.click(button("Change Work"));
+			await user.click(button("Save tag"));
+
+			await waitFor(() => expect(onError).toHaveBeenCalledWith(failure));
+			expect(labelField()).toBeVisible();
+		});
+	});
+
+	describe("deleting a tag", () => {
+		it("deletes after asking and focuses the find field", async () => {
+			changes.remove.mockResolvedValue(undefined);
+			const user = await openTray();
+
+			await user.click(button("Change Work"));
+			await user.click(button("Delete…"));
+			expect(screen.getByText(/removed from 2 drawings/)).toBeVisible();
+			await user.click(button("Delete tag"));
+
+			expect(changes.remove).toHaveBeenCalledWith("c");
+			expect(await screen.findByRole("status")).toHaveTextContent(
+				"Work deleted.",
+			);
+			expect(findField()).toHaveFocus();
+		});
+	});
+
+	describe("Escape", () => {
+		it("undoes one layer at a time", async () => {
+			const user = await openTray();
+			await user.type(findField(), "work");
+			await user.click(button("Change Work"));
+			await user.click(button("Delete…"));
+
+			await user.keyboard("{Escape}");
+			expect(button("Save tag")).toBeVisible();
+
+			await user.keyboard("{Escape}");
+			expect(findField()).toHaveValue("work");
+			expect(button("Change Work")).toHaveFocus();
+
+			await user.keyboard("{Escape}");
+			expect(findField()).toHaveValue("");
+			expect(tray()).not.toBeNull();
+
+			await user.keyboard("{Escape}");
+			expect(tray()).toBeNull();
+		});
+
+		it("goes back to the find field from a new tag", async () => {
+			const user = await openTray();
+
+			await user.click(button("New tag"));
+			await user.keyboard("{Escape}");
+
+			expect(findField()).toHaveFocus();
+		});
+	});
+
+	describe("the keyboard in the list", () => {
+		it("has one tab stop in the rows", async () => {
+			const user = await openTray();
+
+			expect(findField()).toHaveFocus();
+			await user.tab();
+			expect(button("Change Network")).toHaveFocus();
+			await user.tab();
+			expect(button("New tag")).toHaveFocus();
+		});
+
+		it("moves through the rows with the arrow keys, back up to the find field", async () => {
+			const user = await openTray();
+
+			await user.keyboard("{ArrowDown}");
+			expect(button("Change Network")).toHaveFocus();
+			await user.keyboard("{ArrowDown}");
+			expect(button("Change Personal")).toHaveFocus();
+
+			await user.tab();
+			await user.tab({ shift: true });
+			expect(button("Change Personal")).toHaveFocus();
+
+			await user.keyboard("{ArrowUp}{ArrowUp}");
+			expect(findField()).toHaveFocus();
+		});
 	});
 });

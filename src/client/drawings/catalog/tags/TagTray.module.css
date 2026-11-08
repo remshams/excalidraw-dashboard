@@ -16,18 +16,17 @@
 	background: var(--hover);
 }
 
-/* A sheet lying on the page, in front of the cards, wide enough to show about 24
-   tags in two columns. No padding or border here: .page covers the dialog. */
+/* An invisible frame down to the window's foot, wide enough to show about 24 tags
+   in two columns. .page is the sheet inside it, and a press on the frame below the
+   sheet counts as one on the backdrop. */
 .tray {
-	--lift: 0 1px 2px rgb(33 37 41 / 12%), 0 12px 28px rgb(33 37 41 / 18%);
-
+	display: flex;
+	flex-direction: column;
 	width: 34rem;
 	padding: 0;
-	overflow: hidden;
+	overflow: visible;
 	border: 0;
-	border-radius: var(--radius-md);
 	background: none;
-	box-shadow: var(--lift);
 	color: var(--ink);
 }
 
@@ -39,6 +38,9 @@
 		inset: auto;
 		top: anchor(bottom);
 		right: anchor(right);
+		bottom: var(--space-sm);
+		height: auto;
+		max-height: none;
 		margin: var(--space-sm) 0 0;
 	}
 }
@@ -54,7 +56,17 @@
 	background: transparent;
 }
 
+/* A sheet lying on the page, in front of the cards. The page can't scroll now, so
+   in a short window the rows or the form scroll within the sheet instead. */
 .page {
+	--lift: 0 1px 2px rgb(33 37 41 / 12%), 0 12px 28px rgb(33 37 41 / 18%);
+
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+	outline: none;
+	box-shadow: var(--lift);
 	border: var(--stroke-sm) solid var(--rule);
 	border-radius: var(--radius-md);
 	background: var(--sheet);
@@ -70,9 +82,10 @@
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	column-gap: var(--space-sm);
-	/* The page can't scroll now, so the rows leave room for what is above and below
-	   them in a short window. */
-	max-height: min(30rem, 100dvh - 12rem);
+	flex-shrink: 1;
+	align-content: start;
+	min-height: 0;
+	max-height: 30rem;
 	margin: 0;
 	padding: 0 var(--space-sm);
 	overflow-y: auto;
@@ -106,6 +119,29 @@
 	color: var(--graphite);
 }
 
+.pencil {
+	display: grid;
+	place-items: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--graphite);
+	cursor: pointer;
+}
+
+.pencil svg {
+	width: 16px;
+	height: 16px;
+}
+
+.pencil:hover {
+	background: var(--hover);
+	color: var(--ink);
+}
+
 .visuallyHidden {
 	position: absolute;
 	width: 1px;
@@ -117,6 +153,7 @@
 
 .status {
 	margin: 0;
+	overflow-wrap: anywhere;
 	color: var(--graphite);
 }
 
@@ -127,6 +164,38 @@
 
 .rows:not(:empty) {
 	padding-bottom: var(--space-sm);
+}
+
+.footer {
+	padding: var(--space-xs) var(--space-sm);
+	border-top: var(--stroke-sm) solid var(--rule);
+}
+
+.action {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	padding: var(--space-xs) var(--space-sm);
+	overflow-wrap: anywhere;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--ink);
+	text-align: start;
+	cursor: pointer;
+}
+
+.action svg {
+	flex: none;
+}
+
+.action:hover {
+	background: var(--hover);
+}
+
+.formView {
+	min-height: 0;
+	overflow-y: auto;
 }
 
 /* A phone has room for one column, within the page's margins (.gallery). */
