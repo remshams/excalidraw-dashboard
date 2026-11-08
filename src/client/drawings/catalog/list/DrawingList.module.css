@@ -20,6 +20,12 @@
 	line-height: var(--leading-sm);
 }
 
+/* The search field and the Tags button, equally tall. */
+.tools {
+	display: flex;
+	gap: var(--space-sm);
+}
+
 /* Looks like the rename field, in the body font. */
 .search {
 	box-sizing: border-box;
@@ -40,7 +46,7 @@
 	margin-top: var(--space-lg);
 }
 
-.list ul {
+.cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
 	gap: var(--space-lg);
@@ -49,7 +55,7 @@
 	list-style: none;
 }
 
-.list li {
+.cards li {
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -173,8 +179,8 @@
 	opacity: 0;
 }
 
-.list li:hover .actions,
-.list li:focus-within .actions {
+.cards li:hover .actions,
+.cards li:focus-within .actions {
 	opacity: 1;
 }
 
@@ -195,7 +201,7 @@
 
 /* Small screens: two narrower columns of cards. */
 @media (max-width: 40rem) {
-	/* The search field goes under the heading at full width. */
+	/* The search field and the Tags button go under the heading at full width. */
 	.header {
 		flex-direction: column;
 		align-items: stretch;
@@ -204,10 +210,10 @@
 	}
 
 	.search {
-		width: 100%;
+		flex: 1;
 	}
 
-	.list ul {
+	.cards {
 		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
 		gap: var(--space-md);
 	}

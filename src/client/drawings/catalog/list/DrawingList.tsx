@@ -1,15 +1,19 @@
 import { useState } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
+import type { Tag } from "../../../../shared/tags.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { searchByName } from "../../search.ts";
 import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
 import { PencilIcon, PlusIcon, TrashIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
+import { TagTray } from "../tags/TagTray.tsx";
 import styles from "./DrawingList.module.css";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];
+	/** Every tag, or null while they load or when loading failed. */
+	tags: Tag[] | null;
 	onOpen: (id: string | null) => void;
 	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
@@ -30,6 +34,7 @@ type OpenTask = { kind: "create" } | { kind: CardTask; id: string } | null;
  */
 export function DrawingList({
 	drawings,
+	tags,
 	onOpen,
 	onCreate,
 	onRename,
@@ -45,20 +50,23 @@ export function DrawingList({
 		<div className={styles.list}>
 			<header className={styles.header}>
 				<h1>Drawings</h1>
-				<input
-					type="search"
-					className={styles.search}
-					aria-label="Search drawings"
-					placeholder="Search…"
-					value={query}
-					onChange={(event) => {
-						setQuery(event.target.value);
-						// A question on a card the search hides would come back with it.
-						close();
-					}}
-				/>
+				<div className={styles.tools}>
+					<input
+						type="search"
+						className={styles.search}
+						aria-label="Search drawings"
+						placeholder="Search…"
+						value={query}
+						onChange={(event) => {
+							setQuery(event.target.value);
+							// A question on a card the search hides would come back with it.
+							close();
+						}}
+					/>
+					<TagTray tags={tags} drawings={drawings} />
+				</div>
 			</header>
-			<ul aria-label="Drawings">
+			<ul className={styles.cards} aria-label="Drawings">
 				<NewDrawingCard
 					creating={task?.kind === "create"}
 					onStart={() => setTask({ kind: "create" })}
