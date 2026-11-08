@@ -152,13 +152,13 @@ title: Modules of the client
 flowchart TD
     app["App<br>src/client/App.tsx<br>Composes the views and shows request errors"]:::module
     scheme["use-color-scheme<br>src/client/use-color-scheme.ts<br>Follows the system's light or dark setting"]:::module
-    catalog["catalog/<br>Lists, creates, renames, deletes and switches drawings"]:::group
+    catalog["catalog/<br>Lists, creates, renames, deletes and switches drawings; lists tags"]:::group
     editor["editor/<br>Loads and edits the open drawing"]:::group
     openId["use-open-drawing-id<br>src/client/drawings/use-open-drawing-id.ts<br>Keeps the open drawing in the URL path"]:::module
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
-    shared["shared<br>src/shared/<br>API types"]:::module
+    shared["shared<br>src/shared/<br>API types and the tag rules"]:::module
     app --> scheme & catalog & editor & openId & link
     catalog --> api & link & search
     link --> openId
@@ -169,7 +169,7 @@ flowchart TD
 [`src/client/main.tsx`](../../src/client/main.tsx) is the composition root: it
 renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature, one bounded context around the `Drawing` aggregate. It has two modules:
-`catalog/` lists, creates, renames, deletes and switches drawings, and `editor/` edits the
+`catalog/` lists, creates, renames, deletes and switches drawings and lists tags, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `search.ts`, a domain service that finds
 drawings by a part of their name, sits at the root too. So does
@@ -217,32 +217,58 @@ title: Modules of the catalog
 ---
 flowchart TD
     list["DrawingList<br>src/client/drawings/catalog/list/DrawingList.tsx<br>The landing page's cards with their previews"]:::module
-    switcher["QuickSwitcher<br>src/client/drawings/catalog/switcher/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
-    switcherState["use-quick-switcher<br>src/client/drawings/catalog/switcher/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
-    shortcut["use-switcher-shortcut<br>src/client/drawings/catalog/switcher/use-switcher-shortcut.ts<br>Toggles the switcher on Ctrl+K or ⌘K"]:::module
+    switcher["switcher/<br>Modal search that opens or creates a drawing"]:::group
+    tags["tags/<br>Loads, finds and lists the tags"]:::group
     previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
-    icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards and the editor bar"]:::module
+    icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards, the tray and the editor bar"]:::module
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
+    modal["use-modal-dialog<br>src/client/drawings/catalog/use-modal-dialog.ts<br>Keeps a mounted dialog modal, closes it on a backdrop press"]:::module
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
-    list --> name & confirm & icons & link & previewImage & search
-    switcher --> icons & previewImage & switcherState
-    switcherState --> search
+    list --> name & confirm & icons & link & previewImage & search & tags
+    switcher --> icons & modal & previewImage & search
+    tags --> icons & modal & api
     previewImage --> api
     drawings --> api
 ```
 
-`list/` holds the landing page and `switcher/` the quick switcher. Directly in
-`catalog/` stay `PreviewImage` and `icons`, which both use, `use-drawings` for
-`App`, and `NameField` and `DeleteConfirmation`. Only `DrawingList` uses those two
-today, but neither depends on it.
+```mermaid
+---
+title: Modules of the quick switcher and the tags
+---
+flowchart TD
+    switcher["QuickSwitcher<br>src/client/drawings/catalog/switcher/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
+    switcherState["use-quick-switcher<br>src/client/drawings/catalog/switcher/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
+    shortcut["use-switcher-shortcut<br>src/client/drawings/catalog/switcher/use-switcher-shortcut.ts<br>Toggles the switcher on Ctrl+K or ⌘K"]:::module
+    tray["TagTray<br>src/client/drawings/catalog/tags/TagTray.tsx<br>The Tags button and the tray it opens"]:::module
+    trayState["use-tag-tray<br>src/client/drawings/catalog/tags/use-tag-tray.ts<br>The open tray's dialog, find text and found tags"]:::module
+    findTags["find-tags<br>src/client/drawings/catalog/tags/find-tags.ts<br>Finds tags by a part of their label"]:::module
+    tags["use-tags<br>src/client/drawings/catalog/tags/use-tags.ts<br>Loads the tags and sorts them by label"]:::module
+    modal["use-modal-dialog<br>src/client/drawings/catalog/use-modal-dialog.ts<br>Keeps a mounted dialog modal, closes it on a backdrop press"]:::module
+    icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards, the tray and the editor bar"]:::module
+    previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
+    search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
+    api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
+    switcher --> icons & previewImage & switcherState & modal
+    switcherState --> search & modal
+    tray --> icons & trayState & modal
+    trayState --> findTags & modal
+    tags --> api
+```
 
-`App` renders `DrawingList` with the list from `use-drawings`. A search field
-next to the heading filters the cards through `search.ts`, and a status says
-when no drawing has the name. The first card
+`list/` holds the landing page, `switcher/` the quick switcher and `tags/` the
+tags. Directly in `catalog/` stay `PreviewImage`, which the landing page and the
+quick switcher use, `icons`, which all of them use, `use-modal-dialog`, which the
+quick switcher and the tray use, `use-drawings` for `App`, and `NameField` and
+`DeleteConfirmation`. Only
+`DrawingList` uses those two today, but neither depends on it.
+
+`App` renders `DrawingList` with the list from `use-drawings` and the tags from
+`use-tags`. A search field next to the heading filters the cards through
+`search.ts`, and a status says when no drawing has the name. The first card
 is a blank sheet that asks for a name and opens the new drawing. Every other
 card shows the drawing's preview on a sheet, with an `<img>` whose URL from
 `api.ts` carries `previewUpdatedAt` as a version. A drawing without a preview,
@@ -253,6 +279,20 @@ and the browser loads the new image. A card renames its drawing through
 remembers which drawings it deleted, so `App` can ignore a last save that was
 still in flight and fails once the drawing is gone. `App` takes the icons for
 its bar from `icons`.
+
+`tags/` holds the tag aggregate's part of the catalog. `use-tags` loads the tags
+once when `App` mounts and sorts them with `localeCompare`, as `use-drawings` sorts
+names, so a label such as "Ärger" sits with the A's and not after "Work". The
+**Tags** button next to the search opens `TagTray`, a native modal `<dialog>` below
+the button with a transparent backdrop, so the page stays in view but can't scroll
+([ADR 0003](adr/0003-tag-tray-as-modal-dialog.md)). The tray lists each tag with
+its colour and the number of drawings that carry it, which it counts from the
+drawing summaries. Its field finds tags through `find-tags`, a domain service:
+labels that start with the text first, then the rest. A status
+says when no tag has the text, when there are no tags yet or when they aren't
+loaded. Escape clears the
+find text, then closes the tray; a press beside the tray also closes it, and the
+focus returns to the button.
 
 The editor view's bar has a "Switch drawing" button, and `use-switcher-shortcut`
 makes Ctrl+K or ⌘K toggle the same `QuickSwitcher` while the editor view is
@@ -272,7 +312,8 @@ through "All drawings".
 [`styles.css`](../../src/client/styles.css) holds what the whole client shares:
 design tokens for colors from open-color, the palette Excalidraw draws with, and
 for font sizes, line heights, font weights, stroke widths, corner radii and
-spacing;
+spacing, with a `--tag-<colour>-solid` for each of the 8 tag colours in both
+palettes;
 Excalidraw's bundled fonts, Excalifont for drawing names and Assistant for
 controls; the base rules; and the focus ring. It switches to a dark palette with
 `prefers-color-scheme`. Each component keeps its own rules in a CSS module next
@@ -468,7 +509,12 @@ Chromium.
 - [`tags-api.spec.ts`](../../e2e/tags-api.spec.ts) covers tags through the
   HTTP API: creating, renaming and deleting a tag, assigning tags to a drawing
   without changing its `updatedAt`, and that deleting a tag removes it from the
-  drawing. The tag UI doesn't exist yet.
+  drawing.
+- [`tags.spec.ts`](../../e2e/tags.spec.ts) covers the Tags tray: the rows with
+  their colour and drawing count, where the tray hangs on a wide and a phone-width
+  window, the page not scrolling behind it, finding a tag, using it by keyboard
+  alone with the focus returning to the button, and closing it with a press beside
+  it. Tags and assignments come from the HTTP API.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
   Excalidraw logo as its icon and that the server serves it as an SVG.
 - Each test groups its actions and checks into `test.step` blocks, so the test
@@ -478,7 +524,8 @@ Chromium.
   [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings,
   stores scenes, assigns tags, and reads stored scenes, previews and summaries
   through the HTTP API. [`tags-api.ts`](../../e2e/tags-api.ts) creates, changes
-  and deletes tags and reads them back. None of them defines steps. [`unique-name.ts`](../../e2e/unique-name.ts) gives every
+  and deletes tags and reads them back, and [`tags-ui.ts`](../../e2e/tags-ui.ts)
+  holds the locators and user actions for the tray. None of them defines steps. [`unique-name.ts`](../../e2e/unique-name.ts) gives every
   drawing and tag a name no other test uses.
 
 The tests are black-box. They run with `pnpm e2e` and in the `e2e` CI job, not
