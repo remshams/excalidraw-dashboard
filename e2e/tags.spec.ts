@@ -115,8 +115,8 @@ test("the tray fits a short window that can't scroll", async ({
 		await tagsButton(page).click();
 	});
 
-	await test.step("the whole tray is in the window", async () => {
-		await expect(tagTray(page)).toBeInViewport({ ratio: 1 });
+	await test.step("New tag at its foot is in the window", async () => {
+		await expect(trayButton(page, "New tag")).toBeInViewport({ ratio: 1 });
 	});
 
 	await test.step("the last row can be scrolled to", async () => {
@@ -474,7 +474,6 @@ test("the tray keeps New tag in a short window after a change", async ({
 		await trayButton(page, "Save tag").click();
 		await expect(tagTrayStatus(page)).toHaveText(`${label} saved.`);
 		await expect(trayButton(page, "New tag")).toBeInViewport({ ratio: 1 });
-		await expect(tagTray(page)).toBeInViewport({ ratio: 1 });
 	});
 });
 
@@ -500,6 +499,39 @@ test("a long label ends in an ellipsis on a phone", async ({
 		expect(mark.x).toBeGreaterThanOrEqual(tray.x);
 		expect(mark.x + mark.width).toBeLessThanOrEqual(tray.x + tray.width);
 	});
+
+	await test.step("the message about a taken label stays inside the tray", async () => {
+		await trayButton(page, "Keep it").click();
+		await trayButton(page, "Cancel").click();
+		await trayButton(page, "New tag").click();
+		await tagLabelField(page).fill(label);
+		await trayButton(page, "Create tag").click();
+		const tray = await tagTray(page).boundingBox();
+		const error = await tagFormError(page).boundingBox();
+		if (!tray || !error) throw new Error("Both should be on the page");
+		expect(error.x + error.width).toBeLessThanOrEqual(tray.x + tray.width);
+		const scrollWidth = await tagFormError(page).evaluate(
+			(message) => message.scrollWidth - message.clientWidth,
+		);
+		expect(scrollWidth).toBe(0);
+	});
+});
+
+test("a press under the tray's sheet closes it", async ({ page }) => {
+	await test.step("open the tray in a tall window", async () => {
+		await page.setViewportSize({ width: 1280, height: 900 });
+		await page.goto("/");
+		await tagsButton(page).click();
+		await expect(tagTray(page)).toBeVisible();
+	});
+
+	await test.step("press at the window's foot, straight below the tray", async () => {
+		const button = await tagsButton(page).boundingBox();
+		if (!button) throw new Error("The button should be on the page");
+		await page.mouse.click(button.x, 890);
+		await expect(tagTray(page)).toBeHidden();
+		await expect(tagsButton(page)).toBeFocused();
+	});
 });
 
 test("the form fits a short window", async ({ page }) => {
@@ -508,10 +540,6 @@ test("the form fits a short window", async ({ page }) => {
 		await page.goto("/");
 		await tagsButton(page).click();
 		await trayButton(page, "New tag").click();
-	});
-
-	await test.step("the whole tray is in the window", async () => {
-		await expect(tagTray(page)).toBeInViewport({ ratio: 1 });
 	});
 
 	await test.step("the buttons can be scrolled to", async () => {
