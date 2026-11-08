@@ -3,6 +3,7 @@ import {
 	deleteDrawing,
 	deletePreview,
 	listDrawings,
+	listTags,
 	previewUrl,
 	savePreview,
 	updateDrawing,
@@ -18,6 +19,20 @@ describe("drawings API client", () => {
 		mockFetch(Response.json([{ id: "1" }]));
 
 		expect(await listDrawings()).toEqual([{ id: "1" }]);
+	});
+
+	it("lists tags", async () => {
+		const fetch = mockFetch(
+			Response.json([{ id: "1", label: "Work", color: "blue" }]),
+		);
+
+		expect(await listTags()).toEqual([
+			{ id: "1", label: "Work", color: "blue" },
+		]);
+
+		expect(fetch).toHaveBeenCalledWith("/api/tags", {
+			headers: { "Content-Type": "application/json" },
+		});
 	});
 
 	it("sends updates as JSON", async () => {

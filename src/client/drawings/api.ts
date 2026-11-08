@@ -3,6 +3,7 @@ import type {
 	DrawingSummary,
 	UpdateDrawingRequest,
 } from "../../shared/drawings.ts";
+import type { Tag } from "../../shared/tags.ts";
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	const response = await fetch(`/api${path}`, {
@@ -45,6 +46,8 @@ export const savePreview = (id: string, png: Blob) =>
 
 export const deletePreview = (id: string) =>
 	request<DrawingSummary>(`/drawings/${id}/preview`, { method: "DELETE" });
+
+export const listTags = () => request<Tag[]>("/tags");
 
 /**
  * The URL of a drawing's PNG preview, or null if it has none. It carries
