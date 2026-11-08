@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	ApiError,
+	createTag,
 	deleteDrawing,
 	deletePreview,
+	deleteTag,
 	listDrawings,
 	listTags,
 	previewUrl,
 	savePreview,
 	updateDrawing,
+	updateTag,
 } from "./api.ts";
 
 const mockFetch = (response: Response) =>
@@ -32,6 +36,58 @@ describe("drawings API client", () => {
 
 		expect(fetch).toHaveBeenCalledWith("/api/tags", {
 			headers: { "Content-Type": "application/json" },
+		});
+	});
+
+	it("creates a tag", async () => {
+		const tag = { id: "1", label: "Work", color: "blue" } as const;
+		const fetch = mockFetch(Response.json(tag, { status: 201 }));
+
+		expect(await createTag({ label: "Work", color: "blue" })).toEqual(tag);
+
+		expect(fetch).toHaveBeenCalledWith("/api/tags", {
+			method: "POST",
+			body: '{"label":"Work","color":"blue"}',
+			headers: { "Content-Type": "application/json" },
+		});
+	});
+
+	it("changes a tag", async () => {
+		const tag = { id: "1", label: "Home", color: "pink" } as const;
+		const fetch = mockFetch(Response.json(tag));
+
+		expect(await updateTag("1", { label: "Home", color: "pink" })).toEqual(tag);
+
+		expect(fetch).toHaveBeenCalledWith("/api/tags/1", {
+			method: "PUT",
+			body: '{"label":"Home","color":"pink"}',
+			headers: { "Content-Type": "application/json" },
+		});
+	});
+
+	it("deletes a tag", async () => {
+		const fetch = mockFetch(new Response(null, { status: 204 }));
+
+		expect(await deleteTag("1")).toBeUndefined();
+
+		expect(fetch).toHaveBeenCalledWith("/api/tags/1", {
+			method: "DELETE",
+			headers: { "Content-Type": "application/json" },
+		});
+	});
+
+	it("reports a refusal with its status and the server's reason", async () => {
+		mockFetch(new Response("A tag needs a label", { status: 400 }));
+
+		const refusal = await createTag({ label: "", color: "blue" }).catch(
+			(cause: unknown) => cause,
+		);
+
+		expect(refusal).toBeInstanceOf(ApiError);
+		expect(refusal).toMatchObject({
+			message: "POST /tags failed with 400",
+			status: 400,
+			text: "A tag needs a label",
 		});
 	});
 
