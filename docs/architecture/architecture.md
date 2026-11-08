@@ -243,7 +243,7 @@ title: Modules of the quick switcher and the tags
 flowchart TD
     switcher["QuickSwitcher<br>src/client/drawings/catalog/switcher/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
     switcherState["use-quick-switcher<br>src/client/drawings/catalog/switcher/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
-    shortcut["use-switcher-shortcut<br>src/client/drawings/catalog/switcher/use-switcher-shortcut.ts<br>Toggles the switcher on Ctrl+K or ⌘K"]:::module
+    search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
     tray["TagTray<br>src/client/drawings/catalog/tags/TagTray.tsx<br>The Tags button and the tray with its list and form"]:::module
     trayState["use-tag-tray<br>src/client/drawings/catalog/tags/use-tag-tray.ts<br>The open tray's view, find text, tab stop and focus"]:::module
     form["TagForm<br>src/client/drawings/catalog/tags/TagForm.tsx<br>Creates or changes a tag, asks before deleting it"]:::module
@@ -254,10 +254,10 @@ flowchart TD
     dialog["dialog/<br>What the modal dialogs share: the modal behaviour and the search line"]:::group
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     switcher --> switcherState & dialog
-    switcherState --> dialog
+    switcherState --> search & dialog
     tray --> form & trayState & tags & dialog
     form --> mark & api
-    trayState --> findTags & gridKeys & dialog
+    trayState --> findTags & gridKeys & tags & dialog
     tags --> api
 ```
 
