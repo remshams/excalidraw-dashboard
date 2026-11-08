@@ -512,7 +512,7 @@ Chromium.
   drawing.
 - [`tags.spec.ts`](../../e2e/tags.spec.ts) covers the Tags tray: the rows with
   their colour and drawing count, where the tray hangs on a wide and a phone-width
-  window, the page not scrolling behind it, finding a tag, using it by keyboard
+  window, fitting a short window that can't scroll, finding a tag, using it by keyboard
   alone with the focus returning to the button, and closing it with a press beside
   it. Tags and assignments come from the HTTP API.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
