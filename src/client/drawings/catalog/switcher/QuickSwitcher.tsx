@@ -2,6 +2,7 @@ import { type KeyboardEvent, useId } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import { PlusIcon, SearchIcon } from "../icons.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
+import { closeOnBackdropPress } from "../use-modal-dialog.ts";
 import styles from "./QuickSwitcher.module.css";
 import {
 	resultKey,
@@ -78,12 +79,7 @@ export function QuickSwitcher({
 			onKeyUp={(event) => event.stopPropagation()}
 			// Escape from outside the search field, or the Android back gesture.
 			onCancel={onClose}
-			onMouseDown={(event) => {
-				if (event.target !== event.currentTarget) return;
-				// Otherwise the press takes back the focus that closing returns.
-				event.preventDefault();
-				onClose();
-			}}
+			onMouseDown={closeOnBackdropPress(onClose)}
 		>
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: it only keeps the focus in the search field, which handles the keyboard. */}
 			<div
