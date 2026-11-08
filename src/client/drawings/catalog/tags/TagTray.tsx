@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import type { Tag } from "../../../../shared/tags.ts";
+import { SearchLine } from "../dialog/SearchLine.tsx";
+import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
 import { TagIcon } from "../icons.tsx";
-import { closeOnBackdropPress } from "../use-modal-dialog.ts";
 import styles from "./TagTray.module.css";
 import { useTagTray } from "./use-tag-tray.ts";
 
@@ -66,9 +67,9 @@ function TrayDialog({ tags, drawings, onClose }: TrayDialogProps) {
 			onMouseDown={closeOnBackdropPress(onClose)}
 		>
 			<div className={styles.page}>
-				<input
+				<SearchLine
+					lineClassName={styles.find}
 					type="search"
-					className={styles.find}
 					aria-label="Find a tag"
 					placeholder="Find a tag…"
 					value={find}
