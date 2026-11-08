@@ -357,6 +357,17 @@ describe("TagTray", () => {
 			expect(tray()).toBeNull();
 		});
 
+		it("still undoes one layer after a press on a blank part of the form", async () => {
+			const user = await openTray();
+			await user.click(button("New tag"));
+
+			await user.click(screen.getByRole("heading", { name: "New tag" }));
+			await user.keyboard("{Escape}");
+
+			expect(findField()).toHaveFocus();
+			expect(tray()).not.toBeNull();
+		});
+
 		it("goes back to the find field from a new tag", async () => {
 			const user = await openTray();
 
