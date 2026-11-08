@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import { searchByName } from "../../search.ts";
-import { useModalDialog } from "../use-modal-dialog.ts";
+import { useModalDialog } from "../dialog/use-modal-dialog.ts";
 
 export type SwitcherResult =
 	| { kind: "drawing"; drawing: DrawingSummary }

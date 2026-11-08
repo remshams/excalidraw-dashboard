@@ -1,8 +1,9 @@
 import { type KeyboardEvent, useId } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
-import { PlusIcon, SearchIcon } from "../icons.tsx";
+import { SearchLine } from "../dialog/SearchLine.tsx";
+import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
+import { PlusIcon } from "../icons.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
-import { closeOnBackdropPress } from "../use-modal-dialog.ts";
 import styles from "./QuickSwitcher.module.css";
 import {
 	resultKey,
@@ -91,23 +92,20 @@ export function QuickSwitcher({
 						event.preventDefault();
 				}}
 			>
-				<div className={styles.line}>
-					<SearchIcon />
-					<input
-						className={styles.search}
-						role="combobox"
-						aria-label="Find or create a drawing"
-						aria-expanded="true"
-						aria-controls={`${ids}-results`}
-						aria-autocomplete="list"
-						aria-activedescendant={
-							results[selected] ? optionId(selected) : undefined
-						}
-						placeholder="Find or create a drawing…"
-						value={query}
-						onChange={(event) => search(event.target.value)}
-					/>
-				</div>
+				<SearchLine
+					lineClassName={styles.line}
+					role="combobox"
+					aria-label="Find or create a drawing"
+					aria-expanded="true"
+					aria-controls={`${ids}-results`}
+					aria-autocomplete="list"
+					aria-activedescendant={
+						results[selected] ? optionId(selected) : undefined
+					}
+					placeholder="Find or create a drawing…"
+					value={query}
+					onChange={(event) => search(event.target.value)}
+				/>
 				<div
 					id={`${ids}-results`}
 					className={styles.results}
