@@ -1,17 +1,13 @@
 import { type Context, Hono } from "hono";
 import {
 	isTagColor,
-	MAX_TAG_LABEL_LENGTH,
+	labelTakenMessage,
 	type TagRequest,
+	tagLabelMessage,
 	tagLabelProblem,
 } from "../shared/tags.ts";
 import { type Invalid, readJson } from "./request.ts";
 import type { TagStore } from "./tag-store.ts";
-
-const LABEL_PROBLEMS = {
-	empty: "A tag needs a label",
-	"too-long": `A tag label has at most ${MAX_TAG_LABEL_LENGTH} characters`,
-};
 
 /** The tag from a POST or PUT body, with a trimmed label, or why it is invalid. */
 function parseTagRequest(body: unknown): TagRequest | Invalid {
@@ -20,13 +16,13 @@ function parseTagRequest(body: unknown): TagRequest | Invalid {
 		return { invalid: "Send the tag as JSON with a label and a color" };
 	}
 	const problem = tagLabelProblem(label);
-	if (problem) return { invalid: LABEL_PROBLEMS[problem] };
+	if (problem) return { invalid: tagLabelMessage(problem) };
 	if (!isTagColor(color)) return { invalid: "Unknown tag colour" };
 	return { label: label.trim(), color };
 }
 
 const labelTaken = (c: Context, { label }: TagRequest) =>
-	c.text(`A tag named "${label}" already exists`, 409);
+	c.text(labelTakenMessage(label), 409);
 
 /** The HTTP routes of the tag aggregate, mounted at `/api/tags`. */
 export function tagRoutes(tags: TagStore) {
