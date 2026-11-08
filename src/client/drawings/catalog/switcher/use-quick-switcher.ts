@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import { searchByName } from "../../search.ts";
+import { useModalDialog } from "../use-modal-dialog.ts";
 
 export type SwitcherResult =
 	| { kind: "drawing"; drawing: DrawingSummary }
@@ -37,7 +38,7 @@ const firstKey = ([first]: SwitcherResult[]) =>
  * of the open drawing can reorder the rows while the switcher is open.
  */
 export function useQuickSwitcher(drawings: DrawingSummary[]) {
-	const dialog = useRef<HTMLDialogElement>(null);
+	const dialog = useModalDialog();
 	const [query, setQuery] = useState("");
 	const results = switcherResults(drawings, query);
 	const [selectedKey, setSelectedKey] = useState(() => firstKey(results));
@@ -47,15 +48,6 @@ export function useQuickSwitcher(drawings: DrawingSummary[]) {
 		results.findIndex((result) => resultKey(result) === selectedKey),
 		0,
 	);
-
-	// The browser focuses the search field on opening and gives the focus back on
-	// closing. A layout effect, because that only works while the dialog is still
-	// in the page, and React cleans up other effects after removing it.
-	useLayoutEffect(() => {
-		const element = dialog.current;
-		element?.showModal();
-		return () => element?.close();
-	}, []);
 
 	return {
 		dialog,
