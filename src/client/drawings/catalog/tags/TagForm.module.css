@@ -1,0 +1,155 @@
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+	padding: var(--space-md);
+}
+
+.form h2 {
+	margin: 0;
+	font-family: var(--hand);
+	font-size: var(--text-lg);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-sm);
+}
+
+/* The tag as it will look, on a patch of bare paper. */
+.preview {
+	display: grid;
+	/* Not wider than the preview, so a long label ends in an ellipsis. */
+	grid-template-columns: minmax(0, 1fr);
+	place-items: center;
+	min-height: 4.5rem;
+	margin: 0;
+	padding: var(--space-sm);
+	overflow: hidden;
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-sm);
+	background: var(--sheet);
+}
+
+.note {
+	margin: 0;
+	color: var(--graphite);
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-xs);
+	font-size: var(--text-sm);
+	color: var(--graphite);
+}
+
+.field input {
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+	font-size: var(--text-md);
+	color: var(--ink);
+}
+
+.field input[aria-invalid="true"] {
+	border-color: var(--signal);
+}
+
+.error {
+	margin: 0;
+	font-size: var(--text-sm);
+	color: var(--signal);
+}
+
+/* All eight in one line. */
+.colors {
+	display: grid;
+	grid-template-columns: repeat(8, minmax(0, 1.75rem));
+	gap: var(--space-sm);
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.colors legend {
+	margin-bottom: var(--space-xs);
+	padding: 0;
+	font-size: var(--text-sm);
+	color: var(--graphite);
+}
+
+.color {
+	position: relative;
+	aspect-ratio: 1;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+}
+
+.color input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+/* The chosen colour: a ring and a centre in the sheet's colour, so it doesn't rely
+   on colour alone. */
+.color:has(input:checked) {
+	outline: var(--stroke-md) solid var(--ink);
+	outline-offset: 2px;
+}
+
+.color:has(input:checked)::after {
+	content: "";
+	position: absolute;
+	inset: 0.5rem;
+	border-radius: var(--radius-sm);
+	background: var(--sheet);
+}
+
+.color:has(input:focus-visible) {
+	outline: var(--stroke-md) solid var(--selection);
+	outline-offset: 3px;
+}
+
+.buttons {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-sm);
+	margin-top: var(--space-xs);
+}
+
+.buttons button {
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--ink);
+	cursor: pointer;
+}
+
+.buttons button:not(.primary, .danger):hover {
+	background: var(--hover);
+}
+
+/* Under .buttons, so they outrank the rule for every button above. */
+.buttons .primary {
+	border-color: var(--ink);
+	background: var(--ink);
+	color: var(--sheet);
+}
+
+.buttons .danger {
+	border-color: var(--signal);
+	background: var(--signal);
+	color: var(--sheet);
+}
+
+.buttons .quietDanger {
+	margin-left: auto;
+	border-color: transparent;
+	color: var(--signal);
+}
