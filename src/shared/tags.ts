@@ -13,7 +13,7 @@ export const TAG_COLORS = [
 export type TagColor = (typeof TAG_COLORS)[number];
 
 /** Counted in UTF-16 code units. */
-export const MAX_TAG_LABEL_LENGTH = 30;
+const MAX_TAG_LABEL_LENGTH = 30;
 
 export type Tag = {
 	id: string;
