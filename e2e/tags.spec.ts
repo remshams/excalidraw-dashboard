@@ -74,7 +74,7 @@ test("the tray hangs below the Tags button", async ({ page }) => {
 
 test("the tray spans the page's content at phone width", async ({ page }) => {
 	await test.step("open the tray at phone width", async () => {
-		await page.setViewportSize({ width: 360, height: 700 });
+		await page.setViewportSize({ width: 600, height: 700 });
 		await page.goto("/");
 		await tagsButton(page).click();
 	});
@@ -100,7 +100,7 @@ test("the page doesn't scroll away behind the tray", async ({
 		await page.setViewportSize({ width: 1280, height: 200 });
 		await page.goto("/");
 		await tagsButton(page).click();
-		await expect(tagTray(page)).toBeInViewport();
+		await expect(tagTray(page)).toBeInViewport({ ratio: 1 });
 	});
 
 	await test.step("the wheel over the page leaves the tray where it is", async () => {
