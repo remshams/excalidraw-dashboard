@@ -17,8 +17,8 @@ A modal dialog is only as large as its CSS makes it, though, and only its
 
 ## Decision
 
-- The tray is a native `<dialog>` opened with `showModal()`, as tall as its content,
-  with a transparent `::backdrop`. The page stays visible and inert behind it, and
+- The tray is a native `<dialog>` opened with `showModal()`, whose rows scroll past a
+  height limit, with a transparent `::backdrop`. The page stays visible and inert behind it, and
   it can't scroll while the tray is open, because the tray would scroll away with
   the button.
 - The browser moves the focus into the dialog, keeps Tab inside it, keeps screen
