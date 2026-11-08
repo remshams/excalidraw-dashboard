@@ -1,0 +1,150 @@
+.button {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+	font-family: var(--hand);
+	cursor: pointer;
+	/* The tray hangs below this button. */
+	anchor-name: --tag-tray-button;
+}
+
+.button:hover {
+	background: var(--hover);
+}
+
+/* A sheet lying on the page, in front of the cards, wide enough to show about 24
+   tags in two columns. No padding or border here: .page covers the dialog. */
+.tray {
+	--lift: 0 1px 2px rgb(33 37 41 / 12%), 0 12px 28px rgb(33 37 41 / 18%);
+
+	width: 34rem;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	box-shadow: var(--lift);
+	color: var(--ink);
+}
+
+/* A browser without anchor positioning keeps a modal dialog's place in the middle
+   of the window. */
+@supports (anchor-name: --any) {
+	.tray {
+		position-anchor: --tag-tray-button;
+		inset: auto;
+		top: anchor(bottom);
+		right: anchor(right);
+		margin: var(--space-sm) 0 0;
+	}
+}
+
+/* A modal dialog doesn't stop the page from scrolling, and the tray would scroll
+   out of view with its button. The gutter keeps the page's scrollbar from leaving
+   room that moves the cards. */
+:root:has(.tray) {
+	overflow: hidden;
+	scrollbar-gutter: stable;
+}
+
+/* The page stays in view behind the tray; only presses on it close the tray. */
+.tray::backdrop {
+	background: transparent;
+}
+
+.page {
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+.find {
+	display: block;
+	box-sizing: border-box;
+	width: calc(100% - 2 * var(--space-sm));
+	margin: var(--space-sm);
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--rule);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+}
+
+.rows {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	column-gap: var(--space-sm);
+	max-height: min(30rem, 62dvh);
+	margin: 0;
+	padding: 0 var(--space-sm);
+	overflow-y: auto;
+	list-style: none;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	padding: var(--space-xs);
+}
+
+.swatch {
+	width: 0.875rem;
+	height: 0.875rem;
+	border-radius: var(--radius-sm);
+}
+
+.label {
+	flex: 1;
+	overflow: hidden;
+	font-family: var(--hand);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.count {
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+	color: var(--graphite);
+}
+
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.status {
+	margin: 0;
+	color: var(--graphite);
+}
+
+/* The status takes no space while it has no message. */
+.status:not(:empty) {
+	padding: var(--space-sm) var(--space-md);
+}
+
+.rows:not(:empty) {
+	padding-bottom: var(--space-sm);
+}
+
+/* A phone has room for one column, across the whole window. */
+@media (max-width: 40rem) {
+	.tray {
+		right: var(--space-md);
+		left: var(--space-md);
+		width: auto;
+		max-width: none;
+	}
+
+	.rows {
+		grid-template-columns: minmax(0, 1fr);
+		max-height: 50dvh;
+	}
+}
