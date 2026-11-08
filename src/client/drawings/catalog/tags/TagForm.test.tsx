@@ -157,6 +157,26 @@ describe("TagForm", () => {
 		expect(labelField()).toHaveValue("Garden");
 	});
 
+	it("sends one change at a time, and another after the first failed", async () => {
+		let fail = (_: unknown) => {};
+		const onSave = vi.fn(
+			() =>
+				new Promise<void>((_, reject) => {
+					fail = reject;
+				}),
+		);
+		const { user, onError } = setup({ tag: work, onSave });
+
+		await user.dblClick(button("Save tag"));
+		expect(onSave).toHaveBeenCalledOnce();
+
+		fail(new ApiError("", 500, ""));
+		await waitFor(() => expect(onError).toHaveBeenCalled());
+		await user.click(button("Save tag"));
+
+		expect(onSave).toHaveBeenCalledTimes(2);
+	});
+
 	it("cancels", async () => {
 		const { user, onCancel } = setup();
 
@@ -181,6 +201,16 @@ describe("TagForm", () => {
 			expect(screen.getByText(note)).toBeVisible();
 			expect(screen.getByText("Work")).toBeVisible();
 			expect(button("Keep it")).toHaveFocus();
+		});
+
+		it("deletes once when the button is double-clicked", async () => {
+			const onDelete = vi.fn(() => new Promise<void>(() => {}));
+			const { user } = setup({ tag: work, onDelete });
+
+			await user.click(button("Delete…"));
+			await user.dblClick(button("Delete tag"));
+
+			expect(onDelete).toHaveBeenCalledOnce();
 		});
 
 		it("deletes only after the confirmation", async () => {

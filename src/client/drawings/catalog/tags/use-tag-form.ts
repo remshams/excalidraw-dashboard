@@ -57,6 +57,8 @@ export function useTagForm({
 	const [error, setError] = useState<string | null>(null);
 	const [confirming, setConfirming] = useState(false);
 	const input = useRef<HTMLInputElement>(null);
+	// A second click while the first is on its way would get a refusal of its own.
+	const sending = useRef(false);
 
 	const setLabel = (text: string) => {
 		changeLabel(text);
@@ -68,13 +70,17 @@ export function useTagForm({
 		input.current?.focus();
 	};
 
-	const send = async (change: Promise<void>) => {
+	const send = async (change: () => Promise<void>) => {
+		if (sending.current) return;
+		sending.current = true;
 		try {
-			await change;
+			await change();
 		} catch (cause) {
 			if (isRefusal(cause)) refuse(cause.text);
 			else if (cause instanceof ApiError && cause.status === 404) onGone();
 			else onError(cause);
+		} finally {
+			sending.current = false;
 		}
 	};
 
@@ -82,7 +88,7 @@ export function useTagForm({
 		event.preventDefault();
 		const message = labelMessage(label, tags, tag);
 		if (message) refuse(message);
-		else send(onSave({ label: label.trim(), color }));
+		else send(() => onSave({ label: label.trim(), color }));
 	};
 
 	return {
@@ -95,6 +101,6 @@ export function useTagForm({
 		confirming,
 		setConfirming,
 		submit,
-		deleteTag: (toDelete: Tag) => send(onDelete(toDelete)),
+		deleteTag: (toDelete: Tag) => send(() => onDelete(toDelete)),
 	};
 }
