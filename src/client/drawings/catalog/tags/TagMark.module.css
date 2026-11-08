@@ -1,0 +1,47 @@
+.filter {
+	position: absolute;
+	width: 0;
+	height: 0;
+}
+
+.mark {
+	position: relative;
+	box-sizing: border-box;
+	display: inline-flex;
+	max-width: 100%;
+	padding: var(--space-xs) var(--space-sm);
+	color: var(--mark-ink);
+	font-family: var(--hand);
+	font-size: var(--text-lg);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-sm);
+	rotate: var(--tilt);
+}
+
+.mark::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border: var(--stroke-md) solid var(--mark-edge);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--mark-edge) 12%, var(--sheet));
+	filter: url("#tag-ink");
+}
+
+.mark::after {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	border: var(--stroke-sm) solid var(--mark-edge);
+	border-radius: var(--radius-sm);
+	filter: url("#tag-ink");
+}
+
+.text {
+	position: relative;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	filter: url("#tag-ink");
+}
