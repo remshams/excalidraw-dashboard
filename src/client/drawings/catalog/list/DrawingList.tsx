@@ -17,8 +17,6 @@ type DrawingListProps = {
 	/** Every tag, or null while they load or when loading failed. */
 	tags: Tag[] | null;
 	tagChanges: TagChanges;
-	/** Reports a tag change that failed for a reason other than the tag itself. */
-	onTagError: (error: unknown) => void;
 	onOpen: (id: string | null) => void;
 	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
@@ -41,7 +39,6 @@ export function DrawingList({
 	drawings,
 	tags,
 	tagChanges,
-	onTagError,
 	onOpen,
 	onCreate,
 	onRename,
@@ -70,12 +67,7 @@ export function DrawingList({
 							close();
 						}}
 					/>
-					<TagTray
-						tags={tags}
-						drawings={drawings}
-						changes={tagChanges}
-						onError={onTagError}
-					/>
+					<TagTray tags={tags} drawings={drawings} changes={tagChanges} />
 					<TagInkFilter />
 				</div>
 			</header>
