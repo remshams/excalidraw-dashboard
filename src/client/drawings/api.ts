@@ -3,7 +3,19 @@ import type {
 	DrawingSummary,
 	UpdateDrawingRequest,
 } from "../../shared/drawings.ts";
-import type { Tag } from "../../shared/tags.ts";
+import type { Tag, TagRequest } from "../../shared/tags.ts";
+
+/** A request the server answered with an error, and the reason it gave. */
+export class ApiError extends Error {
+	readonly status: number;
+	readonly text: string;
+
+	constructor(message: string, status: number, text: string) {
+		super(message);
+		this.status = status;
+		this.text = text;
+	}
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	const response = await fetch(`/api${path}`, {
@@ -11,8 +23,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 		...init,
 	});
 	if (!response.ok) {
-		throw new Error(
+		throw new ApiError(
 			`${init.method ?? "GET"} ${path} failed with ${response.status}`,
+			response.status,
+			await response.text(),
 		);
 	}
 	return response.status === 204 ? (undefined as T) : response.json();
@@ -48,6 +62,15 @@ export const deletePreview = (id: string) =>
 	request<DrawingSummary>(`/drawings/${id}/preview`, { method: "DELETE" });
 
 export const listTags = () => request<Tag[]>("/tags");
+
+export const createTag = (tag: TagRequest) =>
+	request<Tag>("/tags", { method: "POST", body: JSON.stringify(tag) });
+
+export const updateTag = (id: string, tag: TagRequest) =>
+	request<Tag>(`/tags/${id}`, { method: "PUT", body: JSON.stringify(tag) });
+
+export const deleteTag = (id: string) =>
+	request<void>(`/tags/${id}`, { method: "DELETE" });
 
 /**
  * The URL of a drawing's PNG preview, or null if it has none. It carries
