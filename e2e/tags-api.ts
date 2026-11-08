@@ -42,12 +42,23 @@ export async function deleteTagThroughApi(
 	expect(response.status()).toBe(204);
 }
 
+async function storedTags(request: APIRequestContext): Promise<StoredTag[]> {
+	const response = await request.get("/api/tags");
+	return response.json();
+}
+
 /** The stored tag with the ID, or undefined if there is none. */
 export async function storedTag(
 	request: APIRequestContext,
 	id: string,
 ): Promise<StoredTag | undefined> {
-	const response = await request.get("/api/tags");
-	const tags: StoredTag[] = await response.json();
-	return tags.find((tag) => tag.id === id);
+	return (await storedTags(request)).find((tag) => tag.id === id);
+}
+
+/** The stored tag with the label, or undefined if there is none. */
+export async function storedTagByLabel(
+	request: APIRequestContext,
+	label: string,
+): Promise<StoredTag | undefined> {
+	return (await storedTags(request)).find((tag) => tag.label === label);
 }
