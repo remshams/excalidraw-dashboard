@@ -35,6 +35,7 @@ export function TagForm(props: TagFormProps) {
 			<DeleteQuestion
 				tag={tag}
 				drawingCount={drawingCount}
+				error={error}
 				onDelete={() => deleteTag(tag)}
 				onKeep={() => setConfirming(false)}
 			/>
@@ -123,6 +124,8 @@ function ColorChoice({
 type DeleteQuestionProps = {
 	tag: Tag;
 	drawingCount: number;
+	/** Why the last attempt failed, or null. */
+	error: string | null;
 	onDelete: () => void;
 	onKeep: () => void;
 };
@@ -131,6 +134,7 @@ type DeleteQuestionProps = {
 function DeleteQuestion({
 	tag,
 	drawingCount,
+	error,
 	onDelete,
 	onKeep,
 }: DeleteQuestionProps) {
@@ -153,6 +157,11 @@ function DeleteQuestion({
 				<TagMark label={tag.label} color={tag.color} seed={tag.id} />
 			</p>
 			<p className={styles.note}>{deleteNote(drawingCount)}</p>
+			{error && (
+				<p role="alert" className={styles.error}>
+					{error}
+				</p>
+			)}
 			<div className={styles.buttons}>
 				<button type="button" className={styles.danger} onClick={onDelete}>
 					Delete tag

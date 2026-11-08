@@ -14,7 +14,6 @@ function setup(props: Partial<Parameters<typeof TagForm>[0]> = {}) {
 		onDelete: vi.fn().mockResolvedValue(undefined),
 		onCancel: vi.fn(),
 		onGone: vi.fn(),
-		onError: vi.fn(),
 	};
 	render(
 		<TagForm tags={[work, home]} drawingCount={0} {...handlers} {...props} />,
@@ -117,7 +116,7 @@ describe("TagForm", () => {
 	});
 
 	it.each([400, 409])("shows the server's reason for a %i", async (status) => {
-		const { user, onError } = setup({
+		const { user } = setup({
 			onSave: vi.fn().mockRejectedValue(new ApiError("", status, "No way")),
 		});
 
@@ -125,11 +124,10 @@ describe("TagForm", () => {
 
 		expect(await screen.findByRole("alert")).toHaveTextContent("No way");
 		expect(labelField()).toHaveFocus();
-		expect(onError).not.toHaveBeenCalled();
 	});
 
 	it("reports a tag the server no longer knows", async () => {
-		const { user, onGone, onError } = setup({
+		const { user, onGone } = setup({
 			tag: work,
 			onSave: vi.fn().mockRejectedValue(new ApiError("", 404, "Not found")),
 		});
@@ -137,24 +135,25 @@ describe("TagForm", () => {
 		await user.click(button("Save tag"));
 
 		await waitFor(() => expect(onGone).toHaveBeenCalled());
-		expect(onError).not.toHaveBeenCalled();
 		expect(screen.queryByRole("alert")).toBeNull();
 	});
 
 	it.each([
 		["a server failure", new ApiError("", 500, "Oops")],
 		["a network failure", new TypeError("Failed to fetch")],
-	])("passes on %s and stays open", async (_, failure) => {
-		const { user, onError, onGone } = setup({
+	])("says %s failed and keeps the edits", async (_, failure) => {
+		const { user, onGone } = setup({
 			onSave: vi.fn().mockRejectedValue(failure),
 		});
 
 		await user.type(labelField(), "Garden{Enter}");
 
-		await waitFor(() => expect(onError).toHaveBeenCalledWith(failure));
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"The change failed. Try again.",
+		);
 		expect(onGone).not.toHaveBeenCalled();
-		expect(screen.queryByRole("alert")).toBeNull();
 		expect(labelField()).toHaveValue("Garden");
+		expect(labelField()).toHaveFocus();
 	});
 
 	it("sends one change at a time, and another after the first failed", async () => {
@@ -165,13 +164,13 @@ describe("TagForm", () => {
 					fail = reject;
 				}),
 		);
-		const { user, onError } = setup({ tag: work, onSave });
+		const { user } = setup({ tag: work, onSave });
 
 		await user.dblClick(button("Save tag"));
 		expect(onSave).toHaveBeenCalledOnce();
 
 		fail(new ApiError("", 500, ""));
-		await waitFor(() => expect(onError).toHaveBeenCalled());
+		await screen.findByRole("alert");
 		await user.click(button("Save tag"));
 
 		expect(onSave).toHaveBeenCalledTimes(2);
@@ -201,6 +200,36 @@ describe("TagForm", () => {
 			expect(screen.getByText(note)).toBeVisible();
 			expect(screen.getByText("Work")).toBeVisible();
 			expect(button("Keep it")).toHaveFocus();
+		});
+
+		it("stays on the question when deleting fails, and clears the message on leaving", async () => {
+			const { user } = setup({
+				tag: work,
+				onDelete: vi.fn().mockRejectedValue(new ApiError("", 500, "")),
+			});
+
+			await user.click(button("Delete…"));
+			await user.click(button("Delete tag"));
+
+			expect(await screen.findByRole("alert")).toHaveTextContent(
+				"The change failed. Try again.",
+			);
+			expect(button("Delete tag")).toBeVisible();
+
+			await user.click(button("Keep it"));
+
+			expect(screen.queryByRole("alert")).toBeNull();
+		});
+
+		it("doesn't carry a message about the label into the question", async () => {
+			const { user } = setup({ tag: work });
+			await user.clear(labelField());
+			await user.click(button("Save tag"));
+			expect(screen.getByRole("alert")).toBeVisible();
+
+			await user.click(button("Delete…"));
+
+			expect(screen.queryByRole("alert")).toBeNull();
 		});
 
 		it("deletes once when the button is double-clicked", async () => {
@@ -249,7 +278,6 @@ describe("TagForm", () => {
 						onDelete={vi.fn()}
 						onCancel={vi.fn()}
 						onGone={vi.fn()}
-						onError={vi.fn()}
 					/>
 				</div>,
 			);

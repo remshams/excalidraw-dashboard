@@ -23,8 +23,6 @@ export type TagFormProps = {
 	onCancel: () => void;
 	/** The server no longer knows the tag to change. */
 	onGone: () => void;
-	/** The server failed for a reason other than the tag itself. */
-	onError: (error: unknown) => void;
 };
 
 /** What is wrong with a label before asking the server, or null. */
@@ -50,18 +48,23 @@ export function useTagForm({
 	onSave,
 	onDelete,
 	onGone,
-	onError,
 }: TagFormProps) {
 	const [label, changeLabel] = useState(tag?.label ?? initialLabel);
 	const [color, setColor] = useState<TagColor>(tag?.color ?? "blue");
 	const [error, setError] = useState<string | null>(null);
-	const [confirming, setConfirming] = useState(false);
+	const [confirming, answerQuestion] = useState(false);
 	const input = useRef<HTMLInputElement>(null);
 	// A second click while the first is on its way would get a refusal of its own.
 	const sending = useRef(false);
 
 	const setLabel = (text: string) => {
 		changeLabel(text);
+		setError(null);
+	};
+
+	/** Opens or leaves the delete question, whose answer an old message isn't about. */
+	const setConfirming = (asking: boolean) => {
+		answerQuestion(asking);
 		setError(null);
 	};
 
@@ -78,7 +81,7 @@ export function useTagForm({
 		} catch (cause) {
 			if (isRefusal(cause)) refuse(cause.text);
 			else if (cause instanceof ApiError && cause.status === 404) onGone();
-			else onError(cause);
+			else refuse("The change failed. Try again.");
 		} finally {
 			sending.current = false;
 		}
