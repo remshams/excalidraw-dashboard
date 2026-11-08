@@ -33,6 +33,16 @@
 	--tag-violet-solid: #6741d9;
 	--tag-pink-solid: #d6336c;
 
+	/* The words of a tag in its colour, dark enough to read on the sheet. */
+	--tag-red-ink: #862e2e;
+	--tag-orange-ink: #7f3f0a;
+	--tag-yellow-ink: #6b5200;
+	--tag-green-ink: #1b5e2a;
+	--tag-teal-ink: #0a5c4a;
+	--tag-blue-ink: #0f4a80;
+	--tag-violet-ink: #49329a;
+	--tag-pink-ink: #8a1f4d;
+
 	/* Type. md is the body text size. */
 	--hand: "Drawings Hand", "Comic Sans MS", cursive;
 	--text-sm: 0.875rem;
@@ -93,6 +103,15 @@
 		--tag-blue-solid: #4dabf7;
 		--tag-violet-solid: #9775fa;
 		--tag-pink-solid: #f783ac;
+
+		--tag-red-ink: #ffc9c9;
+		--tag-orange-ink: #ffd8a8;
+		--tag-yellow-ink: #ffec99;
+		--tag-green-ink: #b2f2bb;
+		--tag-teal-ink: #b2f2e4;
+		--tag-blue-ink: #a5d8ff;
+		--tag-violet-ink: #d0bfff;
+		--tag-pink-ink: #fcc2d7;
 	}
 }
 
