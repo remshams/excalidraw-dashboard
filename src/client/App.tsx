@@ -26,9 +26,9 @@ export function App() {
 	const theme = useColorScheme();
 	const [openDrawingId, openDrawing] = useOpenDrawingId();
 	const { drawing, failed } = useDrawing(openDrawingId, showError);
-	const { drawings, replace, create, rename, remove, wasDeleted } =
+	const { drawings, replace, create, rename, remove, forgetTag, wasDeleted } =
 		useDrawings(showError);
-	const { tags } = useTags(showError);
+	const { tags, changes: tagChanges } = useTags(showError, forgetTag);
 	const createAndOpen = (name: string) =>
 		create(name).then((created) => openDrawing(created.id), showError);
 
@@ -54,6 +54,8 @@ export function App() {
 					<DrawingList
 						drawings={drawings}
 						tags={tags}
+						tagChanges={tagChanges}
+						onTagError={showError}
 						onOpen={openDrawing}
 						onCreate={createAndOpen}
 						onRename={(id, name) => rename(id, name).catch(showError)}

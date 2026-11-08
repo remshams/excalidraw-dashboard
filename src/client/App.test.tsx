@@ -128,6 +128,45 @@ describe("App", () => {
 		expect(await tray.findByText("Work")).toBeVisible();
 	});
 
+	it("creates a tag from the tray", async () => {
+		vi.mocked(api.createTag).mockResolvedValue({
+			id: "t2",
+			label: "Home",
+			color: "blue",
+		});
+		const user = userEvent.setup();
+		render(<App />);
+		await cards().findByRole("link", { name: "Plan" });
+		await user.click(screen.getByRole("button", { name: "Tags" }));
+		const tray = within(screen.getByRole("dialog", { name: "Tags" }));
+		await tray.findByText("Work");
+
+		await user.click(tray.getByRole("button", { name: "New tag" }));
+		await user.type(tray.getByRole("textbox", { name: "Label" }), "Home");
+		await user.click(tray.getByRole("button", { name: "Create tag" }));
+
+		expect(
+			await tray.findByRole("button", { name: "Change Home" }),
+		).toBeVisible();
+	});
+
+	it("shows a failed tag change in the banner and keeps the form", async () => {
+		vi.mocked(api.createTag).mockRejectedValue(new Error("Server down"));
+		const user = userEvent.setup();
+		render(<App />);
+		await cards().findByRole("link", { name: "Plan" });
+		await user.click(screen.getByRole("button", { name: "Tags" }));
+		const tray = within(screen.getByRole("dialog", { name: "Tags" }));
+		await tray.findByText("Work");
+
+		await user.click(tray.getByRole("button", { name: "New tag" }));
+		await user.type(tray.getByRole("textbox", { name: "Label" }), "Home");
+		await user.click(tray.getByRole("button", { name: "Create tag" }));
+
+		expect(await screen.findByText("Server down")).toBeVisible();
+		expect(tray.getByRole("textbox", { name: "Label" })).toHaveValue("Home");
+	});
+
 	it("shows why the tags could not be loaded", async () => {
 		vi.mocked(api.listTags).mockRejectedValue(new Error("No tags today"));
 
