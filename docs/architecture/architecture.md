@@ -311,7 +311,9 @@ and each answer has its own path:
   the list.
 - A 404 means the tag is gone. `use-tags` reloads the list and the tray goes back
   to it and says so.
-- Anything else goes to `App`'s error banner, and the form stays open.
+- Anything else, such as a 5xx or no connection, says in the form that the change
+  failed, and the form or the delete question stays open to try again. `App`'s error
+  banner would sit behind the modal tray.
 
 `use-tags` applies every answer to its sorted list. It reports a tag that is gone,
 deleted here or elsewhere, to `use-drawings`, whose `forgetTag` takes the ID off
@@ -543,7 +545,7 @@ Chromium.
   alone with the focus returning to the button, and closing it with a press beside
   it. It also creates, renames, recolours and deletes a tag by mouse and by keyboard,
   with the focus after each step, deletes a tag a drawing carries, shows the rejected
-  labels, follows the server's 409 and 404 after another client changed the tags, and
+  labels, keeps a failed change in the form to try again, follows the server's 409 and 404 after another client changed the tags, and
   keeps the form, a long list with its status line and **New tag** in a short window,
   and ends a long label in an ellipsis on a phone. Preconditions and assignments come from the HTTP
   API.
