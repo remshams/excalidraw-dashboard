@@ -28,6 +28,8 @@ function setup(shown = drawings) {
 		onCreate: vi.fn(),
 		onRename: vi.fn(),
 		onDelete: vi.fn(),
+		onTagError: vi.fn(),
+		tagChanges: { create: vi.fn(), update: vi.fn(), remove: vi.fn() },
 	};
 	const { rerender } = render(
 		<DrawingList drawings={shown} tags={[]} {...props} />,
