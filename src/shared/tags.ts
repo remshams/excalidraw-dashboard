@@ -1,5 +1,5 @@
 /** The open-color hues a tag can have. Each has a light and a dark variant. */
-const TAG_COLORS = [
+export const TAG_COLORS = [
 	"red",
 	"orange",
 	"yellow",
@@ -12,7 +12,7 @@ const TAG_COLORS = [
 
 export type TagColor = (typeof TAG_COLORS)[number];
 
-/** Counted in UTF-16 code units, as an `<input maxLength>` counts. */
+/** Counted in UTF-16 code units. */
 export const MAX_TAG_LABEL_LENGTH = 30;
 
 export type Tag = {
@@ -40,6 +40,16 @@ export function tagLabelProblem(label: string): TagLabelProblem | null {
 	if (trimmed === "") return "empty";
 	return trimmed.length > MAX_TAG_LABEL_LENGTH ? "too-long" : null;
 }
+
+/** Why a label with this problem is rejected, in the words client and server share. */
+export const tagLabelMessage = (problem: TagLabelProblem): string =>
+	problem === "empty"
+		? "A tag needs a label"
+		: `A tag label has at most ${MAX_TAG_LABEL_LENGTH} characters`;
+
+/** Why a label another tag has is rejected. */
+export const labelTakenMessage = (label: string): string =>
+	`A tag named "${label}" already exists`;
 
 /** Two labels with the same key name the same tag, whatever their case. */
 export const tagLabelKey = (label: string): string =>
