@@ -29,12 +29,14 @@ function setup(shown = drawings) {
 		onRename: vi.fn(),
 		onDelete: vi.fn(),
 	};
-	const { rerender } = render(<DrawingList drawings={shown} {...props} />);
+	const { rerender } = render(
+		<DrawingList drawings={shown} tags={[]} {...props} />,
+	);
 	return {
 		...props,
 		user: userEvent.setup(),
 		show: (next: DrawingSummary[]) =>
-			rerender(<DrawingList drawings={next} {...props} />),
+			rerender(<DrawingList drawings={next} tags={[]} {...props} />),
 	};
 }
 
