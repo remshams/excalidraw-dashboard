@@ -15,8 +15,6 @@ type TagTrayProps = {
 	tags: Tag[] | null;
 	drawings: DrawingSummary[];
 	changes: TagChanges;
-	/** Reports a change that failed for a reason other than the tag itself. */
-	onError: (error: unknown) => void;
 };
 
 /** The Tags button and the tray it opens. */
@@ -51,13 +49,7 @@ const drawingCount = (drawings: DrawingSummary[], tagId: string) =>
  * and swaps the list for a form to create or change one. Its backdrop is
  * transparent, so the page stays in view (ADR 0003).
  */
-function TrayDialog({
-	tags,
-	drawings,
-	changes,
-	onError,
-	onClose,
-}: TrayDialogProps) {
+function TrayDialog({ tags, drawings, changes, onClose }: TrayDialogProps) {
 	const tray = useTagTray(tags, changes);
 	const { form, find, shown, notice } = tray;
 
@@ -90,7 +82,6 @@ function TrayDialog({
 							onDelete={tray.remove}
 							onCancel={tray.cancel}
 							onGone={tray.gone}
-							onError={onError}
 						/>
 					</div>
 				) : (
