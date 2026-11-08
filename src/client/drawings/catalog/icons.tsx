@@ -54,3 +54,12 @@ export function SearchIcon() {
 		</svg>
 	);
 }
+
+export function TagIcon() {
+	return (
+		<svg aria-hidden="true" {...iconProps}>
+			<path d="M4 5.5v6l8.5 8.5a1.5 1.5 0 0 0 2.1 0l5.4-5.4a1.5 1.5 0 0 0 0-2.1L11.5 4h-6A1.5 1.5 0 0 0 4 5.5z" />
+			<circle cx="8.5" cy="8.5" r="1" />
+		</svg>
+	);
+}
