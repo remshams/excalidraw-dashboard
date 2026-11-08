@@ -2,9 +2,6 @@
 	/* The writing margin: the search line and the rows both start here. */
 	--margin: var(--space-lg);
 	--sheet-width: 4rem;
-	--search-icon: 1.5rem;
-	/* Thicker than the focus ring elsewhere: one line has to do the work of four. */
-	--rule-focused: 3px;
 	/* The room above the dialog and below its tallest size. A fixed top edge keeps the
 	   search line in place while the rows change. */
 	--room: 15dvh;
@@ -55,58 +52,9 @@
 	background: var(--sheet);
 }
 
-/* A line in a notebook: the writing sits on a rule, with no box around it. The
-   padding makes up for the thicker focused rule, so the rows don't move. */
 .line {
-	display: grid;
 	flex-shrink: 0;
-	grid-template-columns: auto minmax(0, 1fr);
-	column-gap: var(--space-sm);
-	align-items: center;
 	margin: 0 var(--margin);
-	padding-bottom: calc(
-		var(--space-sm) +
-		var(--rule-focused) -
-		var(--stroke-sm)
-	);
-	border-bottom: var(--stroke-sm) solid var(--rule);
-	color: var(--graphite);
-}
-
-/* The only focus indicator of the search field. Its thickness also shows in a
-   forced-colors mode, which replaces the color. */
-.line:focus-within {
-	padding-bottom: var(--space-sm);
-	border-bottom: var(--rule-focused) solid var(--selection);
-	color: var(--selection);
-}
-
-.line svg {
-	width: var(--search-icon);
-	height: var(--search-icon);
-}
-
-.search {
-	box-sizing: border-box;
-	width: 100%;
-	padding: 0;
-	border: 0;
-	background: none;
-	color: var(--ink);
-	caret-color: var(--selection);
-	font-family: var(--hand);
-	font-size: var(--text-lg);
-	line-height: var(--leading-md);
-}
-
-.search::placeholder {
-	color: var(--graphite);
-	opacity: 1;
-}
-
-/* The rule under the line shows the focus instead of a ring. */
-.search:focus-visible {
-	outline: none;
 }
 
 /* The whitespace around the rows lies inside the scroller, so a long list slides
@@ -186,7 +134,6 @@
 		max-height: calc(100dvh - 2 * var(--space-lg));
 		margin-top: var(--space-xl);
 		--margin: var(--space-md);
-		--search-icon: 1.25rem;
 	}
 
 	.page {
