@@ -8,6 +8,7 @@ import {
 	switcherShortcutHint,
 	useSwitcherShortcut,
 } from "./drawings/catalog/switcher/use-switcher-shortcut.ts";
+import { useTags } from "./drawings/catalog/tags/use-tags.ts";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
 import { DrawingLink } from "./drawings/DrawingLink.tsx";
 import { Editor } from "./drawings/editor/Editor.tsx";
@@ -17,7 +18,7 @@ import { useColorScheme } from "./use-color-scheme.ts";
 
 export function App() {
 	const [error, setError] = useState<string | null>(null);
-	// Stable, because useDrawing and useDrawings reload when their onError changes.
+	// Stable, because useDrawing, useDrawings and useTags reload when their onError changes.
 	const showError = useCallback((cause: unknown) => {
 		setError(cause instanceof Error ? cause.message : String(cause));
 	}, []);
@@ -27,6 +28,7 @@ export function App() {
 	const { drawing, failed } = useDrawing(openDrawingId, showError);
 	const { drawings, replace, create, rename, remove, wasDeleted } =
 		useDrawings(showError);
+	const { tags } = useTags(showError);
 	const createAndOpen = (name: string) =>
 		create(name).then((created) => openDrawing(created.id), showError);
 
@@ -51,6 +53,7 @@ export function App() {
 				<main className={styles.gallery}>
 					<DrawingList
 						drawings={drawings}
+						tags={tags}
 						onOpen={openDrawing}
 						onCreate={createAndOpen}
 						onRename={(id, name) => rename(id, name).catch(showError)}

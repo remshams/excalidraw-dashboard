@@ -95,6 +95,9 @@ beforeEach(() => {
 	vi.mocked(api.getDrawing).mockImplementation(async (id) =>
 		drawing(id, id === "1" ? "Plan" : "Roadmap"),
 	);
+	vi.mocked(api.listTags).mockResolvedValue([
+		{ id: "t1", label: "Work", color: "blue" },
+	]);
 });
 
 afterEach(() => {
@@ -112,6 +115,25 @@ describe("App", () => {
 		).toBeInTheDocument();
 		expect(screen.getByRole("heading", { name: "Drawings" })).toBeVisible();
 		expect(screen.queryByText(/^Editing/)).toBeNull();
+	});
+
+	it("lists the loaded tags in the tray on the landing page", async () => {
+		const user = userEvent.setup();
+		render(<App />);
+		await cards().findByRole("link", { name: "Plan" });
+
+		await user.click(screen.getByRole("button", { name: "Tags" }));
+
+		const tray = within(screen.getByRole("dialog", { name: "Tags" }));
+		expect(await tray.findByText("Work")).toBeVisible();
+	});
+
+	it("shows why the tags could not be loaded", async () => {
+		vi.mocked(api.listTags).mockRejectedValue(new Error("No tags today"));
+
+		render(<App />);
+
+		expect(await screen.findByRole("alert")).toHaveTextContent("No tags today");
 	});
 
 	it("opens a drawing from its card", async () => {
