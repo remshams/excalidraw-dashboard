@@ -91,16 +91,28 @@ test("the tray spans the page's content at phone width", async ({ page }) => {
 	});
 });
 
-test("the page doesn't scroll away behind the tray", async ({
+test("the tray fits a short window that can't scroll", async ({
 	page,
 	request,
 }) => {
-	await test.step("a window too short for the page shows the open tray", async () => {
+	await test.step("a window too short for the page and ten tags", async () => {
 		await createDrawingThroughApi(request, uniqueName("Plan"));
-		await page.setViewportSize({ width: 1280, height: 200 });
+		for (let index = 0; index < 10; index++) {
+			await createTagThroughApi(request, uniqueName("Short"));
+		}
+		await page.setViewportSize({ width: 1280, height: 320 });
 		await page.goto("/");
 		await tagsButton(page).click();
+	});
+
+	await test.step("the whole tray is in the window", async () => {
 		await expect(tagTray(page)).toBeInViewport({ ratio: 1 });
+	});
+
+	await test.step("the last row can be scrolled to", async () => {
+		const lastRow = tagTray(page).getByRole("listitem").last();
+		await lastRow.scrollIntoViewIfNeeded();
+		await expect(lastRow).toBeInViewport({ ratio: 1 });
 	});
 
 	await test.step("the wheel over the page leaves the tray where it is", async () => {
