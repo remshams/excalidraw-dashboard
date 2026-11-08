@@ -35,11 +35,10 @@ const drawings = [
 ];
 
 const changes = { create: vi.fn(), update: vi.fn(), remove: vi.fn() };
-const onError = vi.fn();
 
 beforeEach(() => vi.resetAllMocks());
 
-const trayProps = { drawings, changes, onError };
+const trayProps = { drawings, changes };
 
 /** A tray whose tags take in a created one, as `useTags` does. */
 function TrayWithStoredTags() {
@@ -304,16 +303,17 @@ describe("TagTray", () => {
 			expect(findField()).toHaveFocus();
 		});
 
-		it("reports a failure that isn't about the tag and keeps the form", async () => {
-			const failure = new ApiError("PUT failed with 500", 500, "");
-			changes.update.mockRejectedValue(failure);
+		it("says so in the form when the change fails", async () => {
+			changes.update.mockRejectedValue(new ApiError("", 500, ""));
 			const user = await openTray();
 
 			await user.click(button("Change Work"));
 			await user.click(button("Save tag"));
 
-			await waitFor(() => expect(onError).toHaveBeenCalledWith(failure));
-			expect(labelField()).toBeVisible();
+			expect(await screen.findByRole("alert")).toHaveTextContent(
+				"The change failed. Try again.",
+			);
+			expect(labelField()).toHaveFocus();
 		});
 	});
 
