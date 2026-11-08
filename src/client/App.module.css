@@ -1,5 +1,11 @@
 /* Landing page */
 
+/* Keeps the cards in place when a scrollbar comes or goes, such as when the Tags
+   tray stops the page from scrolling. */
+:root:has(.gallery) {
+	scrollbar-gutter: stable;
+}
+
 .gallery {
 	box-sizing: border-box;
 	min-height: 100%;
