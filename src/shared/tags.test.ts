@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isTagColor, tagLabelKey, tagLabelProblem } from "./tags.ts";
+import {
+	isTagColor,
+	labelTakenMessage,
+	TAG_COLORS,
+	tagLabelKey,
+	tagLabelMessage,
+	tagLabelProblem,
+} from "./tags.ts";
 
 describe("tag label rules", () => {
 	it("accepts a label of 1 to 30 characters", () => {
@@ -26,7 +33,25 @@ describe("tag label rules", () => {
 	});
 });
 
+describe("tag label messages", () => {
+	it("explains each problem with a label", () => {
+		expect(tagLabelMessage("empty")).toBe("A tag needs a label");
+		expect(tagLabelMessage("too-long")).toBe(
+			"A tag label has at most 30 characters",
+		);
+	});
+
+	it("names the label another tag has", () => {
+		expect(labelTakenMessage("Work")).toBe('A tag named "Work" already exists');
+	});
+});
+
 describe("tag colours", () => {
+	it("lists eight colours, each of them valid", () => {
+		expect(TAG_COLORS).toHaveLength(8);
+		expect(TAG_COLORS.every(isTagColor)).toBe(true);
+	});
+
 	it("accepts the eight open-color hues", () => {
 		for (const color of [
 			"red",
