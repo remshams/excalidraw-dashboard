@@ -224,13 +224,14 @@ flowchart TD
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
     icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards, the tray and the editor bar"]:::module
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, remembers deletes"]:::module
-    modal["use-modal-dialog<br>src/client/drawings/catalog/use-modal-dialog.ts<br>Keeps a mounted dialog modal, closes it on a backdrop press"]:::module
+    dialog["dialog/<br>What the modal dialogs share: the modal behaviour and the search line"]:::group
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
     list --> name & confirm & icons & link & previewImage & search & tags
-    switcher --> icons & modal & previewImage & search
-    tags --> icons & modal & api
+    switcher --> icons & dialog & previewImage & search
+    tags --> icons & dialog & api
+    dialog --> icons
     previewImage --> api
     drawings --> api
 ```
@@ -247,22 +248,24 @@ flowchart TD
     trayState["use-tag-tray<br>src/client/drawings/catalog/tags/use-tag-tray.ts<br>The open tray's dialog, find text and found tags"]:::module
     findTags["find-tags<br>src/client/drawings/catalog/tags/find-tags.ts<br>Finds tags by a part of their label"]:::module
     tags["use-tags<br>src/client/drawings/catalog/tags/use-tags.ts<br>Loads the tags and sorts them by label"]:::module
-    modal["use-modal-dialog<br>src/client/drawings/catalog/use-modal-dialog.ts<br>Keeps a mounted dialog modal, closes it on a backdrop press"]:::module
+    modal["use-modal-dialog<br>src/client/drawings/catalog/dialog/use-modal-dialog.ts<br>Keeps a mounted dialog modal, closes it on a backdrop press"]:::module
+    line["SearchLine<br>src/client/drawings/catalog/dialog/SearchLine.tsx<br>A dialog's search field on a notebook line"]:::module
     icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards, the tray and the editor bar"]:::module
-    previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
-    switcher --> icons & previewImage & switcherState & modal
+    switcher --> icons & line & switcherState & modal
     switcherState --> search & modal
-    tray --> icons & trayState & modal
+    line --> icons
+    tray --> icons & line & trayState & modal
     trayState --> findTags & modal
     tags --> api
 ```
 
-`list/` holds the landing page, `switcher/` the quick switcher and `tags/` the
-tags. Directly in `catalog/` stay `PreviewImage`, which the landing page and the
-quick switcher use, `icons`, which all of them use, `use-modal-dialog`, which the
-quick switcher and the tray use, `use-drawings` for `App`, and `NameField` and
+`list/` holds the landing page, `switcher/` the quick switcher, `tags/` the tags
+and `dialog/` what the quick switcher and the tray share: `use-modal-dialog` and
+`SearchLine`, a search field on a notebook line with no box. Directly in `catalog/`
+stay `PreviewImage`, which the landing page and the quick switcher use, `icons`,
+which all of them use, `use-drawings` for `App`, and `NameField` and
 `DeleteConfirmation`. Only
 `DrawingList` uses those two today, but neither depends on it.
 
