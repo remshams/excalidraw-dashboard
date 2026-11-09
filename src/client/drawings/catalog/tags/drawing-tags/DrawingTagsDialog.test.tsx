@@ -10,7 +10,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag, TagRequest } from "#shared/tags.ts";
-import { ApiError } from "../../api.ts";
+import { ApiError } from "../../../api.ts";
 import { DrawingTagsDialog } from "./DrawingTagsDialog.tsx";
 
 const tags: Tag[] = [

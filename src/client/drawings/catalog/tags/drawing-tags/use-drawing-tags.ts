@@ -1,15 +1,11 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { DrawingSummary } from "#shared/drawings.ts";
-import {
-	type Tag,
-	type TagRequest,
-	tagLabelKey,
-} from "#shared/tags.ts";
-import { ApiError } from "../../api.ts";
-import { useModalDialog } from "../dialog/use-modal-dialog.ts";
-import { findTags } from "./find-tags.ts";
-import { moveInGrid } from "./grid-keys.ts";
-import type { TagChanges } from "./use-tags.ts";
+import { type Tag, type TagRequest, tagLabelKey } from "#shared/tags.ts";
+import { ApiError } from "../../../api.ts";
+import { useModalDialog } from "../../dialog/use-modal-dialog.ts";
+import { findTags } from "../find-tags.ts";
+import { moveInGrid } from "../grid-keys.ts";
+import type { TagChanges } from "../use-tags.ts";
 
 export type DrawingTagsProps = {
 	drawing: DrawingSummary;

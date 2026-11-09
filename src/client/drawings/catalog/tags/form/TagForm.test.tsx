@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { Tag } from "#shared/tags.ts";
-import { ApiError } from "../../api.ts";
+import { ApiError } from "../../../api.ts";
 import { TagForm } from "./TagForm.tsx";
 
 const work: Tag = { id: "w", label: "Work", color: "teal" };

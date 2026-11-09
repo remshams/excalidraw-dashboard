@@ -1,12 +1,8 @@
 import { useId } from "react";
-import {
-	TAG_COLORS,
-	type Tag,
-	type TagColor,
-} from "#shared/tags.ts";
+import { TAG_COLORS, type Tag, type TagColor } from "#shared/tags.ts";
+import { TagMark } from "../TagMark.tsx";
+import { tagColorName } from "../tag-color-name.ts";
 import styles from "./TagForm.module.css";
-import { TagMark } from "./TagMark.tsx";
-import { tagColorName } from "./tag-color-name.ts";
 import { type TagFormProps, useTagForm } from "./use-tag-form.ts";
 
 /**

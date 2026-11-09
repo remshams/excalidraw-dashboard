@@ -8,7 +8,7 @@ import {
 	tagLabelMessage,
 	tagLabelProblem,
 } from "#shared/tags.ts";
-import { ApiError } from "../../api.ts";
+import { ApiError } from "../../../api.ts";
 
 export type TagFormProps = {
 	/** The tag to change, or none to create one. */
