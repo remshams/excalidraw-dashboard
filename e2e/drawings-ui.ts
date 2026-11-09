@@ -235,6 +235,62 @@ export async function deleteDrawing(page: Page, name: string): Promise<void> {
 		.click();
 }
 
+/**
+ * The link of a tagged drawing's card. Its accessible name lists every tag, by
+ * label, after the drawing's name.
+ */
+export function taggedCardLink(page: Page, name: string, labels: string[]) {
+	return drawingCardLink(page, `${name}, tags: ${labels.join(", ")}`);
+}
+
+/** The "+2" on a card that has more tags than it shows. */
+export function hiddenTagCount(page: Page, name: string, count: number) {
+	return drawingList(page)
+		.getByRole("listitem")
+		.filter({ has: page.getByRole("link", { name: `${name}, tags:` }) })
+		.getByText(`+${count}`, { exact: true });
+}
+
+/** The card's action that opens the dialog for the drawing's tags. */
+export function changeTagsButton(page: Page, name: string) {
+	return drawingList(page).getByRole("button", {
+		name: `Change tags of ${name}`,
+		exact: true,
+	});
+}
+
+/** Opens the dialog for the drawing's tags from its card. */
+export async function openDrawingTags(page: Page, name: string): Promise<void> {
+	await changeTagsButton(page, name).click();
+	await expect(drawingTagsDialog(page, name)).toBeVisible();
+}
+
+/** The open dialog for the drawing's tags. */
+export function drawingTagsDialog(page: Page, name: string) {
+	return page.getByRole("dialog", { name: `Tags of ${name}` });
+}
+
+/** The dialog's field that finds a tag to add by its label. */
+export function findTagToAddField(page: Page, name: string) {
+	return drawingTagsDialog(page, name).getByRole("searchbox", {
+		name: "Find a tag to add",
+	});
+}
+
+/** A tag the drawing has, as the button in the dialog that takes it off. */
+export function tagOnDrawing(page: Page, name: string, label: string) {
+	return drawingTagsDialog(page, name)
+		.getByRole("group", { name: "Tags it has" })
+		.getByRole("button", { name: `Remove ${label}`, exact: true });
+}
+
+/** A tag the drawing doesn't have, as the button in the dialog that adds it. */
+export function tagToAdd(page: Page, name: string, label: string) {
+	return drawingTagsDialog(page, name)
+		.getByRole("group", { name: "Tags to add" })
+		.getByRole("button", { name: `Add ${label}`, exact: true });
+}
+
 /** The button in the editor's bar that opens the quick switcher. */
 export function switchDrawingButton(page: Page) {
 	return page.getByRole("button", { name: "Switch drawing" });
