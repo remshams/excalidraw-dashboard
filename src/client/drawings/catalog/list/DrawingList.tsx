@@ -7,9 +7,9 @@ import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
 import { PencilIcon, PlusIcon, TagIcon, TrashIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
-import { DrawingTagsDialog } from "../tags/DrawingTagsDialog.tsx";
+import { DrawingTagsDialog } from "../tags/drawing-tags/DrawingTagsDialog.tsx";
 import { TagInkFilter, TagMark } from "../tags/TagMark.tsx";
-import { TagTray } from "../tags/TagTray.tsx";
+import { TagTray } from "../tags/tray/TagTray.tsx";
 import type { TagChanges } from "../tags/use-tags.ts";
 import styles from "./DrawingList.module.css";
 

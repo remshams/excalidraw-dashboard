@@ -1,12 +1,12 @@
 import type { Tag } from "#shared/tags.ts";
-import frame from "../dialog/CentredDialog.module.css";
-import { SearchLine } from "../dialog/SearchLine.tsx";
-import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
-import { CrossIcon } from "../icons.tsx";
+import frame from "../../dialog/CentredDialog.module.css";
+import { SearchLine } from "../../dialog/SearchLine.tsx";
+import { closeOnBackdropPress } from "../../dialog/use-modal-dialog.ts";
+import { CrossIcon } from "../../icons.tsx";
+import { TagForm } from "../form/TagForm.tsx";
+import { NewTagButton } from "../NewTagButton.tsx";
+import { TagMark } from "../TagMark.tsx";
 import styles from "./DrawingTagsDialog.module.css";
-import { NewTagButton } from "./NewTagButton.tsx";
-import { TagForm } from "./TagForm.tsx";
-import { TagMark } from "./TagMark.tsx";
 import { type DrawingTagsProps, useDrawingTags } from "./use-drawing-tags.ts";
 
 type DrawingTagsDialogProps = DrawingTagsProps & {
