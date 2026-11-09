@@ -101,7 +101,8 @@ rules, and `pnpm fallow:architecture` fails on a forbidden import. `e2e` may
 import nothing from `src/`. The client and the server import `shared` through
 the `#shared/*` subpath import in [`package.json`](../../package.json), such as
 `#shared/tags.ts`. Node, TypeScript, Vite, Vitest and Fallow all resolve it from
-that one entry, so the server still runs its TypeScript without a build. Imports
+that one entry, so the server still runs its TypeScript without a build. Biome's
+`noRestrictedImports` rule rejects a relative import of `shared`. Imports
 inside the client stay relative, so they show where a feature lives.
 
 ```mermaid
