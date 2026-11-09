@@ -54,6 +54,9 @@ code.
   technical role across features.
 - Keep the zones from `.fallowrc.json`: `client` and `server` may import `shared`,
   never each other. `pnpm fallow:architecture` enforces this.
+- Import `shared` through the `#shared/*` alias from `package.json` `imports`,
+  such as `#shared/tags.ts`. Biome rejects a relative path into `shared`. Imports
+  inside the client stay relative.
 - Use `.ts` extensions in relative imports. The server runs without a build, and
   the client config allows the same style.
 - Server code must use erasable TypeScript only: no enums, namespaces or
