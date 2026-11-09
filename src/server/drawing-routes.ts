@@ -3,8 +3,8 @@ import { bodyLimit } from "hono/body-limit";
 import type {
 	CreateDrawingRequest,
 	UpdateDrawingRequest,
-} from "../shared/drawings.ts";
-import type { DrawingTagsRequest } from "../shared/tags.ts";
+} from "#shared/drawings.ts";
+import type { DrawingTagsRequest } from "#shared/tags.ts";
 import type { DrawingStore } from "./drawing-store.ts";
 import { type Invalid, readJson } from "./request.ts";
 

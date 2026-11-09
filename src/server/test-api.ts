@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach } from "vitest";
-import type { Drawing } from "../shared/drawings.ts";
-import type { Tag } from "../shared/tags.ts";
+import type { Drawing } from "#shared/drawings.ts";
+import type { Tag } from "#shared/tags.ts";
 import { createApp } from "./app.ts";
 import { openDatabase } from "./database.ts";
 import { openDrawingStore } from "./drawing-store.ts";
