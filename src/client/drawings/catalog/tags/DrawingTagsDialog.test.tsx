@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -343,5 +349,85 @@ describe("DrawingTagsDialog", () => {
 
 		expect(status()).toHaveTextContent("The tags aren't loaded.");
 		expect(screen.queryByRole("button", { name: "New tag" })).toBeNull();
+	});
+
+	it("says nothing while there are tags to add", () => {
+		open();
+
+		expect(status()).toBeEmptyDOMElement();
+	});
+
+	it("puts every tag the drawing has in the tab order, each with a cross", () => {
+		open(["a", "c"]);
+
+		const remove = within(
+			screen.getByRole("group", { name: "Tags it has" }),
+		).getAllByRole("button");
+		expect(remove.map((tag) => tag.tabIndex)).toEqual([0, 0]);
+		expect(remove.every((tag) => tag.querySelector("svg"))).toBe(true);
+		expect(button("Add Personal").querySelector("svg")).toBeNull();
+	});
+
+	it("keeps the browser's own handling of Escape and the arrow keys out", () => {
+		open();
+
+		expect(fireEvent.keyDown(findField(), { key: "ArrowDown" })).toBe(false);
+		expect(
+			fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" }),
+		).toBe(false);
+	});
+
+	it("leaves the focus on a tag to add for a key that doesn't move it", async () => {
+		const user = open([]);
+		await user.keyboard("{ArrowDown}");
+
+		await user.keyboard("x");
+
+		expect(button("Add Network")).toHaveFocus();
+	});
+
+	it("refuses a label another tag has in the form, without asking the server", async () => {
+		const user = open([]);
+
+		await user.click(button("New tag"));
+		await user.type(screen.getByRole("textbox", { name: "Label" }), "Work");
+		await user.click(button("Create tag"));
+
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			'A tag named "Work" already exists',
+		);
+		expect(changes.create).not.toHaveBeenCalled();
+	});
+
+	it("drops an old message once the user types or opens the form", async () => {
+		onToggle.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+		const user = open();
+		await user.click(button("Add Network"));
+		await screen.findByRole("alert");
+
+		expect(status()).toBeEmptyDOMElement();
+
+		await user.type(findField(), "p");
+
+		expect(screen.queryByRole("alert")).toBeNull();
+
+		await user.clear(findField());
+		await user.click(button("Add Personal"));
+		await user.click(button("New tag"));
+		await user.click(button("Cancel"));
+
+		expect(status()).not.toHaveTextContent("Personal added.");
+	});
+
+	it("drops a failure once the user opens the form", async () => {
+		onToggle.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+		const user = open();
+		await user.click(button("Add Network"));
+		await screen.findByRole("alert");
+
+		await user.click(button("New tag"));
+		await user.click(button("Cancel"));
+
+		expect(screen.queryByRole("alert")).toBeNull();
 	});
 });
