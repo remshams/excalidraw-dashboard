@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useId } from "react";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
+import frame from "../dialog/CentredDialog.module.css";
 import { SearchLine } from "../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
 import { PlusIcon } from "../icons.tsx";
@@ -74,7 +75,7 @@ export function QuickSwitcher({
 	return (
 		<dialog
 			ref={dialog}
-			className={styles.switcher}
+			className={`${frame.dialog} ${styles.switcher}`}
 			aria-label="Switch drawing"
 			onKeyDown={onKeyDown}
 			onKeyUp={(event) => event.stopPropagation()}
