@@ -9,6 +9,7 @@ import {
 	listTags,
 	previewUrl,
 	savePreview,
+	setDrawingTags,
 	updateDrawing,
 	updateTag,
 } from "./api.ts";
@@ -72,6 +73,21 @@ describe("drawings API client", () => {
 
 		expect(fetch).toHaveBeenCalledWith("/api/tags/1", {
 			method: "DELETE",
+			headers: { "Content-Type": "application/json" },
+		});
+	});
+
+	it("sets a drawing's tags", async () => {
+		const fetch = mockFetch(Response.json({ id: "1", tagIds: ["a", "b"] }));
+
+		expect(await setDrawingTags("1", ["a", "b"])).toEqual({
+			id: "1",
+			tagIds: ["a", "b"],
+		});
+
+		expect(fetch).toHaveBeenCalledWith("/api/drawings/1/tags", {
+			method: "PUT",
+			body: '{"tagIds":["a","b"]}',
 			headers: { "Content-Type": "application/json" },
 		});
 	});
