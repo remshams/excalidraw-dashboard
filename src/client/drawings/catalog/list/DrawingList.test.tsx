@@ -2,19 +2,21 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "../../../../shared/drawings.ts";
+import type { Tag } from "../../../../shared/tags.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
 const summary = (
 	id: string,
 	name: string,
 	previewUpdatedAt: string | null = null,
+	tagIds: string[] = [],
 ): DrawingSummary => ({
 	id,
 	name,
 	createdAt: "",
 	updatedAt: "",
 	previewUpdatedAt,
-	tagIds: [],
+	tagIds,
 });
 
 const drawings = [
@@ -22,22 +24,23 @@ const drawings = [
 	summary("2", "Roadmap"),
 ];
 
-function setup(shown = drawings) {
+function setup(shown = drawings, tags: Tag[] = []) {
 	const props = {
 		onOpen: vi.fn(),
 		onCreate: vi.fn(),
 		onRename: vi.fn(),
 		onDelete: vi.fn(),
+		onToggleTag: vi.fn(),
 		tagChanges: { create: vi.fn(), update: vi.fn(), remove: vi.fn() },
 	};
 	const { rerender } = render(
-		<DrawingList drawings={shown} tags={[]} {...props} />,
+		<DrawingList drawings={shown} tags={tags} {...props} />,
 	);
 	return {
 		...props,
 		user: userEvent.setup(),
 		show: (next: DrawingSummary[]) =>
-			rerender(<DrawingList drawings={next} tags={[]} {...props} />),
+			rerender(<DrawingList drawings={next} tags={tags} {...props} />),
 	};
 }
 
@@ -308,6 +311,98 @@ describe("DrawingList", () => {
 
 			expect(screen.getByRole("link", { name: "Floor plan" })).toBeVisible();
 			expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
+		});
+	});
+
+	describe("tags", () => {
+		const tags: Tag[] = [
+			{ id: "a", label: "Home", color: "green" },
+			{ id: "b", label: "Ideas", color: "yellow" },
+			{ id: "c", label: "Later", color: "teal" },
+			{ id: "d", label: "Work", color: "blue" },
+		];
+		const tagged = [
+			summary("1", "Plan", null, ["d", "c", "b", "a"]),
+			summary("2", "Roadmap", null, ["d"]),
+		];
+
+		/** The marks along the foot of a card's sheet, as they read. */
+		const marksOf = (name: string) =>
+			screen
+				.getByRole("link", { name: new RegExp(`^${name}`) })
+				.querySelector("[aria-hidden]")?.textContent;
+
+		it("shows the first 3 tags of a card by label and counts the rest", () => {
+			setup(tagged, tags);
+
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
+			expect(marksOf("Roadmap")).toBe("Work");
+		});
+
+		it("names every tag of a card in its accessible name", () => {
+			setup(tagged, tags);
+
+			expect(
+				screen.getByRole("link", {
+					name: "Plan, tags: Home, Ideas, Later, Work",
+				}),
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole("link", { name: "Roadmap, tags: Work" }),
+			).toBeInTheDocument();
+		});
+
+		it("shows no tags while they aren't loaded", () => {
+			render(
+				<DrawingList
+					drawings={tagged}
+					tags={null}
+					tagChanges={{ create: vi.fn(), update: vi.fn(), remove: vi.fn() }}
+					onOpen={vi.fn()}
+					onCreate={vi.fn()}
+					onRename={vi.fn()}
+					onDelete={vi.fn()}
+					onToggleTag={vi.fn()}
+				/>,
+			);
+
+			expect(screen.getByRole("link", { name: "Plan" })).toBeInTheDocument();
+		});
+
+		it("changes a card's tags in a dialog for that drawing", async () => {
+			const { user, onToggleTag } = setup(tagged, tags);
+			onToggleTag.mockResolvedValue(undefined);
+			const change = screen.getByRole("button", {
+				name: "Change tags of Roadmap",
+			});
+			expect(change).toHaveAttribute("aria-haspopup", "dialog");
+
+			await user.click(change);
+			await user.click(screen.getByRole("button", { name: "Add Home" }));
+
+			expect(
+				screen.getByRole("dialog", { name: "Tags of Roadmap" }),
+			).toBeInTheDocument();
+			expect(onToggleTag).toHaveBeenCalledExactlyOnceWith(tagged[1], "a");
+
+			await user.click(screen.getByRole("button", { name: "Done" }));
+
+			expect(screen.queryByRole("dialog")).toBeNull();
+		});
+
+		it("shows the drawing's latest tags in the open dialog", async () => {
+			const { user, show } = setup(tagged, tags);
+			await user.click(
+				screen.getByRole("button", { name: "Change tags of Roadmap" }),
+			);
+
+			show([tagged[0], summary("2", "Roadmap", null, ["d", "a"])]);
+
+			expect(
+				within(screen.getByRole("group", { name: "Tags it has" }))
+					.getAllByRole("button")
+					.map((tag) => tag.getAttribute("aria-label")),
+			).toEqual(["Remove Home", "Remove Work"]);
 		});
 	});
 });

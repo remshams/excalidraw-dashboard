@@ -107,6 +107,39 @@
 	object-fit: contain;
 }
 
+/* Leaves the foot of the sheet to the tags. */
+.sheet.tagged {
+	--strip-height: 1.5rem;
+}
+
+.sheet.tagged img {
+	height: calc(100% - var(--space-md) - var(--strip-height) - var(--space-xs));
+}
+
+/* The first tags in one line along the foot of the sheet, then "+2" for the rest. */
+.strip {
+	position: absolute;
+	right: var(--space-sm);
+	bottom: var(--space-xs);
+	left: var(--space-sm);
+	display: flex;
+	align-items: center;
+	gap: var(--space-xs);
+	height: var(--strip-height);
+}
+
+.strip > * {
+	flex: 0 1 auto;
+	min-width: 0;
+}
+
+.more {
+	flex: none;
+	color: var(--graphite);
+	font-family: var(--hand);
+	font-size: var(--text-sm);
+}
+
 /* The card under the pointer or keyboard is outlined like a selected element in
    Excalidraw. */
 .open:is(:hover, :focus-visible) .sheet:not(.blank) {

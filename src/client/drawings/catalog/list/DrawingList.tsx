@@ -4,10 +4,11 @@ import type { Tag } from "../../../../shared/tags.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { searchByName } from "../../search.ts";
 import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
-import { PencilIcon, PlusIcon, TrashIcon } from "../icons.tsx";
+import { PencilIcon, PlusIcon, TagIcon, TrashIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
-import { TagInkFilter } from "../tags/TagMark.tsx";
+import { DrawingTagsDialog } from "../tags/DrawingTagsDialog.tsx";
+import { TagInkFilter, TagMark } from "../tags/TagMark.tsx";
 import { TagTray } from "../tags/TagTray.tsx";
 import type { TagChanges } from "../tags/use-tags.ts";
 import styles from "./DrawingList.module.css";
@@ -21,7 +22,12 @@ type DrawingListProps = {
 	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
 	onDelete: (id: string) => void;
+	/** Gives the drawing the tag or takes it off. Rejects when the server refuses. */
+	onToggleTag: (drawing: DrawingSummary, tagId: string) => Promise<void>;
 };
+
+/** How many tags a card shows before it counts the rest. */
+const CARD_TAGS = 3;
 
 type CardTask = "rename" | "delete";
 
@@ -43,8 +49,11 @@ export function DrawingList({
 	onCreate,
 	onRename,
 	onDelete,
+	onToggleTag,
 }: DrawingListProps) {
 	const [task, setTask] = useState<OpenTask>(null);
+	const [taggingId, setTaggingId] = useState<string | null>(null);
+	const tagging = drawings.find(({ id }) => id === taggingId);
 	const [query, setQuery] = useState("");
 	const close = () => setTask(null);
 	const shown = searchByName(drawings, query);
@@ -85,6 +94,7 @@ export function DrawingList({
 					<DrawingCard
 						key={drawing.id}
 						drawing={drawing}
+						tags={(tags ?? []).filter(({ id }) => drawing.tagIds.includes(id))}
 						task={
 							task && task.kind !== "create" && task.id === drawing.id
 								? task.kind
@@ -92,6 +102,7 @@ export function DrawingList({
 						}
 						onOpen={onOpen}
 						onStart={(kind) => setTask({ kind, id: drawing.id })}
+						onEditTags={() => setTaggingId(drawing.id)}
 						onRename={(name) => {
 							close();
 							onRename(drawing.id, name);
@@ -111,6 +122,15 @@ export function DrawingList({
 					? `No drawing is named “${searched}”.`
 					: null}
 			</p>
+			{tagging && (
+				<DrawingTagsDialog
+					drawing={tagging}
+					tags={tags}
+					changes={tagChanges}
+					onToggle={(tagId) => onToggleTag(tagging, tagId)}
+					onClose={() => setTaggingId(null)}
+				/>
+			)}
 		</div>
 	);
 }
@@ -159,10 +179,13 @@ function NewDrawingCard({
 
 type DrawingCardProps = {
 	drawing: DrawingSummary;
+	/** The drawing's tags, sorted by label. */
+	tags: Tag[];
 	/** The question the card asks below its sheet, if any. */
 	task: CardTask | null;
 	onOpen: (id: string | null) => void;
 	onStart: (task: CardTask) => void;
+	onEditTags: () => void;
 	onRename: (name: string) => void;
 	onDelete: () => void;
 	onCancel: () => void;
@@ -170,9 +193,11 @@ type DrawingCardProps = {
 
 function DrawingCard({
 	drawing,
+	tags,
 	task,
 	onOpen,
 	onStart,
+	onEditTags,
 	onRename,
 	onDelete,
 	onCancel,
@@ -182,7 +207,7 @@ function DrawingCard({
 	if (task === "rename" || task === "delete") {
 		return (
 			<li>
-				<Sheet drawing={drawing} />
+				<Sheet drawing={drawing} tags={tags} />
 				{task === "rename" ? (
 					<NameField
 						label={`New name for ${name}`}
@@ -203,11 +228,31 @@ function DrawingCard({
 
 	return (
 		<li>
-			<DrawingLink drawingId={id} onOpen={onOpen} className={styles.open}>
-				<Sheet drawing={drawing} />
+			<DrawingLink
+				drawingId={id}
+				onOpen={onOpen}
+				className={styles.open}
+				// The sheet shows only the first tags; the name lists them all.
+				aria-label={
+					tags.length > 0
+						? `${name}, tags: ${tags.map(({ label }) => label).join(", ")}`
+						: undefined
+				}
+			>
+				<Sheet drawing={drawing} tags={tags} />
 				<span className={styles.name}>{name}</span>
 			</DrawingLink>
 			<span className={styles.actions}>
+				<button
+					type="button"
+					className={styles.icon}
+					aria-label={`Change tags of ${name}`}
+					aria-haspopup="dialog"
+					title="Change tags"
+					onClick={onEditTags}
+				>
+					<TagIcon />
+				</button>
 				<button
 					type="button"
 					className={styles.icon}
@@ -229,11 +274,29 @@ function DrawingCard({
 	);
 }
 
-/** The drawing's preview on a sheet of paper, or a blank sheet without one. */
-function Sheet({ drawing }: { drawing: DrawingSummary }) {
+/**
+ * The drawing's preview on a sheet of paper, or a blank sheet without one. Its first
+ * tags stand along the foot. The card's link names them all for screen readers.
+ */
+function Sheet({ drawing, tags }: { drawing: DrawingSummary; tags: Tag[] }) {
+	const hidden = tags.length - CARD_TAGS;
 	return (
-		<span className={styles.sheet}>
+		<span className={`${styles.sheet} ${tags.length > 0 ? styles.tagged : ""}`}>
 			<PreviewImage drawing={drawing} />
+			{tags.length > 0 && (
+				<span className={styles.strip} aria-hidden="true">
+					{tags.slice(0, CARD_TAGS).map((tag) => (
+						<TagMark
+							key={tag.id}
+							label={tag.label}
+							color={tag.color}
+							seed={drawing.id + tag.id}
+							small
+						/>
+					))}
+					{hidden > 0 && <span className={styles.more}>+{hidden}</span>}
+				</span>
+			)}
 		</span>
 	);
 }
