@@ -1,0 +1,22 @@
+.button {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	min-width: 0;
+	padding: var(--space-xs) var(--space-sm);
+	overflow-wrap: anywhere;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--ink);
+	text-align: start;
+	cursor: pointer;
+}
+
+.button svg {
+	flex: none;
+}
+
+.button:hover {
+	background: var(--hover);
+}
