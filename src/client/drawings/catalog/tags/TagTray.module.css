@@ -171,28 +171,6 @@
 	border-top: var(--stroke-sm) solid var(--rule);
 }
 
-.action {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--space-xs);
-	padding: var(--space-xs) var(--space-sm);
-	overflow-wrap: anywhere;
-	border: 0;
-	border-radius: var(--radius-md);
-	background: none;
-	color: var(--ink);
-	text-align: start;
-	cursor: pointer;
-}
-
-.action svg {
-	flex: none;
-}
-
-.action:hover {
-	background: var(--hover);
-}
-
 .formView {
 	min-height: 0;
 	overflow-y: auto;
