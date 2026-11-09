@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DrawingSummary } from "../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import {
 	create,
 	createTag,

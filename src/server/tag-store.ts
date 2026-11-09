@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { type Tag, type TagRequest, tagLabelKey } from "../shared/tags.ts";
+import { type Tag, type TagRequest, tagLabelKey } from "#shared/tags.ts";
 import { isUniqueError } from "./database.ts";
 
 /**

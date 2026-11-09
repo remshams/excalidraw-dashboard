@@ -5,7 +5,7 @@ import {
 	type TagRequest,
 	tagLabelMessage,
 	tagLabelProblem,
-} from "../shared/tags.ts";
+} from "#shared/tags.ts";
 import { type Invalid, readJson } from "./request.ts";
 import type { TagStore } from "./tag-store.ts";
 

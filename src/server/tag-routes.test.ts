@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Tag } from "../shared/tags.ts";
+import type { Tag } from "#shared/tags.ts";
 import {
 	create,
 	createTag,
