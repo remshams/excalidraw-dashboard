@@ -21,7 +21,20 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"preset": "recommended"
+			"preset": "recommended",
+			"style": {
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"patterns": [
+							{
+								"group": ["../**/shared/**"],
+								"message": "Import shared through the #shared alias, such as #shared/tags.ts."
+							}
+						]
+					}
+				}
+			}
 		},
 		"domains": {
 			"react": "recommended"
