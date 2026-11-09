@@ -26,8 +26,16 @@ export function App() {
 	const theme = useColorScheme();
 	const [openDrawingId, openDrawing] = useOpenDrawingId();
 	const { drawing, failed } = useDrawing(openDrawingId, showError);
-	const { drawings, replace, create, rename, remove, forgetTag, wasDeleted } =
-		useDrawings(showError);
+	const {
+		drawings,
+		replace,
+		create,
+		rename,
+		remove,
+		toggleTag,
+		forgetTag,
+		wasDeleted,
+	} = useDrawings(showError);
 	const { tags, changes: tagChanges } = useTags(showError, forgetTag);
 	const createAndOpen = (name: string) =>
 		create(name).then((created) => openDrawing(created.id), showError);
@@ -59,6 +67,8 @@ export function App() {
 						onCreate={createAndOpen}
 						onRename={(id, name) => rename(id, name).catch(showError)}
 						onDelete={(id) => remove(id).catch(showError)}
+						// The dialog says why a change failed.
+						onToggleTag={toggleTag}
 					/>
 				</main>
 			)}

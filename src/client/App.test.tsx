@@ -150,6 +150,30 @@ describe("App", () => {
 		).toBeVisible();
 	});
 
+	it("tags a drawing from its card and shows the tag on the card", async () => {
+		vi.mocked(api.setDrawingTags).mockResolvedValue({
+			...drawing("2", "Roadmap"),
+			tagIds: ["t1"],
+		});
+		const user = userEvent.setup();
+		render(<App />);
+		await cards().findByRole("link", { name: "Roadmap" });
+
+		await user.click(
+			cards().getByRole("button", { name: "Change tags of Roadmap" }),
+		);
+		const dialog = within(
+			screen.getByRole("dialog", { name: "Tags of Roadmap" }),
+		);
+		await user.click(dialog.getByRole("button", { name: "Add Work" }));
+
+		expect(api.setDrawingTags).toHaveBeenCalledExactlyOnceWith("2", ["t1"]);
+		expect(
+			cards().getByRole("link", { name: "Roadmap, tags: Work" }),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("alert")).toBeNull();
+	});
+
 	it("shows why the tags could not be loaded", async () => {
 		vi.mocked(api.listTags).mockRejectedValue(new Error("No tags today"));
 
