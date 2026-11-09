@@ -6,6 +6,8 @@ type DrawingLinkProps = {
 	drawingId: string | null;
 	onOpen: (id: string | null) => void;
 	className?: string;
+	/** Names the link when its content alone doesn't say enough. */
+	"aria-label"?: string;
 	children: ReactNode;
 };
 
@@ -18,12 +20,14 @@ export function DrawingLink({
 	drawingId,
 	onOpen,
 	className,
+	"aria-label": label,
 	children,
 }: DrawingLinkProps) {
 	return (
 		<a
 			href={drawingPath(drawingId)}
 			className={className}
+			aria-label={label}
 			onClick={(event) => {
 				const modified =
 					event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;

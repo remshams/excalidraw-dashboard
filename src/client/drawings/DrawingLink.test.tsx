@@ -22,6 +22,18 @@ describe("DrawingLink", () => {
 		expect(setup(null).link).toHaveAttribute("href", "/");
 	});
 
+	it("takes a name that says more than its content", () => {
+		render(
+			<DrawingLink drawingId="1" onOpen={vi.fn()} aria-label="Plan, tags: Work">
+				Plan
+			</DrawingLink>,
+		);
+
+		expect(
+			screen.getByRole("link", { name: "Plan, tags: Work" }),
+		).toHaveAttribute("href", "/drawings/1");
+	});
+
 	it("opens the drawing in place on a plain click", async () => {
 		const { onOpen, link } = setup("1");
 
