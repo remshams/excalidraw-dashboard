@@ -2,41 +2,13 @@
 	/* The writing margin: the search line and the rows both start here. */
 	--margin: var(--space-lg);
 	--sheet-width: 4rem;
-	/* The room above the dialog and below its tallest size. A fixed top edge keeps the
-	   search line in place while the rows change. */
-	--room: 15dvh;
+	--dialog-width: 36rem;
+	--dialog-room: 15dvh;
 	/* Half the margin on each side of a row's edge: the band reaches out past the
 	   writing and stops short of the dialog's edge. */
 	--band-inset: calc(var(--margin) / 2);
 	/* The selected row, in a wash of the color the search line's rule has. */
 	--band: color-mix(in srgb, var(--selection) 14%, transparent);
-	/* A sheet of paper lying above the editor. */
-	--lift: 0 var(--space-md) var(--space-xl) rgb(0 0 0 / 25%);
-	/* Dims the editor behind the dialog, in both themes. */
-	--backdrop: rgb(0 0 0 / 40%);
-
-	box-sizing: border-box;
-	flex-direction: column;
-	width: min(36rem, 100% - 2 * var(--space-md));
-	max-height: calc(100dvh - 2 * var(--room));
-	margin: var(--room) auto auto;
-	/* No padding or border here: .page covers the dialog, so a press on the dialog
-	   element itself is always one on its backdrop. */
-	padding: 0;
-	overflow: hidden;
-	border: 0;
-	border-radius: var(--radius-md);
-	background: none;
-	box-shadow: var(--lift);
-	color: var(--ink);
-}
-
-.switcher[open] {
-	display: flex;
-}
-
-.switcher::backdrop {
-	background: var(--backdrop);
 }
 
 /* A shrinking column, so only the rows scroll and the search line stays. */
