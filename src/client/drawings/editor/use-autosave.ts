@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Drawing, DrawingSummary } from "../../../shared/drawings.ts";
+import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import { updateDrawing } from "../api.ts";
 import { createSaveScheduler } from "./save-scheduler.ts";
 

@@ -1,7 +1,7 @@
 import { exportToBlob } from "@excalidraw/excalidraw";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
-import type { DrawingSummary } from "../../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import { deletePreview, savePreview } from "../api.ts";
 
 /** Longest side of a preview in pixels, enough for a card on a high-density screen. */

@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useId } from "react";
-import type { DrawingSummary } from "../../../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import frame from "../dialog/CentredDialog.module.css";
 import { SearchLine } from "../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";

@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import type { Tag, TagRequest } from "../../../../shared/tags.ts";
+import type { Tag, TagRequest } from "#shared/tags.ts";
 import { useModalDialog } from "../dialog/use-modal-dialog.ts";
 import { findTags } from "./find-tags.ts";
 import { moveInGrid } from "./grid-keys.ts";

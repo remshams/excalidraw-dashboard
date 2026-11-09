@@ -7,7 +7,7 @@ import {
 	tagLabelKey,
 	tagLabelMessage,
 	tagLabelProblem,
-} from "../../../../shared/tags.ts";
+} from "#shared/tags.ts";
 import { ApiError } from "../../api.ts";
 
 export type TagFormProps = {

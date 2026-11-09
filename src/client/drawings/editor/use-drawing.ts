@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Drawing } from "../../../shared/drawings.ts";
+import type { Drawing } from "#shared/drawings.ts";
 import { getDrawing } from "../api.ts";
 
 /** The result of loading one drawing: the drawing, or null if loading failed. */

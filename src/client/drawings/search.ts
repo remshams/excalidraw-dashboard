@@ -1,4 +1,4 @@
-import type { DrawingSummary } from "../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 
 /**
  * The drawings whose name contains the query, ignoring case and the spaces

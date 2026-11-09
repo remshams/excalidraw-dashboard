@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "../../../../shared/drawings.ts";
-import type { Tag } from "../../../../shared/tags.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
+import type { Tag } from "#shared/tags.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
 const summary = (

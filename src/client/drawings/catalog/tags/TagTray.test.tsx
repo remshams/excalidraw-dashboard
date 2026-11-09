@@ -8,8 +8,8 @@ import {
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "../../../../shared/drawings.ts";
-import type { Tag, TagRequest } from "../../../../shared/tags.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
+import type { Tag, TagRequest } from "#shared/tags.ts";
 import { ApiError } from "../../api.ts";
 import { TagTray } from "./TagTray.tsx";
 

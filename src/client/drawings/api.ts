@@ -2,8 +2,8 @@ import type {
 	Drawing,
 	DrawingSummary,
 	UpdateDrawingRequest,
-} from "../../shared/drawings.ts";
-import type { DrawingTagsRequest, Tag, TagRequest } from "../../shared/tags.ts";
+} from "#shared/drawings.ts";
+import type { DrawingTagsRequest, Tag, TagRequest } from "#shared/tags.ts";
 
 /** A request the server answered with an error, and the reason it gave. */
 export class ApiError extends Error {

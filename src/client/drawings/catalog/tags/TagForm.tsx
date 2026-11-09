@@ -3,7 +3,7 @@ import {
 	TAG_COLORS,
 	type Tag,
 	type TagColor,
-} from "../../../../shared/tags.ts";
+} from "#shared/tags.ts";
 import styles from "./TagForm.module.css";
 import { TagMark } from "./TagMark.tsx";
 import { tagColorName } from "./tag-color-name.ts";
