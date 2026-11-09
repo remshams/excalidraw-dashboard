@@ -98,7 +98,11 @@ flowchart TD
 
 The Fallow zones in [`.fallowrc.json`](../../.fallowrc.json) enforce these
 rules, and `pnpm fallow:architecture` fails on a forbidden import. `e2e` may
-import nothing from `src/`.
+import nothing from `src/`. The client and the server import `shared` through
+the `#shared/*` subpath import in [`package.json`](../../package.json), such as
+`#shared/tags.ts`. Node, TypeScript, Vite, Vitest and Fallow all resolve it from
+that one entry, so the server still runs its TypeScript without a build. Imports
+inside the client stay relative, so they show where a feature lives.
 
 ```mermaid
 ---
@@ -241,15 +245,15 @@ flowchart TD
 title: Modules of the tags
 ---
 flowchart TD
-    tray["TagTray<br>src/client/drawings/catalog/tags/TagTray.tsx<br>The Tags button and the tray with its list and form"]:::module
-    trayState["use-tag-tray<br>src/client/drawings/catalog/tags/use-tag-tray.ts<br>The open tray's view, find text, tab stop and focus"]:::module
-    form["TagForm<br>src/client/drawings/catalog/tags/TagForm.tsx<br>Creates or changes a tag, asks before deleting it"]:::module
+    tray["TagTray<br>src/client/drawings/catalog/tags/tray/TagTray.tsx<br>The Tags button and the tray with its list and form"]:::module
+    trayState["use-tag-tray<br>src/client/drawings/catalog/tags/tray/use-tag-tray.ts<br>The open tray's view, find text, tab stop and focus"]:::module
+    form["TagForm<br>src/client/drawings/catalog/tags/form/TagForm.tsx<br>Creates or changes a tag, asks before deleting it"]:::module
     mark["TagMark<br>src/client/drawings/catalog/tags/TagMark.tsx<br>A tag's inked label and the ink filter"]:::module
     findTags["find-tags<br>src/client/drawings/catalog/tags/find-tags.ts<br>Finds tags by a part of their label"]:::module
     gridKeys["grid-keys<br>src/client/drawings/catalog/tags/grid-keys.ts<br>Moves the focus through a grid with the arrow keys"]:::module
     tags["use-tags<br>src/client/drawings/catalog/tags/use-tags.ts<br>Loads the tags, applies changes, reloads after a refusal"]:::module
-    drawingTags["DrawingTagsDialog<br>src/client/drawings/catalog/tags/DrawingTagsDialog.tsx<br>Modal dialog that changes one drawing's tags"]:::module
-    drawingTagsState["use-drawing-tags<br>src/client/drawings/catalog/tags/use-drawing-tags.ts<br>The dialog's tags on the drawing and to add, find text, form and failure"]:::module
+    drawingTags["DrawingTagsDialog<br>src/client/drawings/catalog/tags/drawing-tags/DrawingTagsDialog.tsx<br>Modal dialog that changes one drawing's tags"]:::module
+    drawingTagsState["use-drawing-tags<br>src/client/drawings/catalog/tags/drawing-tags/use-drawing-tags.ts<br>The dialog's tags on the drawing and to add, find text, form and failure"]:::module
     newTag["NewTagButton<br>src/client/drawings/catalog/tags/NewTagButton.tsx<br>Opens the form for a new tag"]:::module
     dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
@@ -270,6 +274,12 @@ stay `PreviewImage`, which the landing page and the quick switcher use, `icons`,
 which all of them use, `use-drawings` for `App`, and `NameField` and
 `DeleteConfirmation`. Only
 `DrawingList` uses those two today, but neither depends on it.
+
+`tags/` has one folder per UI unit, each with its hook, CSS module and tests:
+`tray/` holds `TagTray` and `use-tag-tray`, `drawing-tags/` holds
+`DrawingTagsDialog` and `use-drawing-tags`, and `form/` holds `TagForm` and
+`use-tag-form`. What several units use stays at the top of `tags/`: `use-tags`,
+`TagMark`, `NewTagButton`, `find-tags`, `grid-keys` and `tag-color-name`.
 
 `App` renders `DrawingList` with the list from `use-drawings` and the tags from
 `use-tags`. A search field next to the heading filters the cards through
