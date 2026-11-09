@@ -216,15 +216,15 @@ failed preview is only logged, and the next open tries again.
 title: Modules of the catalog
 ---
 flowchart TD
-    list["DrawingList<br>src/client/drawings/catalog/list/DrawingList.tsx<br>The landing page's cards with their previews"]:::module
+    list["DrawingList<br>src/client/drawings/catalog/list/DrawingList.tsx<br>The landing page's cards with their previews and tags"]:::module
     switcher["switcher/<br>Modal search that opens or creates a drawing"]:::group
-    tags["tags/<br>Loads, finds, creates, changes and deletes the tags"]:::group
+    tags["tags/<br>Loads, finds, creates, changes and deletes the tags; changes a drawing's tags"]:::group
     previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
     icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards, the tray and the editor bar"]:::module
-    drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, remembers deletes, forgets deleted tags"]:::module
-    dialog["dialog/<br>What the modal dialogs share: the modal behaviour and the search line"]:::group
+    drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, gives or takes off a tag, remembers deletes, forgets deleted tags"]:::module
+    dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
@@ -238,12 +238,9 @@ flowchart TD
 
 ```mermaid
 ---
-title: Modules of the quick switcher and the tags
+title: Modules of the tags
 ---
 flowchart TD
-    switcher["QuickSwitcher<br>src/client/drawings/catalog/switcher/QuickSwitcher.tsx<br>Modal search that opens or creates a drawing"]:::module
-    switcherState["use-quick-switcher<br>src/client/drawings/catalog/switcher/use-quick-switcher.ts<br>The open switcher's dialog, query, rows and selection"]:::module
-    search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
     tray["TagTray<br>src/client/drawings/catalog/tags/TagTray.tsx<br>The Tags button and the tray with its list and form"]:::module
     trayState["use-tag-tray<br>src/client/drawings/catalog/tags/use-tag-tray.ts<br>The open tray's view, find text, tab stop and focus"]:::module
     form["TagForm<br>src/client/drawings/catalog/tags/TagForm.tsx<br>Creates or changes a tag, asks before deleting it"]:::module
@@ -251,19 +248,24 @@ flowchart TD
     findTags["find-tags<br>src/client/drawings/catalog/tags/find-tags.ts<br>Finds tags by a part of their label"]:::module
     gridKeys["grid-keys<br>src/client/drawings/catalog/tags/grid-keys.ts<br>Moves the focus through a grid with the arrow keys"]:::module
     tags["use-tags<br>src/client/drawings/catalog/tags/use-tags.ts<br>Loads the tags, applies changes, reloads after a refusal"]:::module
-    dialog["dialog/<br>What the modal dialogs share: the modal behaviour and the search line"]:::group
+    drawingTags["DrawingTagsDialog<br>src/client/drawings/catalog/tags/DrawingTagsDialog.tsx<br>Modal dialog that changes one drawing's tags"]:::module
+    drawingTagsState["use-drawing-tags<br>src/client/drawings/catalog/tags/use-drawing-tags.ts<br>The dialog's tags on the drawing and to add, find text, form and failure"]:::module
+    newTag["NewTagButton<br>src/client/drawings/catalog/tags/NewTagButton.tsx<br>Opens the form for a new tag"]:::module
+    dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
-    switcher --> switcherState & dialog
-    switcherState --> search & dialog
-    tray --> form & trayState & tags & dialog
+    tray --> form & trayState & tags & dialog & newTag
+    drawingTags --> form & mark & drawingTagsState & newTag & dialog
+    drawingTagsState --> findTags & gridKeys & api & dialog
     form --> mark & api
     trayState --> findTags & gridKeys & tags & dialog
     tags --> api
 ```
 
 `list/` holds the landing page, `switcher/` the quick switcher, `tags/` the tags
-and `dialog/` what the quick switcher and the tray share: `use-modal-dialog` and
-`SearchLine`, a search field on a notebook line with no box. Directly in `catalog/`
+and `dialog/` what the modal dialogs share: `use-modal-dialog`,
+`SearchLine`, a search field on a notebook line with no box, and
+`CentredDialog.module.css`, the frame of the quick switcher and the dialog for a
+drawing's tags: a sheet in the middle of the window over the dimmed page. Directly in `catalog/`
 stay `PreviewImage`, which the landing page and the quick switcher use, `icons`,
 which all of them use, `use-drawings` for `App`, and `NameField` and
 `DeleteConfirmation`. Only
@@ -315,6 +317,27 @@ and each answer has its own path:
   failed, and the form or the delete question stays open to try again. `App`'s error
   banner would sit behind the modal tray.
 
+A card shows its drawing's first 3 tags by label as small `TagMark`s along the foot
+of its sheet, and `+N` for the rest. The marks are hidden from screen readers; the
+card's link names every tag instead, as in "Plan, tags: Home, Work". The card's tag
+button opens `DrawingTagsDialog`, a modal `<dialog>` in `CentredDialog`'s frame for
+that drawing. `use-drawing-tags` holds its state. The tags the drawing has stand
+on top, and a click takes one off. The tags it hasn't, found by label through
+`find-tags`, stand below the find field; a click adds one, and Enter adds the top
+match. Enter on a text no tag to add has, or the `NewTagButton` the tray shares,
+swaps the list for `TagForm`, and saving creates the tag and adds it. A label the
+drawing already has opens no form; the status says so. The status also announces
+each tag added or removed, as the button moves out of the focus. Escape undoes
+the form, then the find text, then closes the dialog, and the browser returns the
+focus to the card's tag button.
+
+Each add or remove calls `toggleTag` in `use-drawings`, which changes the summary
+at once and sends the drawing's whole set of tag IDs with `setDrawingTags`. A second
+click before the server answers builds on the first. If the server refuses,
+`toggleTag` undoes only that change and rejects, and the dialog says why: a 400 or
+404 means another tab changed the drawing or the tags, so it asks for a reload, and
+anything else asks to try again.
+
 `use-tags` applies every answer to its sorted list. It reports a tag that is gone,
 deleted here or elsewhere, to `use-drawings`, whose `forgetTag` takes the ID off
 the drawing summaries, as the server already did.
@@ -323,7 +346,9 @@ Escape undoes one layer at a time: the delete question, the form, the find text,
 then the tray. A press beside the tray closes it, and the focus returns to the
 button. Saving focuses the tag's pencil, and deleting focuses the find field.
 
-The editor view's bar has a "Switch drawing" button, and `use-switcher-shortcut`
+`QuickSwitcher` keeps its dialog, query, rows and selection in
+`use-quick-switcher`, which finds the drawings through `search.ts`. The editor
+view's bar has a "Switch drawing" button, and `use-switcher-shortcut`
 makes Ctrl+K or ⌘K toggle the same `QuickSwitcher` while the editor view is
 mounted. The hook listens in the capture phase and stops the event, so Excalidraw
 doesn't add a link on those keys. The switcher belongs to the catalog even though
@@ -549,12 +574,16 @@ Chromium.
   keeps the form, a long list with its status line and **New tag** in a short window,
   and ends a long label in an ellipsis on a phone. Preconditions and assignments come from the HTTP
   API.
+- [`drawing-tags.spec.ts`](../../e2e/drawing-tags.spec.ts) covers a drawing's
+  tags: adding and removing them from the card and seeing them after a reload,
+  doing it by keyboard alone with a tag created in place and the focus returning
+  to the card, and a card that shows 3 tags and counts the fourth.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
   Excalidraw logo as its icon and that the server serves it as an SVG.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
-  actions for the drawings UI, and
+  actions for the drawings UI, including a card's tags and their dialog, and
   [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings,
   stores scenes, assigns tags, and reads stored scenes, previews and summaries
   through the HTTP API. [`tags-api.ts`](../../e2e/tags-api.ts) creates, changes
