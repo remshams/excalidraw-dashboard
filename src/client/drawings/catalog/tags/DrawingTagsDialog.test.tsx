@@ -189,6 +189,25 @@ describe("DrawingTagsDialog", () => {
 		expect(button("New tag")).toBeInTheDocument();
 	});
 
+	it.each([
+		["a composition is active", { isComposing: true }],
+		["the key belongs to an input method", { keyCode: 229 }],
+	])(
+		"leaves Enter and ArrowDown to the input method when %s",
+		async (_, input) => {
+			const user = open();
+			await user.type(findField(), "net");
+
+			expect(
+				fireEvent.keyDown(findField(), { key: "ArrowDown", ...input }),
+			).toBe(true);
+			fireEvent.keyDown(findField(), { key: "Enter", ...input });
+
+			expect(onToggle).not.toHaveBeenCalled();
+			expect(findField()).toHaveValue("net");
+		},
+	);
+
 	it("adds nothing on Enter with an empty find field", async () => {
 		const user = open();
 

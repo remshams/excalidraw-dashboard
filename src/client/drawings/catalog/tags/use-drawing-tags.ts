@@ -109,6 +109,8 @@ export function useDrawingTags({
 	};
 
 	const onFindKey = (event: KeyboardEvent) => {
+		// An input method uses these keys to edit and confirm its composition.
+		if (event.nativeEvent.isComposing || event.keyCode === 229) return;
 		if (event.key === "ArrowDown") {
 			event.preventDefault();
 			toAdd.current?.querySelector("button")?.focus();
