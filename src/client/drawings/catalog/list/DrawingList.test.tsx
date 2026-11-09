@@ -339,6 +339,22 @@ describe("DrawingList", () => {
 			expect(marksOf("Roadmap")).toBe("Work");
 		});
 
+		it("counts nothing more for a card with exactly 3 tags", () => {
+			setup([summary("1", "Plan", null, ["a", "b", "c"])], tags);
+
+			expect(marksOf("Plan")).toBe("HomeIdeasLater");
+		});
+
+		it("shows no tag strip on a card without tags", () => {
+			setup([summary("1", "Plan")], tags);
+
+			expect(
+				screen
+					.getByRole("link", { name: "Plan" })
+					.querySelector("[aria-hidden]"),
+			).toBeNull();
+		});
+
 		it("names every tag of a card in its accessible name", () => {
 			setup(tagged, tags);
 
