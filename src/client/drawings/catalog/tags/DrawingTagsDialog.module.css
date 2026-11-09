@@ -67,8 +67,9 @@
 	overflow-y: auto;
 }
 
-/* As wide as its tag, so the hover shows around the tag and not across the
-   column. A long label still ends in an ellipsis within the column. */
+/* As wide as its tag; a long label ends in an ellipsis within its column. No
+   hover: a grey block behind an inked tag reads as a shadow, and the pointer
+   cursor already says the tag can be clicked. */
 .tag {
 	display: inline-flex;
 	align-items: center;
@@ -87,18 +88,14 @@
 	justify-self: start;
 }
 
-.tag:hover {
-	background: var(--hover);
-}
-
 .tag svg {
 	flex: none;
 	width: 14px;
 	height: 14px;
 }
 
-/* The tag Enter adds. */
-.next {
+/* The tag Enter adds. The focus ring replaces the outline while it has the focus. */
+.next:not(:focus-visible) {
 	box-shadow: 0 0 0 var(--stroke-sm) var(--selection);
 }
 
