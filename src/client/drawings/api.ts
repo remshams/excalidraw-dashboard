@@ -3,7 +3,7 @@ import type {
 	DrawingSummary,
 	UpdateDrawingRequest,
 } from "../../shared/drawings.ts";
-import type { Tag, TagRequest } from "../../shared/tags.ts";
+import type { DrawingTagsRequest, Tag, TagRequest } from "../../shared/tags.ts";
 
 /** A request the server answered with an error, and the reason it gave. */
 export class ApiError extends Error {
@@ -60,6 +60,13 @@ export const savePreview = (id: string, png: Blob) =>
 
 export const deletePreview = (id: string) =>
 	request<DrawingSummary>(`/drawings/${id}/preview`, { method: "DELETE" });
+
+/** Gives the drawing exactly these tags. Its `updatedAt` stays the same. */
+export const setDrawingTags = (id: string, tagIds: string[]) =>
+	request<DrawingSummary>(`/drawings/${id}/tags`, {
+		method: "PUT",
+		body: JSON.stringify({ tagIds } satisfies DrawingTagsRequest),
+	});
 
 export const listTags = () => request<Tag[]>("/tags");
 
