@@ -83,6 +83,9 @@ export async function expectCardShowsPreview(
 ): Promise<void> {
 	const image = drawingCard(page, name).locator("img");
 	await expect(image).toBeVisible();
+	// The preview loads lazily, so far down a long list it stays empty until the
+	// user scrolls to it.
+	await image.scrollIntoViewIfNeeded();
 	await expect
 		.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
 		.toBeGreaterThan(0);
