@@ -63,3 +63,11 @@ export function TagIcon() {
 		</svg>
 	);
 }
+
+export function CrossIcon() {
+	return (
+		<svg aria-hidden="true" {...iconProps}>
+			<path d="M6 6l12 12M18 6L6 18" />
+		</svg>
+	);
+}
