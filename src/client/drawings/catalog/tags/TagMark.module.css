@@ -37,6 +37,15 @@
 	filter: url("#tag-ink");
 }
 
+.small {
+	padding: 0 var(--space-xs);
+	font-size: var(--text-sm);
+}
+
+.small::after {
+	inset: 2px;
+}
+
 .text {
 	position: relative;
 	min-width: 0;

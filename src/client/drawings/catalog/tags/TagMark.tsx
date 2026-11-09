@@ -40,13 +40,15 @@ type TagMarkProps = {
 	color: TagColor;
 	/** Keeps the angle the same for this tag. */
 	seed: string;
+	/** A smaller mark, for the foot of a card. */
+	small?: boolean;
 };
 
 /** A tag's label in its colour, inked by hand with a double edge and never quite straight. */
-export function TagMark({ label, color, seed }: TagMarkProps) {
+export function TagMark({ label, color, seed, small }: TagMarkProps) {
 	return (
 		<span
-			className={styles.mark}
+			className={small ? `${styles.mark} ${styles.small}` : styles.mark}
 			style={
 				{
 					"--mark-ink": `var(--tag-${color}-ink)`,
