@@ -67,7 +67,8 @@
 	overflow-y: auto;
 }
 
-/* A tag to add fills its column; one to remove keeps its own width. */
+/* As wide as its tag, so the hover shows around the tag and not across the
+   column. A long label still ends in an ellipsis within the column. */
 .tag {
 	display: inline-flex;
 	align-items: center;
@@ -83,7 +84,7 @@
 }
 
 .available .tag {
-	display: flex;
+	justify-self: start;
 }
 
 .tag:hover {
