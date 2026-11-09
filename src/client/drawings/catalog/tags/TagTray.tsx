@@ -3,7 +3,8 @@ import type { DrawingSummary } from "../../../../shared/drawings.ts";
 import type { Tag } from "../../../../shared/tags.ts";
 import { SearchLine } from "../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
-import { PencilIcon, PlusIcon, TagIcon } from "../icons.tsx";
+import { PencilIcon, TagIcon } from "../icons.tsx";
+import { NewTagButton } from "./NewTagButton.tsx";
 import { TagForm } from "./TagForm.tsx";
 import styles from "./TagTray.module.css";
 import { tagColorName } from "./tag-color-name.ts";
@@ -122,16 +123,10 @@ function TrayDialog({ tags, drawings, changes, onClose }: TrayDialogProps) {
 				</p>
 				{!form && tags && (
 					<div className={styles.footer}>
-						<button
-							type="button"
-							className={styles.action}
+						<NewTagButton
+							label={shown.length === 0 ? find.trim() : ""}
 							onClick={tray.startNew}
-						>
-							<PlusIcon />
-							{shown.length === 0 && find.trim()
-								? `Create “${find.trim()}”`
-								: "New tag"}
-						</button>
+						/>
 					</div>
 				)}
 			</div>
