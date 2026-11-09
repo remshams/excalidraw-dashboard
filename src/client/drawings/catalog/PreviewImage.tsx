@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DrawingSummary } from "../../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import { previewUrl } from "../api.ts";
 import styles from "./PreviewImage.module.css";
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Drawing, DrawingSummary } from "../../../shared/drawings.ts";
+import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import { isPreviewOutdated, storePreview } from "./preview.ts";
 import type { SavedScene } from "./use-autosave.ts";
 

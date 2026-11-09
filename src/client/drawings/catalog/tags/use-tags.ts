@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Tag, TagRequest } from "../../../../shared/tags.ts";
+import type { Tag, TagRequest } from "#shared/tags.ts";
 import {
 	ApiError,
 	createTag,

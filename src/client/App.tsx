@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { Drawing, DrawingSummary } from "../shared/drawings.ts";
+import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import styles from "./App.module.css";
 import { BackIcon, SearchIcon } from "./drawings/catalog/icons.tsx";
 import { DrawingList } from "./drawings/catalog/list/DrawingList.tsx";

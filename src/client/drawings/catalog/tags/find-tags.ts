@@ -1,4 +1,4 @@
-import { type Tag, tagLabelKey } from "../../../../shared/tags.ts";
+import { type Tag, tagLabelKey } from "#shared/tags.ts";
 
 /**
  * The tags whose label contains the text, ignoring case. Labels that start with

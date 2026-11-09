@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "../../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import * as api from "../api.ts";
 import { useDrawings } from "./use-drawings.ts";
 

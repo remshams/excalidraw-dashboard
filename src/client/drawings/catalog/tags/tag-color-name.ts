@@ -1,4 +1,4 @@
-import type { TagColor } from "../../../../shared/tags.ts";
+import type { TagColor } from "#shared/tags.ts";
 
 /** A colour as a user reads it, such as "Blue". */
 export const tagColorName = (color: TagColor): string =>

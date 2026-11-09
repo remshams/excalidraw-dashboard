@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { DrawingSummary } from "../../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import {
 	createDrawing,
 	deleteDrawing,

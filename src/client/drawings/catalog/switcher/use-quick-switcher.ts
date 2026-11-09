@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DrawingSummary } from "../../../../shared/drawings.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
 import { searchByName } from "../../search.ts";
 import { useModalDialog } from "../dialog/use-modal-dialog.ts";
 

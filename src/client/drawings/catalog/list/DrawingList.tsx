@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { DrawingSummary } from "../../../../shared/drawings.ts";
-import type { Tag } from "../../../../shared/tags.ts";
+import type { DrawingSummary } from "#shared/drawings.ts";
+import type { Tag } from "#shared/tags.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { searchByName } from "../../search.ts";
 import { DeleteConfirmation } from "../DeleteConfirmation.tsx";

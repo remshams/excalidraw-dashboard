@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { TagColor } from "../../../../shared/tags.ts";
+import type { TagColor } from "#shared/tags.ts";
 import styles from "./TagMark.module.css";
 
 /** A small angle that stays the same for one tag. */
