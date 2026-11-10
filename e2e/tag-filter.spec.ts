@@ -9,6 +9,7 @@ import {
 	drawingCardLink,
 	drawingCards,
 	expectDrawingOpen,
+	expectHitHeight,
 	filterRowTag,
 	filterRowTags,
 	goToAllDrawings,
@@ -248,5 +249,31 @@ test("the Filter by row shows every tag, newest created first", async ({
 		await expect(filterRowTags(page).nth(1)).toHaveAccessibleName(
 			`Filter by ${older}`,
 		);
+	});
+});
+
+test("on a phone, a tag is big enough to hit in the row and on a card", async ({
+	page,
+	request,
+}) => {
+	const drawing = uniqueName("Phone");
+	const label = uniqueName("Phone tag");
+
+	await test.step(`${drawing} has ${label}, and the page loads at phone width`, async () => {
+		const tagId = await createTagThroughApi(request, label);
+		const drawingId = await createDrawingThroughApi(request, drawing);
+		await assignTagsThroughApi(request, drawingId, [tagId]);
+		await page.setViewportSize({ width: 390, height: 760 });
+		await page.goto("/");
+	});
+
+	await test.step("the row's tag is at least 32 pixels tall", async () => {
+		await expect(filterRowTag(page, label)).toBeVisible();
+		await expectHitHeight(filterRowTag(page, label), 32);
+	});
+
+	await test.step("the card's tag is at least 24 pixels tall", async () => {
+		await expect(cardTagToggle(page, drawing, label)).toBeVisible();
+		await expectHitHeight(cardTagToggle(page, drawing, label), 24);
 	});
 });
