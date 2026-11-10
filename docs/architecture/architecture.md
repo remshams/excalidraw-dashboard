@@ -399,15 +399,18 @@ created, which then comes first, or deleted.
 `FilterRow` is the "Filter by" toolbar between the header and the cards. It shows
 every tag, newest created first, and a **Clear filter** button while a filter is
 set. A click on a tag only turns it on or off and never moves it, and clearing the
-filter moves nothing either. Solid ink alone marks a selected tag. The
-row is one line of fixed height and stays blank without tags, so the cards don't
+filter moves nothing either. Solid ink alone marks a selected tag. Its
+tags are medium `TagMark`s, between a card's and the tray's in size, so a finger
+hits them on a phone. The row is one line of fixed height and stays blank without tags, so the cards don't
 move when tags arrive. Its tags scroll sideways when they don't fit. The CSS module fades the
 edge where tags are cut off and nowhere else, with scroll-driven animations of two
 registered fade widths and no script. A browser without them shows no fade.
 
 `TagToggles` renders tags as toggle buttons named "Filter by <label>" with
 `aria-pressed`, and a selected one as a solid `TagMark`, inked in its
-`--tag-<colour>-fill` under paper-coloured words. The row and each card use it as
+`--tag-<colour>-fill` under paper-coloured words. The caller picks the mark size:
+small on a card, medium in the row. Each button reaches past its mark, so it is
+easier to hit than the mark looks. The row and each card use it as
 a toolbar with one tab stop; the left and right arrow keys move through its tags with `moveInRow` from
 `grid-keys`. A card's toggles lie over the foot of its sheet but outside its link,
 so a click filters and doesn't open the drawing. A card shows its first 3 tags in
