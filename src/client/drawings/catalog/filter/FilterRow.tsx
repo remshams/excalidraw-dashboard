@@ -30,7 +30,7 @@ export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 	});
 
 	return (
-		<div ref={row} className={styles.row}>
+		<div ref={row} className={styles.row} data-filter-row>
 			{rowTags.length > 0 && (
 				<>
 					<span id={words} className={styles.words}>

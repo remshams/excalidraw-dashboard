@@ -9,6 +9,9 @@ const tags: Tag[] = [
 	{ id: "a", label: "Home", color: "green" },
 	{ id: "b", label: "Ideas", color: "yellow" },
 	{ id: "c", label: "Work", color: "blue" },
+	...[4, 5, 6, 7, 8, 9].map(
+		(n): Tag => ({ id: `t${n}`, label: `Tag ${n}`, color: "pink" }),
+	),
 ];
 
 /** The row with a filter the test sets up through the buttons below it. */
@@ -116,5 +119,17 @@ describe("FilterRow", () => {
 		expect(toggles().filter((button) => button.tabIndex === 0)).toEqual([
 			toggle("Home"),
 		]);
+	});
+
+	it("keeps the 8 tags selected last and drops the oldest", async () => {
+		const { select } = setup();
+		const labels = tags.map(({ label }) => label);
+
+		await select(...labels, ...labels);
+
+		expect(clearButton()).toBeNull();
+		expect(toggles().map((button) => button.textContent)).toEqual(
+			labels.slice(1).reverse(),
+		);
 	});
 });
