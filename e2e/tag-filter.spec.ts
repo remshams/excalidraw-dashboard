@@ -171,7 +171,7 @@ test("filter by tags with the keyboard alone", async ({ page, request }) => {
 		await expect(filterRowTag(page, second)).toBeFocused();
 	});
 
-	await test.step("Tab reaches Clear filter, and Enter empties the filter", async () => {
+	await test.step("Tab reaches Clear filter, and Enter empties the filter and focuses the row's first tag", async () => {
 		await page.keyboard.press("Tab");
 		await expect(clearFilterButton(page)).toBeFocused();
 		await page.keyboard.press("Enter");
@@ -181,6 +181,6 @@ test("filter by tags with the keyboard alone", async ({ page, request }) => {
 		);
 		await expect(clearFilterButton(page)).toHaveCount(0);
 		await expect(tagsButton(page)).toBeVisible();
-		await expect(filterRowTag(page, second)).toBeFocused();
+		await expect(filterRowTag(page, first)).toBeFocused();
 	});
 });
