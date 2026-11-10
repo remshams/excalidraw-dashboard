@@ -20,12 +20,11 @@ type FilterRowProps = {
 export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 	const { rowTags, selectedTagIds } = filter;
 	const words = useId();
-	const row = useRef<HTMLDivElement>(null);
 	const tags = useRef<HTMLDivElement>(null);
 	useOverflowEdges(tags, rowTags.length);
 
 	return (
-		<div ref={row} className={styles.row} data-filter-row>
+		<div className={styles.row} data-filter-row>
 			{rowTags.length > 0 && (
 				<>
 					<span id={words} className={styles.words}>
@@ -46,7 +45,7 @@ export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 							className={styles.clear}
 							onClick={() => {
 								// The button goes with the filter; the tags stay where they are.
-								row.current
+								tags.current
 									?.querySelector<HTMLElement>("[data-tag-toggle]")
 									?.focus();
 								onClear();
