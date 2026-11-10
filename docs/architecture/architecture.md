@@ -399,10 +399,10 @@ created, which then comes first, or deleted.
 `FilterRow` is the "Filter by" toolbar between the header and the cards. It shows
 every tag, newest created first, and a **Clear filter** button while a filter is
 set. A click on a tag only turns it on or off and never moves it, and clearing the
-filter moves nothing either. Solid ink alone marks a selected tag. Its
-tags are medium `TagMark`s, between a card's and the tray's in size, so a finger
-hits them on a phone. The row is one line of fixed height and stays blank without tags, so the cards don't
-move when tags arrive. Its tags scroll sideways when they don't fit. The CSS module fades the
+filter moves nothing either. Solid ink alone marks a selected tag. Its tags are
+medium `TagMark`s, between a card's and the tray's in size, so a finger hits them
+on a phone. The row is one line of fixed height and stays blank without tags, so
+the cards don't move when tags arrive. Its tags scroll sideways when they don't fit. The CSS module fades the
 edge where tags are cut off and nowhere else, with scroll-driven animations of two
 registered fade widths and no script. A browser without them shows no fade.
 
