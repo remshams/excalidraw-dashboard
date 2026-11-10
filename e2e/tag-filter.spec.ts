@@ -10,6 +10,7 @@ import {
 	drawingCards,
 	expectDrawingOpen,
 	filterRowTag,
+	filterRowTags,
 	goToAllDrawings,
 	openDrawingFromCard,
 	searchDrawings,
@@ -111,11 +112,18 @@ test("filter by two tags and search, open a drawing and find both still set on r
 		await expect(taggedCardLink(page, planAtHome, [home])).toBeVisible();
 	});
 
-	await test.step("a reload clears the filter and the search", async () => {
+	await test.step("a reload clears the filter and the search, and the row still shows the tags", async () => {
 		await page.reload();
 		await expect(searchField(page)).toHaveValue("");
 		await expect(tagsButton(page)).toBeVisible();
-		await expect(filterRowTag(page, work)).toHaveCount(0);
+		await expect(filterRowTag(page, work)).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
+		await expect(filterRowTag(page, home)).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
 		await expect(taggedCardLink(page, otherPlan, [other])).toBeVisible();
 	});
 });
@@ -125,12 +133,13 @@ test("filter by tags with the keyboard alone", async ({ page, request }) => {
 	const first = uniqueName("A first");
 	const second = uniqueName("B second");
 
-	await test.step(`${name} carries ${first} and ${second}`, async () => {
+	await test.step(`${name} carries ${first} and ${second}, and ${first} is the newer tag`, async () => {
 		const drawingId = await createDrawingThroughApi(request, name);
-		await assignTagsThroughApi(request, drawingId, [
-			await createTagThroughApi(request, first),
-			await createTagThroughApi(request, second),
-		]);
+		// The row shows the newer tag first. Its label sorts first too, so a tie
+		// in creation time gives the same order.
+		const secondId = await createTagThroughApi(request, second);
+		const firstId = await createTagThroughApi(request, first);
+		await assignTagsThroughApi(request, drawingId, [firstId, secondId]);
 		await page.goto("/");
 	});
 
@@ -182,5 +191,62 @@ test("filter by tags with the keyboard alone", async ({ page, request }) => {
 		await expect(clearFilterButton(page)).toHaveCount(0);
 		await expect(tagsButton(page)).toBeVisible();
 		await expect(filterRowTag(page, first)).toBeFocused();
+	});
+});
+
+test("the Filter by row shows every tag, newest created first", async ({
+	page,
+	request,
+}) => {
+	// A label that sorts first breaks a tie in creation time the same way.
+	const older = uniqueName("B older");
+	const newer = uniqueName("A newer");
+
+	await test.step(`${older} exists and the page loads`, async () => {
+		await createTagThroughApi(request, older);
+		await page.goto("/");
+	});
+
+	await test.step(`the row shows ${older} first, unpressed, without a selection`, async () => {
+		await expect(filterRowTags(page).first()).toHaveAccessibleName(
+			`Filter by ${older}`,
+		);
+		await expect(filterRowTag(page, older)).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
+		await expect(clearFilterButton(page)).toHaveCount(0);
+	});
+
+	await test.step(`${newer} is created through the API and shows first after a reload`, async () => {
+		await createTagThroughApi(request, newer);
+		await page.reload();
+		await expect(filterRowTags(page).nth(0)).toHaveAccessibleName(
+			`Filter by ${newer}`,
+		);
+		await expect(filterRowTags(page).nth(1)).toHaveAccessibleName(
+			`Filter by ${older}`,
+		);
+	});
+
+	await test.step(`selecting ${older} and clearing the filter moves no tag`, async () => {
+		await filterRowTag(page, older).click();
+		await expect(filterRowTag(page, older)).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		await expect(filterRowTags(page).nth(0)).toHaveAccessibleName(
+			`Filter by ${newer}`,
+		);
+		await expect(filterRowTags(page).nth(1)).toHaveAccessibleName(
+			`Filter by ${older}`,
+		);
+		await clearFilterButton(page).click();
+		await expect(filterRowTags(page).nth(0)).toHaveAccessibleName(
+			`Filter by ${newer}`,
+		);
+		await expect(filterRowTags(page).nth(1)).toHaveAccessibleName(
+			`Filter by ${older}`,
+		);
 	});
 });
