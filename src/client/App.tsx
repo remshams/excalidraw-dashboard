@@ -17,6 +17,11 @@ import { useDrawing } from "./drawings/editor/use-drawing.ts";
 import { useOpenDrawingId } from "./drawings/use-open-drawing-id.ts";
 import { useColorScheme } from "./use-color-scheme.ts";
 
+/**
+ * The whole client: the landing page at `/`, or the open drawing below its bar, and
+ * the error banner for failed requests. It holds the drawings, the tags and the tag
+ * filter, so they outlive switching between the two views.
+ */
 export function App() {
 	const [error, setError] = useState<string | null>(null);
 	// Stable, because useDrawing, useDrawings and useTags reload when their onError changes.
