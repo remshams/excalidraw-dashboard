@@ -174,6 +174,43 @@ describe("App", () => {
 		expect(screen.queryByRole("alert")).toBeNull();
 	});
 
+	it("keeps the tag filter and the search while a drawing is open", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([
+			{ ...drawing("1", "Plan"), tagIds: ["t1"] },
+			{ ...drawing("2", "Roadmap"), tagIds: ["t1"] },
+			drawing("3", "Garden plan"),
+		]);
+		const user = userEvent.setup();
+		render(<App />);
+		const [onPlan] = await cards().findAllByRole("button", {
+			name: "Filter by Work",
+		});
+		await user.click(onPlan);
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search drawings" }),
+			"plan",
+		);
+
+		await user.click(cards().getByRole("link", { name: "Plan, tags: Work" }));
+		await screen.findByText("Editing Plan");
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+
+		expect(
+			await screen.findByRole("searchbox", { name: "Search drawings" }),
+		).toHaveValue("plan");
+		expect(
+			within(screen.getByRole("toolbar", { name: "Filter by" })).getByRole(
+				"button",
+				{ name: "Filter by Work" },
+			),
+		).toHaveAttribute("aria-pressed", "true");
+		expect(
+			cards()
+				.getAllByRole("link")
+				.map((link) => link.getAttribute("aria-label") ?? link.textContent),
+		).toEqual(["Plan, tags: Work"]);
+	});
+
 	it("shows why the tags could not be loaded", async () => {
 		vi.mocked(api.listTags).mockRejectedValue(new Error("No tags today"));
 

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import styles from "./App.module.css";
 import { BackIcon, SearchIcon } from "./drawings/catalog/icons.tsx";
+import { useTagFilter } from "./drawings/catalog/filter/use-tag-filter.ts";
 import { DrawingList } from "./drawings/catalog/list/DrawingList.tsx";
 import { QuickSwitcher } from "./drawings/catalog/switcher/QuickSwitcher.tsx";
 import {
@@ -37,6 +38,9 @@ export function App() {
 		wasDeleted,
 	} = useDrawings(showError);
 	const { tags, changes: tagChanges } = useTags(showError, forgetTag);
+	// Here rather than in the landing page, so the filter and the search stay set
+	// while a drawing is open.
+	const filter = useTagFilter(tags);
 	const createAndOpen = (name: string) =>
 		create(name).then((created) => openDrawing(created.id), showError);
 
@@ -63,6 +67,7 @@ export function App() {
 						drawings={drawings}
 						tags={tags}
 						tagChanges={tagChanges}
+						filter={filter}
 						onOpen={openDrawing}
 						onCreate={createAndOpen}
 						onRename={(id, name) => rename(id, name).catch(showError)}
