@@ -43,6 +43,17 @@
 	--tag-violet-ink: #49329a;
 	--tag-pink-ink: #8a1f4d;
 
+	/* The fill under --sheet text for a tag pressed in full ink, such as a tag in
+	   the filter. */
+	--tag-red-fill: #c92a2a;
+	--tag-orange-fill: #c2410c;
+	--tag-yellow-fill: #8a6100;
+	--tag-green-fill: #237a36;
+	--tag-teal-fill: #0b7285;
+	--tag-blue-fill: #1864ab;
+	--tag-violet-fill: #5f3dc4;
+	--tag-pink-fill: #a61e4d;
+
 	/* Type. md is the body text size. */
 	--hand: "Drawings Hand", "Comic Sans MS", cursive;
 	--text-sm: 0.875rem;
@@ -112,6 +123,15 @@
 		--tag-blue-ink: #a5d8ff;
 		--tag-violet-ink: #d0bfff;
 		--tag-pink-ink: #fcc2d7;
+
+		--tag-red-fill: #ff8787;
+		--tag-orange-fill: #ffa94d;
+		--tag-yellow-fill: #ffd43b;
+		--tag-green-fill: #69db7c;
+		--tag-teal-fill: #3bc9db;
+		--tag-blue-fill: #4dabf7;
+		--tag-violet-fill: #9775fa;
+		--tag-pink-fill: #f783ac;
 	}
 }
 
