@@ -27,6 +27,7 @@ describe("tags API", () => {
 			id: expect.any(String),
 			label: "Work",
 			color: "blue",
+			createdAt: expect.any(String),
 		});
 	});
 
@@ -40,8 +41,8 @@ describe("tags API", () => {
 		]);
 	});
 
-	it("changes a tag's label and colour", async () => {
-		const { id } = await createTag("Work");
+	it("changes a tag's label and colour and keeps its creation time", async () => {
+		const { id, createdAt: created } = await createTag("Work");
 
 		const response = await send("PUT", `/tags/${id}`, {
 			label: "Job",
@@ -49,8 +50,9 @@ describe("tags API", () => {
 		});
 
 		expect(response.status).toBe(200);
-		expect(await response.json()).toEqual({ id, label: "Job", color: "red" });
-		expect(await listTags()).toEqual([{ id, label: "Job", color: "red" }]);
+		const stored = { id, label: "Job", color: "red", createdAt: created };
+		expect(await response.json()).toEqual(stored);
+		expect(await listTags()).toEqual([stored]);
 	});
 
 	it("renames a tag to its own label in another case", async () => {
@@ -81,17 +83,15 @@ describe("tags API", () => {
 		["a label that isn't text", { label: 1, color: "blue" }, "Send the tag"],
 		["an unknown colour", { label: "Work", color: "gray" }, "Unknown tag"],
 	])("rejects %s with 400", async (_, body, message) => {
-		const { id } = await createTag("Existing");
+		const existing = await createTag("Existing");
 
 		const created = await send("POST", "/tags", body);
-		const changed = await send("PUT", `/tags/${id}`, body);
+		const changed = await send("PUT", `/tags/${existing.id}`, body);
 
 		expect(created.status).toBe(400);
 		expect(await created.text()).toContain(message);
 		expect(changed.status).toBe(400);
-		expect(await listTags()).toEqual([
-			{ id, label: "Existing", color: "blue" },
-		]);
+		expect(await listTags()).toEqual([existing]);
 	});
 
 	it("rejects a body that isn't JSON with 400", async () => {
