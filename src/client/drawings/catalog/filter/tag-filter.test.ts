@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
-import { filterDrawings, joinRow } from "./tag-filter.ts";
+import type { Tag } from "#shared/tags.ts";
+import { filterDrawings, newestFirst } from "./tag-filter.ts";
 
 const drawing = (name: string, tagIds: string[]): DrawingSummary => ({
 	id: name,
@@ -60,46 +61,41 @@ describe("filterDrawings", () => {
 	});
 });
 
-describe("joinRow", () => {
-	const eight = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
-	it("adds a tag at the end", () => {
-		expect(joinRow(["a", "b"], "c", ["c"])).toEqual(["a", "b", "c"]);
+describe("newestFirst", () => {
+	const tag = (label: string, createdAt: string): Tag => ({
+		id: label,
+		label,
+		color: "blue",
+		createdAt,
 	});
 
-	it("leaves a tag it already has where it is", () => {
-		expect(joinRow(["a", "b", "c"], "a", ["a"])).toEqual(["a", "b", "c"]);
-	});
+	it("puts the tag created last first", () => {
+		const tags = [
+			tag("Old", "2026-01-01T00:00:00.000Z"),
+			tag("New", "2026-03-01T00:00:00.000Z"),
+			tag("Middle", "2026-02-01T00:00:00.000Z"),
+		];
 
-	it("drops the oldest tag that isn't selected when the row grows past 8", () => {
-		expect(joinRow(eight, "i", ["a", "c", "i"])).toEqual([
-			"a",
-			"c",
-			"d",
-			"e",
-			"f",
-			"g",
-			"h",
-			"i",
+		expect(newestFirst(tags).map(({ label }) => label)).toEqual([
+			"New",
+			"Middle",
+			"Old",
 		]);
 	});
 
-	it("keeps every selected tag, so the row can hold more than 8", () => {
-		expect(joinRow(eight, "i", [...eight, "i"])).toEqual([...eight, "i"]);
+	it("orders tags created at the same time by label", () => {
+		const at = "2026-01-01T00:00:00.000Z";
+
+		expect(
+			newestFirst([tag("b", at), tag("a", at)]).map(({ label }) => label),
+		).toEqual(["a", "b"]);
 	});
 
-	it("drops unselected tags until the row fits again", () => {
-		const ten = [...eight, "i", "j"];
+	it("leaves the list it gets as it is", () => {
+		const tags = [tag("a", "2026-01-01"), tag("b", "2026-02-01")];
 
-		expect(joinRow(ten, "k", ["k"])).toEqual([
-			"d",
-			"e",
-			"f",
-			"g",
-			"h",
-			"i",
-			"j",
-			"k",
-		]);
+		newestFirst(tags);
+
+		expect(tags.map(({ label }) => label)).toEqual(["a", "b"]);
 	});
 });
