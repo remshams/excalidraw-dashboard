@@ -63,9 +63,12 @@
 	background: var(--hover);
 }
 
+/* Cards keep their own height, so a card's actions stay on its name row while a
+   taller card in the same row asks for a name or a delete confirmation. */
 .cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+	align-items: start;
 	gap: var(--space-lg);
 	margin: 0;
 	padding: 0;
