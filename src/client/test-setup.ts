@@ -19,11 +19,5 @@ HTMLDialogElement.prototype.close = function () {
 	this.open = false;
 };
 Element.prototype.scrollIntoView = () => {};
-// jsdom has no layout, so a resize observer would never fire.
-globalThis.ResizeObserver = class {
-	observe() {}
-	unobserve() {}
-	disconnect() {}
-};
 
 afterEach(cleanup);
