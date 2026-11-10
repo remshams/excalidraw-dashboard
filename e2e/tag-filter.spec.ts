@@ -5,7 +5,7 @@ import {
 } from "./drawings-api.ts";
 import {
 	cardTagToggle,
-	clearFilterInRow,
+	clearFilterButton,
 	drawingCardLink,
 	drawingCards,
 	expectDrawingOpen,
@@ -173,13 +173,13 @@ test("filter by tags with the keyboard alone", async ({ page, request }) => {
 
 	await test.step("Tab reaches Clear filter, and Enter empties the filter", async () => {
 		await page.keyboard.press("Tab");
-		await expect(clearFilterInRow(page)).toBeFocused();
+		await expect(clearFilterButton(page)).toBeFocused();
 		await page.keyboard.press("Enter");
 		await expect(filterRowTag(page, first)).toHaveAttribute(
 			"aria-pressed",
 			"false",
 		);
-		await expect(clearFilterInRow(page)).toHaveCount(0);
+		await expect(clearFilterButton(page)).toHaveCount(0);
 		await expect(tagsButton(page)).toBeVisible();
 		await expect(filterRowTag(page, second)).toBeFocused();
 	});
