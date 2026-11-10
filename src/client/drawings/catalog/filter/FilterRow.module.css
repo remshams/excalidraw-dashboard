@@ -1,7 +1,7 @@
 /* One line of a fixed height, also while blank, so nothing below moves when tags
    arrive. "Filter by" and Clear filter stay at its ends. */
 .row {
-	--row-height: 2rem;
+	--row-height: 2.75rem;
 
 	display: flex;
 	align-items: center;
