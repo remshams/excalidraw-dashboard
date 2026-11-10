@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { Tag } from "#shared/tags.ts";
 import { moveInRow } from "../tags/grid-keys.ts";
 import { TagMark } from "../tags/TagMark.tsx";
@@ -10,8 +10,6 @@ type TagTogglesProps = {
 	/** Keeps each tag's angle the same in this place. */
 	seed: string;
 	className?: string;
-	/** Writes "or" between neighbouring tags in the filter. */
-	orBetween?: boolean;
 	onToggle: (tagId: string) => void;
 	/** Follows the tags, such as "+2" for the ones a card leaves out. */
 	children?: ReactNode;
@@ -20,14 +18,13 @@ type TagTogglesProps = {
 /**
  * Tags as buttons that put them in the filter or take them out, in a toolbar with
  * one tab stop: the tag last used. The left and right arrow keys reach the others.
- * A tag in the filter is pressed and inked solid.
+ * A tag in the filter is pressed and inked solid; that alone marks it.
  */
 export function TagToggles({
 	tags,
 	selectedTagIds,
 	seed,
 	className,
-	orBetween,
 	onToggle,
 	children,
 	...label
@@ -36,9 +33,7 @@ export function TagToggles({
 	const tabStop = tags.some(({ id }) => id === stopId)
 		? stopId
 		: (tags[0]?.id ?? null);
-	/** Takes no ID for the tag before the first, which is never pressed. */
-	const pressed = (id: string | undefined) =>
-		id !== undefined && selectedTagIds.includes(id);
+	const pressed = (id: string) => selectedTagIds.includes(id);
 
 	return (
 		<div
@@ -47,32 +42,26 @@ export function TagToggles({
 			{...label}
 			onKeyDown={(event) => moveInRow(event, event.currentTarget)}
 		>
-			{tags.map((tag, index) => (
-				<Fragment key={tag.id}>
-					{orBetween && pressed(tag.id) && pressed(tags[index - 1]?.id) && (
-						<span className={styles.or} aria-hidden="true">
-							or
-						</span>
-					)}
-					<button
-						type="button"
-						className={styles.toggle}
-						data-tag-toggle={tag.id}
-						aria-label={`Filter by ${tag.label}`}
-						aria-pressed={pressed(tag.id)}
-						tabIndex={tag.id === tabStop ? 0 : -1}
-						onFocus={() => setStopId(tag.id)}
-						onClick={() => onToggle(tag.id)}
-					>
-						<TagMark
-							label={tag.label}
-							color={tag.color}
-							seed={seed + tag.id}
-							small
-							inked={pressed(tag.id)}
-						/>
-					</button>
-				</Fragment>
+			{tags.map((tag) => (
+				<button
+					key={tag.id}
+					type="button"
+					className={styles.toggle}
+					data-tag-toggle={tag.id}
+					aria-label={`Filter by ${tag.label}`}
+					aria-pressed={pressed(tag.id)}
+					tabIndex={tag.id === tabStop ? 0 : -1}
+					onFocus={() => setStopId(tag.id)}
+					onClick={() => onToggle(tag.id)}
+				>
+					<TagMark
+						label={tag.label}
+						color={tag.color}
+						seed={seed + tag.id}
+						small
+						inked={pressed(tag.id)}
+					/>
+				</button>
 			))}
 			{children}
 		</div>

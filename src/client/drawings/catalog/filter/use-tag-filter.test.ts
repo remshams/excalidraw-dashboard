@@ -50,13 +50,13 @@ describe("useTagFilter", () => {
 		expect(current().selectedTagIds).toEqual(["a"]);
 	});
 
-	it("shows the selected tags first in the row, then the other recent ones newest first", () => {
+	it("shows the tags in the row in the order they joined, and never moves one", () => {
 		const { current, toggle } = setup();
 
 		toggle("a", "b", "c", "a", "b", "c", "d", "a");
 
 		expect(current().selectedTagIds).toEqual(["d", "a"]);
-		expect(ids(current().rowTags)).toEqual(["d", "a", "c", "b"]);
+		expect(ids(current().rowTags)).toEqual(["a", "b", "c", "d"]);
 	});
 
 	it("keeps the row's tags after the filter is cleared", () => {
@@ -66,24 +66,26 @@ describe("useTagFilter", () => {
 		act(() => current().clear());
 
 		expect(current().selectedTagIds).toEqual([]);
-		expect(ids(current().rowTags)).toEqual(["b", "a"]);
+		expect(ids(current().rowTags)).toEqual(["a", "b"]);
 	});
 
-	it("keeps at most 8 tags in the row, dropping the oldest", () => {
+	it("keeps at most 8 tags in the row, dropping the oldest that isn't selected", () => {
 		const { current, toggle } = setup();
-
-		toggle("a", "b", "c", "d", "e", "f", "g", "h", "i");
+		toggle("a", "b", "c", "d", "e", "f", "g", "h");
 		act(() => current().clear());
+		toggle("b");
+
+		toggle("i");
 
 		expect(ids(current().rowTags)).toEqual([
-			"i",
-			"h",
-			"g",
-			"f",
-			"e",
-			"d",
-			"c",
 			"b",
+			"c",
+			"d",
+			"e",
+			"f",
+			"g",
+			"h",
+			"i",
 		]);
 	});
 

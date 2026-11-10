@@ -60,15 +60,15 @@ describe("FilterRow", () => {
 		expect(clearButton()).toBeNull();
 	});
 
-	it("shows the selected tags pressed in the order selected, with or between them, then the others", async () => {
+	it("shows its tags in the order they joined, the selected ones pressed, with no words between them", async () => {
 		const { select } = setup();
 
-		await select("Work", "Home", "Ideas", "Ideas");
+		await select("Ideas", "Work", "Ideas", "Home");
 
 		expect(
 			toggles().map((button) => button.getAttribute("aria-label")),
-		).toEqual(["Filter by Work", "Filter by Home", "Filter by Ideas"]);
-		expect(row()).toHaveTextContent(/^WorkorHomeIdeas$/);
+		).toEqual(["Filter by Ideas", "Filter by Work", "Filter by Home"]);
+		expect(row()).toHaveTextContent(/^IdeasWorkHome$/);
 		expect(toggle("Work")).toHaveAttribute("aria-pressed", "true");
 		expect(toggle("Home")).toHaveAttribute("aria-pressed", "true");
 		expect(toggle("Ideas")).toHaveAttribute("aria-pressed", "false");
@@ -81,7 +81,22 @@ describe("FilterRow", () => {
 		await user.click(toggle("Work"));
 
 		expect(toggle("Work")).toHaveAttribute("aria-pressed", "false");
-		expect(toggles()[0]).toBe(toggle("Home"));
+		expect(toggle("Work")).toHaveFocus();
+	});
+
+	it("keeps every tag in its place when one is turned on or off", async () => {
+		const { user, select } = setup();
+		await select("Work", "Home", "Ideas", "Home", "Ideas");
+		const order = () =>
+			toggles().map((button) => button.getAttribute("aria-label"));
+		const before = order();
+
+		await user.click(toggle("Ideas"));
+		expect(order()).toEqual(before);
+		await user.click(toggle("Work"));
+		expect(order()).toEqual(before);
+		await user.click(toggle("Ideas"));
+		expect(order()).toEqual(before);
 	});
 
 	it("clears the filter, keeps the tags and moves the focus to the first one", async () => {
@@ -104,15 +119,15 @@ describe("FilterRow", () => {
 
 		await user.click(clearButton() as HTMLElement);
 		expect(toggles()).toEqual([
-			toggle("Ideas"),
-			toggle("Home"),
 			toggle("Work"),
+			toggle("Home"),
+			toggle("Ideas"),
 		]);
-		expect(toggle("Ideas")).toHaveFocus();
+		expect(toggle("Work")).toHaveFocus();
 		await user.keyboard("{ArrowRight}");
 		expect(toggle("Home")).toHaveFocus();
 		await user.keyboard("{ArrowRight}{ArrowRight}");
-		expect(toggle("Work")).toHaveFocus();
+		expect(toggle("Ideas")).toHaveFocus();
 		await user.keyboard("{ArrowLeft}");
 		expect(toggle("Home")).toHaveFocus();
 
@@ -121,15 +136,17 @@ describe("FilterRow", () => {
 		]);
 	});
 
-	it("keeps the 8 tags selected last and drops the oldest", async () => {
+	it("adds a new tag at the end and, past 8, drops the oldest one not in the filter", async () => {
 		const { select } = setup();
 		const labels = tags.map(({ label }) => label);
+		const firstEight = labels.slice(0, 8);
+		await select(...firstEight, ...firstEight, "Ideas");
 
-		await select(...labels, ...labels);
+		await select(labels[8]);
 
-		expect(clearButton()).toBeNull();
-		expect(toggles().map((button) => button.textContent)).toEqual(
-			labels.slice(1).reverse(),
-		);
+		expect(toggles().map((button) => button.textContent)).toEqual([
+			"Ideas",
+			...labels.slice(2, 9),
+		]);
 	});
 });

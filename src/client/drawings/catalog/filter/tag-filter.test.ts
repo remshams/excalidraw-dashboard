@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
-import { filterDrawings, rememberTag, rowOrder } from "./tag-filter.ts";
+import { filterDrawings, joinRow } from "./tag-filter.ts";
 
 const drawing = (name: string, tagIds: string[]): DrawingSummary => ({
 	id: name,
@@ -60,46 +60,46 @@ describe("filterDrawings", () => {
 	});
 });
 
-describe("rememberTag", () => {
-	it("puts a tag first", () => {
-		expect(rememberTag(["a", "b"], "c")).toEqual(["c", "a", "b"]);
+describe("joinRow", () => {
+	const eight = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+	it("adds a tag at the end", () => {
+		expect(joinRow(["a", "b"], "c", ["c"])).toEqual(["a", "b", "c"]);
 	});
 
-	it("moves a tag it already has to the front", () => {
-		expect(rememberTag(["a", "b", "c"], "c")).toEqual(["c", "a", "b"]);
+	it("leaves a tag it already has where it is", () => {
+		expect(joinRow(["a", "b", "c"], "a", ["a"])).toEqual(["a", "b", "c"]);
 	});
 
-	it("keeps at most 8 tags, dropping the oldest", () => {
-		const eight = ["h", "g", "f", "e", "d", "c", "b", "a"];
-
-		expect(rememberTag(eight, "i")).toEqual([
-			"i",
-			"h",
-			"g",
-			"f",
-			"e",
-			"d",
-			"c",
-			"b",
-		]);
-	});
-});
-
-describe("rowOrder", () => {
-	it("puts the selected tags first in the order they were selected, then the rest newest first", () => {
-		expect(rowOrder(["d", "c", "b", "a"], ["b", "d"])).toEqual([
-			"b",
-			"d",
-			"c",
+	it("drops the oldest tag that isn't selected when the row grows past 8", () => {
+		expect(joinRow(eight, "i", ["a", "c", "i"])).toEqual([
 			"a",
+			"c",
+			"d",
+			"e",
+			"f",
+			"g",
+			"h",
+			"i",
 		]);
 	});
 
-	it("keeps the recent order without a selection", () => {
-		expect(rowOrder(["c", "b", "a"], [])).toEqual(["c", "b", "a"]);
+	it("keeps every selected tag, so the row can hold more than 8", () => {
+		expect(joinRow(eight, "i", [...eight, "i"])).toEqual([...eight, "i"]);
 	});
 
-	it("keeps a selected tag that dropped out of the recent tags", () => {
-		expect(rowOrder(["b", "c"], ["a", "b"])).toEqual(["a", "b", "c"]);
+	it("drops unselected tags until the row fits again", () => {
+		const ten = [...eight, "i", "j"];
+
+		expect(joinRow(ten, "k", ["k"])).toEqual([
+			"d",
+			"e",
+			"f",
+			"g",
+			"h",
+			"i",
+			"j",
+			"k",
+		]);
 	});
 });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Tag } from "#shared/tags.ts";
-import { rememberTag, rowOrder } from "./tag-filter.ts";
+import { joinRow } from "./tag-filter.ts";
 
 /**
  * The landing page's tag filter and search. `App` holds them, so they stay set
@@ -9,24 +9,27 @@ import { rememberTag, rowOrder } from "./tag-filter.ts";
  */
 export function useTagFilter(tags: Tag[] | null) {
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
-	const [recentIds, setRecentIds] = useState<string[]>([]);
+	const [rowIds, setRowIds] = useState<string[]>([]);
 	const [query, setQuery] = useState("");
 
 	/** The loaded tag with the ID, or none while the tags load or once it is deleted. */
 	const tagOf = (id: string) => tags?.find((tag) => tag.id === id) ?? [];
 	const selectedTags = selectedIds.flatMap(tagOf);
-	const recentTags = recentIds.flatMap(tagOf);
+	const rowTags = rowIds.flatMap(tagOf);
 	const selectedTagIds = selectedTags.map(({ id }) => id);
-	const live = recentTags.map(({ id }) => id);
-	const rowTags = rowOrder(live, selectedTagIds).flatMap(tagOf);
 
-	/** Adds the tag to the filter and to the front of the row, or takes it out. */
+	/**
+	 * Adds the tag to the filter, and to the end of the row if it isn't there yet,
+	 * or takes it out of the filter. A tag in the row never moves.
+	 */
 	const toggle = (tagId: string) => {
 		if (selectedTagIds.includes(tagId)) {
 			setSelectedIds(selectedTagIds.filter((id) => id !== tagId));
 		} else {
-			setSelectedIds([...selectedTagIds, tagId]);
-			setRecentIds(rememberTag(live, tagId));
+			const selected = [...selectedTagIds, tagId];
+			setSelectedIds(selected);
+			const row = rowTags.map(({ id }) => id);
+			setRowIds(joinRow(row, tagId, selected));
 		}
 	};
 
@@ -39,7 +42,7 @@ export function useTagFilter(tags: Tag[] | null) {
 		/** The tags in the filter, in the order they were selected. */
 		selectedTags,
 		selectedTagIds,
-		/** The tags of the "Filter by" row, in the order it shows them. */
+		/** The tags of the "Filter by" row, in the order they joined it. */
 		rowTags,
 		toggle,
 		clear,
