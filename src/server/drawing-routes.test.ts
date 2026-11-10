@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import {
 	create,
@@ -13,6 +13,7 @@ import {
 } from "./test-api.ts";
 
 setUpTestApi();
+afterEach(() => vi.restoreAllMocks());
 
 /** Bytes that start like a PNG; the server checks only the Content-Type. */
 const png = (fill = 1, size = 16) =>
@@ -114,9 +115,12 @@ describe("drawings API", () => {
 	])("rejects %s when creating a drawing with 400", async (_, body) => {
 		const before = await (await send("GET", "/drawings")).json();
 
+		const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
 		const response = await sendRaw("POST", "/drawings", body);
 
 		expect(response.status).toBe(400);
+		expect(logged).not.toHaveBeenCalled();
 		expect(await response.text()).not.toBe("");
 		expect(await (await send("GET", "/drawings")).json()).toEqual(before);
 	});
@@ -130,9 +134,12 @@ describe("drawings API", () => {
 		const { id } = await create("Plan");
 		const before = await (await send("GET", `/drawings/${id}`)).json();
 
+		const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
 		const response = await sendRaw("PUT", `/drawings/${id}`, body);
 
 		expect(response.status).toBe(400);
+		expect(logged).not.toHaveBeenCalled();
 		expect(await response.text()).not.toBe("");
 		expect(await (await send("GET", `/drawings/${id}`)).json()).toEqual(before);
 	});
