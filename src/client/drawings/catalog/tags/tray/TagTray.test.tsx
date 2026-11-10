@@ -14,9 +14,24 @@ import { ApiError } from "../../../api.ts";
 import { TagTray } from "./TagTray.tsx";
 
 const tags: Tag[] = [
-	{ id: "a", label: "Network", color: "teal" },
-	{ id: "b", label: "Personal", color: "pink" },
-	{ id: "c", label: "Work", color: "blue" },
+	{
+		id: "a",
+		label: "Network",
+		color: "teal",
+		createdAt: "2026-01-01T00:00:00.000Z",
+	},
+	{
+		id: "b",
+		label: "Personal",
+		color: "pink",
+		createdAt: "2026-01-01T00:00:00.000Z",
+	},
+	{
+		id: "c",
+		label: "Work",
+		color: "blue",
+		createdAt: "2026-01-01T00:00:00.000Z",
+	},
 ];
 
 const drawing = (id: string, tagIds: string[]): DrawingSummary => ({
@@ -244,7 +259,12 @@ describe("TagTray", () => {
 		});
 
 		it("creates a tag in the form and focuses its row in the list", async () => {
-			const created: Tag = { id: "n", label: "Garden", color: "blue" };
+			const created: Tag = {
+				id: "n",
+				label: "Garden",
+				color: "blue",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			};
 			changes.create.mockResolvedValue(created);
 			render(<TrayWithStoredTags />);
 			const user = userEvent.setup();
@@ -264,7 +284,12 @@ describe("TagTray", () => {
 		});
 
 		it("clears the find text after creating from it", async () => {
-			const created: Tag = { id: "n", label: "Garden", color: "blue" };
+			const created: Tag = {
+				id: "n",
+				label: "Garden",
+				color: "blue",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			};
 			changes.create.mockResolvedValue(created);
 			const user = await openTray();
 
