@@ -1,0 +1,50 @@
+/* One line of a fixed height, also while blank, so nothing below moves when tags
+   arrive. "Filter by" and Clear filter stay at its ends. */
+.row {
+	--row-height: 2rem;
+
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	min-width: 0;
+	height: var(--row-height);
+}
+
+.words {
+	flex: none;
+	color: var(--graphite);
+}
+
+/* The tags never wrap. When they don't fit, as on a phone, they scroll sideways.
+   The padding leaves room for the tilt of the marks and the focus ring. */
+.tags {
+	display: flex;
+	align-items: center;
+	gap: var(--space-xs);
+	min-width: 0;
+	height: 100%;
+	padding-inline: var(--space-xs);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.tags > * {
+	flex: none;
+}
+
+.clear {
+	flex: none;
+	margin-left: auto;
+	padding: 0 var(--space-xs);
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--graphite);
+	text-decoration: underline;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.clear:hover {
+	color: var(--ink);
+}
