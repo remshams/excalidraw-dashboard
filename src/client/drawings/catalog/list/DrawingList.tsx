@@ -419,6 +419,7 @@ function CardTags({ drawing, tags, selectedTagIds, onToggle }: CardTagsProps) {
 				tags={shownCardTags(tags, selectedTagIds, CARD_TAGS)}
 				selectedTagIds={selectedTagIds}
 				seed={drawing.id}
+				size="small"
 				className={styles.strip}
 				aria-label={`Tags of ${drawing.name}`}
 				onToggle={onToggle}
