@@ -1,9 +1,19 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
+import { useTagFilter } from "../filter/use-tag-filter.ts";
 import { DrawingList } from "./DrawingList.tsx";
+
+/** The landing page with a filter of its own, as `App` gives it one. */
+function FilteredList(
+	props: Omit<ComponentProps<typeof DrawingList>, "filter">,
+) {
+	const filter = useTagFilter(props.tags);
+	return <DrawingList {...props} filter={filter} />;
+}
 
 const summary = (
 	id: string,
@@ -34,13 +44,13 @@ function setup(shown = drawings, tags: Tag[] = []) {
 		tagChanges: { create: vi.fn(), update: vi.fn(), remove: vi.fn() },
 	};
 	const { rerender } = render(
-		<DrawingList drawings={shown} tags={tags} {...props} />,
+		<FilteredList drawings={shown} tags={tags} {...props} />,
 	);
 	return {
 		...props,
 		user: userEvent.setup(),
 		show: (next: DrawingSummary[]) =>
-			rerender(<DrawingList drawings={next} tags={tags} {...props} />),
+			rerender(<FilteredList drawings={next} tags={tags} {...props} />),
 	};
 }
 
@@ -48,6 +58,10 @@ const cards = () =>
 	within(screen.getByRole("list", { name: "Drawings" })).getAllByRole(
 		"listitem",
 	);
+
+/** The tags along the foot of a card's sheet, as they read. */
+const marksOf = (name: string) =>
+	screen.getByRole("toolbar", { name: `Tags of ${name}` }).textContent;
 
 /** The card's preview image; it has no role, since its alt text is empty. */
 const previewOf = (name: string) =>
@@ -326,12 +340,6 @@ describe("DrawingList", () => {
 			summary("2", "Roadmap", null, ["d"]),
 		];
 
-		/** The marks along the foot of a card's sheet, as they read. */
-		const marksOf = (name: string) =>
-			screen
-				.getByRole("link", { name: new RegExp(`^${name}`) })
-				.querySelector("[aria-hidden]")?.textContent;
-
 		it("shows the first 3 tags of a card by label and counts the rest", () => {
 			setup(tagged, tags);
 
@@ -348,11 +356,8 @@ describe("DrawingList", () => {
 		it("shows no tag strip on a card without tags", () => {
 			setup([summary("1", "Plan")], tags);
 
-			expect(
-				screen
-					.getByRole("link", { name: "Plan" })
-					.querySelector("[aria-hidden]"),
-			).toBeNull();
+			expect(screen.getByRole("link", { name: "Plan" })).toBeInTheDocument();
+			expect(screen.queryByRole("toolbar")).toBeNull();
 		});
 
 		it("names every tag of a card in its accessible name", () => {
@@ -370,7 +375,7 @@ describe("DrawingList", () => {
 
 		it("shows no tags while they aren't loaded", () => {
 			render(
-				<DrawingList
+				<FilteredList
 					drawings={tagged}
 					tags={null}
 					tagChanges={{ create: vi.fn(), update: vi.fn(), remove: vi.fn() }}
@@ -419,6 +424,219 @@ describe("DrawingList", () => {
 					.getAllByRole("button")
 					.map((tag) => tag.getAttribute("aria-label")),
 			).toEqual(["Remove Home", "Remove Work"]);
+		});
+	});
+
+	describe("tag filter", () => {
+		const tags: Tag[] = [
+			{ id: "a", label: "Home", color: "green" },
+			{ id: "b", label: "Ideas", color: "yellow" },
+			{ id: "c", label: "Later", color: "teal" },
+			{ id: "d", label: "Work", color: "blue" },
+			{ id: "e", label: "Unused", color: "red" },
+		];
+		const tagged = [
+			summary("1", "Plan", null, ["a", "b", "c", "d"]),
+			summary("2", "Roadmap", null, ["d"]),
+			summary("3", "Garden plan", null, ["a"]),
+			summary("4", "Shopping", null, []),
+		];
+
+		const cardTag = (name: string, label: string) =>
+			within(
+				screen.getByRole("toolbar", { name: `Tags of ${name}` }),
+			).getByRole("button", { name: `Filter by ${label}` });
+		const rowTag = (label: string) =>
+			within(screen.getByRole("toolbar", { name: "Filter by" })).getByRole(
+				"button",
+				{ name: `Filter by ${label}` },
+			);
+		const shownNames = () =>
+			within(screen.getByRole("list", { name: "Drawings" }))
+				.queryAllByRole("link")
+				.map((link) => link.textContent);
+		const search = () =>
+			screen.getByRole("searchbox", { name: "Search drawings" });
+
+		it("filters by a tag on a card without opening the drawing", async () => {
+			const { user, onOpen } = setup(tagged, tags);
+
+			await user.click(cardTag("Roadmap", "Work"));
+
+			expect(onOpen).not.toHaveBeenCalled();
+			expect(shownNames()).toEqual(["Plan", "Roadmap"]);
+			expect(cardTag("Roadmap", "Work")).toHaveAttribute(
+				"aria-pressed",
+				"true",
+			);
+			expect(cardTag("Plan", "Work")).toHaveAttribute("aria-pressed", "true");
+			expect(rowTag("Work")).toHaveAttribute("aria-pressed", "true");
+		});
+
+		it("shows the drawings with any of several tags", async () => {
+			const { user } = setup(tagged, tags);
+
+			await user.click(cardTag("Roadmap", "Work"));
+			await user.click(cardTag("Plan", "Home"));
+
+			expect(shownNames()).toEqual(["Plan", "Roadmap", "Garden plan"]);
+			expect(
+				screen.getByRole("toolbar", { name: "Filter by" }),
+			).toHaveTextContent(/^WorkorHome$/);
+		});
+
+		it("shows the tags in the filter first on a card, so none hides behind +N", async () => {
+			const { user } = setup(tagged, tags);
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
+
+			await user.click(cardTag("Roadmap", "Work"));
+
+			expect(marksOf("Plan")).toBe("WorkHomeIdeas+1");
+			expect(
+				screen.getByRole("link", {
+					name: "Plan, tags: Home, Ideas, Later, Work",
+				}),
+			).toBeInTheDocument();
+		});
+
+		it("is one tab stop per card, with the arrow keys moving between its tags", async () => {
+			const { user } = setup(tagged, tags);
+
+			screen.getByRole("link", { name: /^Plan/ }).focus();
+			await user.tab();
+			expect(cardTag("Plan", "Home")).toHaveFocus();
+			await user.keyboard("{ArrowRight}");
+			expect(cardTag("Plan", "Ideas")).toHaveFocus();
+			await user.tab();
+			expect(
+				screen.getByRole("button", { name: "Change tags of Plan" }),
+			).toHaveFocus();
+			await user.tab({ shift: true });
+			expect(cardTag("Plan", "Ideas")).toHaveFocus();
+		});
+
+		it("keeps the focus on a toggled tag on its card", async () => {
+			const { user } = setup(tagged, tags);
+			cardTag("Plan", "Later").focus();
+
+			await user.keyboard("{Enter}");
+
+			expect(cardTag("Plan", "Later")).toHaveFocus();
+			expect(cardTag("Plan", "Later")).toHaveAttribute("aria-pressed", "true");
+			expect(marksOf("Plan")).toBe("LaterHomeIdeas+1");
+		});
+
+		it("moves the focus to the tag in the row when its card leaves the page", async () => {
+			const { user } = setup(tagged, tags);
+			await user.click(cardTag("Roadmap", "Work"));
+			await user.click(cardTag("Plan", "Home"));
+
+			await user.click(cardTag("Roadmap", "Work"));
+
+			expect(shownNames()).toEqual(["Plan", "Garden plan"]);
+			expect(rowTag("Work")).toHaveFocus();
+			expect(rowTag("Work")).toHaveAttribute("aria-pressed", "false");
+		});
+
+		it("moves the focus to the tag in the row when it leaves the first tags of its card", async () => {
+			const { user } = setup(tagged, tags);
+			await user.click(cardTag("Roadmap", "Work"));
+
+			await user.click(cardTag("Plan", "Work"));
+
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
+			expect(rowTag("Work")).toHaveFocus();
+		});
+
+		it("shows every drawing again after Clear filter", async () => {
+			const { user } = setup(tagged, tags);
+			await user.click(cardTag("Roadmap", "Work"));
+
+			await user.click(screen.getByRole("button", { name: "Clear filter" }));
+
+			expect(shownNames()).toHaveLength(4);
+			expect(rowTag("Work")).toHaveAttribute("aria-pressed", "false");
+		});
+
+		it("filters by a tag from the tray", async () => {
+			const { user } = setup(tagged, tags);
+
+			await user.click(screen.getByRole("button", { name: "Tags" }));
+			await user.click(
+				within(screen.getByRole("dialog", { name: "Tags" })).getByRole(
+					"button",
+					{ name: "Filter by Later" },
+				),
+			);
+
+			expect(shownNames()).toEqual(["Plan"]);
+			expect(
+				screen.getByRole("button", { name: "Tags, 1 in the filter" }),
+			).toBeInTheDocument();
+		});
+
+		it("says when no drawing has the tags of the filter", async () => {
+			const { user } = setup(tagged, tags);
+
+			await user.click(screen.getByRole("button", { name: "Tags" }));
+			await user.click(
+				screen.getByRole("button", { name: "Filter by Unused" }),
+			);
+
+			await user.keyboard("{Escape}");
+
+			expect(shownNames()).toEqual([]);
+			expect(screen.getByRole("status")).toHaveTextContent(
+				"No drawing has Unused.",
+			);
+			// Only the row offers it; nothing outside the filter has a name to keep.
+			expect(
+				screen.getAllByRole("button", { name: "Clear filter" }),
+			).toHaveLength(1);
+		});
+
+		it("searches within the filter", async () => {
+			const { user } = setup(tagged, tags);
+			await user.click(cardTag("Plan", "Home"));
+
+			await user.type(search(), "garden");
+
+			expect(shownNames()).toEqual(["Garden plan"]);
+		});
+
+		it("says how many drawings outside the filter the search finds, and clears the filter but not the search", async () => {
+			const { user } = setup(tagged, tags);
+			await user.click(cardTag("Roadmap", "Work"));
+			await user.click(cardTag("Plan", "Work"));
+			await user.click(cardTag("Roadmap", "Work"));
+
+			await user.type(search(), "garden");
+
+			expect(shownNames()).toEqual([]);
+			expect(screen.getByText(/^No drawing with/)).toHaveTextContent(
+				"No drawing with Work is named “garden”. 1 drawing without this tag is.",
+			);
+
+			const clear = within(
+				screen.getByText(/^No drawing with/).parentElement as HTMLElement,
+			).getByRole("button", { name: "Clear filter" });
+			await user.click(clear);
+
+			expect(shownNames()).toEqual(["Garden plan"]);
+			expect(search()).toHaveValue("garden");
+			expect(search()).toHaveFocus();
+			expect(screen.queryByText(/^No drawing/)).toBeNull();
+		});
+
+		it("closes a card's question when the filter changes", async () => {
+			const { user } = setup(tagged, tags);
+			await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+
+			await user.click(cardTag("Roadmap", "Work"));
+
+			expect(
+				screen.queryByRole("textbox", { name: "New name for Plan" }),
+			).toBeNull();
 		});
 	});
 });
