@@ -225,7 +225,7 @@
 	background: var(--hover);
 }
 
-/* In the filter: the tag's colour, solid, with paper-coloured words. */
+/* In the filter: the tag's fill colour, with paper-coloured words. */
 .toggle[aria-pressed="true"] {
 	background: var(--pressed-ink);
 	color: var(--sheet);
