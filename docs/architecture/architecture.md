@@ -402,8 +402,8 @@ set. A click on a tag only turns it on or off and never moves it, and clearing t
 filter moves nothing either. Solid ink alone marks a selected tag. The
 row is one line of fixed height and stays blank without tags, so the cards don't
 move when tags arrive. Its tags scroll sideways when they don't fit. `use-overflow-edges`
-reads the scroll position and sizes on scroll, on resize and when the number of tags
-changes, and sets `data-fade-start` and `data-fade-end`. The CSS module fades the
+reads the scroll position and sizes on scroll, when the row or one of its tags
+changes size, and when the number of tags changes, and sets `data-fade-start` and `data-fade-end`. The CSS module fades the
 edge where tags are cut off and nowhere else.
 
 `TagToggles` renders tags as toggle buttons named "Filter by <label>" with
