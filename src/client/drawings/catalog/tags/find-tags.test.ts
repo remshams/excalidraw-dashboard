@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { Tag } from "#shared/tags.ts";
 import { findTags } from "./find-tags.ts";
 
-const tag = (label: string): Tag => ({ id: label, label, color: "blue" });
+const tag = (label: string): Tag => ({
+	id: label,
+	label,
+	color: "blue",
+	createdAt: "2026-01-01T00:00:00.000Z",
+});
 
 const labels = (tags: Tag[]) => tags.map(({ label }) => label);
 
