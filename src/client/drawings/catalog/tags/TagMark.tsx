@@ -80,6 +80,7 @@ export function TagMark({ label, color, seed, small, inked }: TagMarkProps) {
 				{
 					"--mark-ink": `var(--tag-${color}-ink)`,
 					"--mark-edge": `var(--tag-${color}-solid)`,
+					"--mark-fill": `var(--tag-${color}-fill)`,
 					"--tilt": tiltOf(seed),
 				} as CSSProperties
 			}
