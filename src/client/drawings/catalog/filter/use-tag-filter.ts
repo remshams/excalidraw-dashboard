@@ -12,6 +12,7 @@ export function useTagFilter(tags: Tag[] | null) {
 	const [recentIds, setRecentIds] = useState<string[]>([]);
 	const [query, setQuery] = useState("");
 
+	/** The loaded tag with the ID, or none while the tags load or once it is deleted. */
 	const tagOf = (id: string) => tags?.find((tag) => tag.id === id) ?? [];
 	const selectedTags = selectedIds.flatMap(tagOf);
 	const recentTags = recentIds.flatMap(tagOf);
