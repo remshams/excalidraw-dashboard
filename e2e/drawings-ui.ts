@@ -408,6 +408,7 @@ export async function expectHitHeight(
 	minHeight: number,
 ): Promise<void> {
 	const box = await button.boundingBox();
+	expect(box, "the button is on the page").not.toBeNull();
 	expect(box?.height).toBeGreaterThanOrEqual(minHeight);
 }
 
