@@ -87,6 +87,24 @@ describe("useTagFilter", () => {
 		]);
 	});
 
+	it("shows every selected tag in the row, even more than 8", () => {
+		const { current, toggle } = setup();
+
+		toggle("a", "b", "c", "d", "e", "f", "g", "h", "i");
+
+		expect(ids(current().rowTags)).toEqual([
+			"a",
+			"b",
+			"c",
+			"d",
+			"e",
+			"f",
+			"g",
+			"h",
+			"i",
+		]);
+	});
+
 	it("drops a tag that no longer exists from the filter and the row", () => {
 		const { hook, current, toggle } = setup();
 		toggle("a", "b");

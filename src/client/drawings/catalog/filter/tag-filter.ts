@@ -31,12 +31,10 @@ export function rememberTag(recent: string[], tagId: string): string[] {
 }
 
 /**
- * The order of the "Filter by" row: the selected tags in the order they were
- * selected, then the other recent tags, newest first.
+ * The order of the "Filter by" row: every selected tag in the order they were
+ * selected, then the other recent tags, newest first. The row's size limits only
+ * the recent tags, so a tag in the filter always has its place in the row.
  */
 export function rowOrder(recent: string[], selected: string[]): string[] {
-	return [
-		...selected.filter((id) => recent.includes(id)),
-		...recent.filter((id) => !selected.includes(id)),
-	];
+	return [...selected, ...recent.filter((id) => !selected.includes(id))];
 }
