@@ -10,11 +10,10 @@ type FilterRowProps = {
 };
 
 /**
- * The "Filter by" row under the header: the tags filtered by recently, each one
- * click from the filter, in the order they joined. A tag keeps its place, so a
- * click only turns it on or off; the ones in the filter show in solid ink. It keeps
- * one line of the same height, blank while it has no tags, so the cards don't move
- * when tags arrive.
+ * The "Filter by" row under the header: every tag, newest created first, each one
+ * click from the filter. A tag keeps its place, so a click only turns it on or off;
+ * the ones in the filter show in solid ink. It keeps one line of the same height,
+ * blank while there are no tags, so the cards don't move when tags arrive.
  */
 export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 	const { rowTags, selectedTagIds } = filter;
