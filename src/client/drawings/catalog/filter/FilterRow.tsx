@@ -32,6 +32,7 @@ export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 						tags={rowTags}
 						selectedTagIds={selectedTagIds}
 						seed="row"
+						size="medium"
 						className={styles.tags}
 						aria-labelledby={words}
 						onToggle={onToggle}
