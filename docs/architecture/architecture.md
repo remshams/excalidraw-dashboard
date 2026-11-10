@@ -23,12 +23,13 @@ Numbered migrations keep the database schema up to date
   records when it was last set.
 - **Drawing summary**: a drawing without its scene or preview image, as a card
   on the landing page shows it. It carries the drawing's tag IDs.
-- **Tag**: an entity with an ID, a label and a colour, and the root of its own
+- **Tag**: an entity with an ID, a label, a colour and a creation time, and the root of its own
   aggregate. Tags belong to the dashboard, not to one drawing; a drawing refers
   to them by ID. A label is trimmed, 1 to 30 characters long and unique when
   case is ignored. The colour is one of 8 open-color hues. Tags are dashboard
   data: they live in the database and never in a scene, so an exported
-  `.excalidraw` file carries none.
+  `.excalidraw` file carries none. `createdAt` is set once, on create, and no
+  change touches it.
 - **Tag filter**: the tags the user selected on the landing page, in the order
   selected. A drawing matches when it carries any of them; no selected tag
   matches every drawing. The search narrows the matches by name.
@@ -143,7 +144,10 @@ table holds which drawings carry which tags. It belongs to the drawing aggregate
 so `drawing-store` writes it, and the summary queries read the tag IDs from it.
 Its foreign keys delete a drawing's rows when the drawing or the tag goes.
 `tag-store` owns the `tags` table, whose `label_key` column holds the label in
-lower case under a `UNIQUE` constraint.
+lower case under a `UNIQUE` constraint, and a `created_at` column with the
+creation time. Migration 3 added the column; it gave existing tags times that
+follow their insertion order. `GET`, `POST` and `PUT` return `createdAt`, and the
+list stays sorted by label.
 
 Each aggregate has one route module. `drawing-routes` serves the drawing, its
 preview and its set of tag IDs, and checks the tag IDs and the preview's type and
@@ -381,26 +385,26 @@ remounts on `key={drawing.id}`, so its pending save is flushed as when leaving
 through "All drawings".
 
 `filter/` holds the tag filter. `use-tag-filter` keeps the selected tag IDs in the
-order selected, the tag IDs of the "Filter by" row in the order they joined it,
-and the search query. `App`
+order selected and the search query. `App`
 calls it, not `DrawingList`, so the filter and the search stay set while a drawing
 is open and come back with the landing page. Nothing stores them, so a reload
 clears them. The hook derives its tags from the loaded ones on each render, so a
 deleted tag leaves the filter and the row, and a renamed one shows its new label.
 `tag-filter` is a domain service: `filterDrawings` keeps the drawings that carry any
-selected tag and narrows them by name through `search.ts`. `joinRow` adds a newly
-selected tag at the end of the row and leaves a tag already there in its place.
-When the row grows past 8, the oldest tag that isn't selected leaves and the ones
-after it close the gap. A selected tag never leaves, so with more than 8 selected
-the row holds more.
+selected tag and narrows them by name through `search.ts`. `newestFirst` orders the
+tags of the "Filter by" row by `createdAt`, newest first, with the label breaking a
+tie. The order depends only on the loaded tags, so a tag moves only when a tag is
+created, which then comes first, or deleted.
 
 `FilterRow` is the "Filter by" toolbar between the header and the cards. It shows
-its tags in the order they joined, and a **Clear filter** button while a filter is
-set. Selecting a tag on a card, in the row or in the tray adds it to the row. A
-click on a tag only turns it on or off and never moves it, and clearing the filter
-moves nothing either. Solid ink alone marks a selected tag. The
+every tag, newest created first, and a **Clear filter** button while a filter is
+set. A click on a tag only turns it on or off and never moves it, and clearing the
+filter moves nothing either. Solid ink alone marks a selected tag. The
 row is one line of fixed height and stays blank without tags, so the cards don't
-move when tags arrive. On a narrow screen its tags scroll sideways.
+move when tags arrive. Its tags scroll sideways when they don't fit. `use-overflow-edges`
+reads the scroll position and sizes on scroll, on resize and when the number of tags
+changes, and sets `data-fade-start` and `data-fade-end`. The CSS module fades the
+edge where tags are cut off and nowhere else.
 
 `TagToggles` renders tags as toggle buttons named "Filter by <label>" with
 `aria-pressed`, and a selected one as a solid `TagMark`, inked in its
