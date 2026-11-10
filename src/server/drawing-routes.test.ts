@@ -121,28 +121,37 @@ describe("drawings API", () => {
 
 		expect(response.status).toBe(400);
 		expect(logged).not.toHaveBeenCalled();
-		expect(await response.text()).not.toBe("");
+		expect(response.headers.get("Content-Type")).toMatch(/^text\/plain/);
+		expect(await response.text()).toBe(
+			"Send the drawing as JSON with a text name",
+		);
 		expect(await (await send("GET", "/drawings")).json()).toEqual(before);
 	});
 
 	it.each([
-		["malformed JSON", "{nope"],
-		["a body that isn't an object", "[]"],
-		["a name that isn't text", '{"name":5}'],
-		["a scene that isn't text", '{"scene":{}}'],
-	])("rejects %s when updating a drawing with 400", async (_, body) => {
-		const { id } = await create("Plan");
-		const before = await (await send("GET", `/drawings/${id}`)).json();
+		["malformed JSON", "{nope", "Send the changes as a JSON object"],
+		["a body that isn't an object", "[]", "Send the changes as a JSON object"],
+		["a name that isn't text", '{"name":5}', "The name must be text"],
+		["a scene that isn't text", '{"scene":{}}', "The scene must be text"],
+	])(
+		"rejects %s when updating a drawing with 400",
+		async (_, body, message) => {
+			const { id } = await create("Plan");
+			const before = await (await send("GET", `/drawings/${id}`)).json();
 
-		const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+			const logged = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		const response = await sendRaw("PUT", `/drawings/${id}`, body);
+			const response = await sendRaw("PUT", `/drawings/${id}`, body);
 
-		expect(response.status).toBe(400);
-		expect(logged).not.toHaveBeenCalled();
-		expect(await response.text()).not.toBe("");
-		expect(await (await send("GET", `/drawings/${id}`)).json()).toEqual(before);
-	});
+			expect(response.status).toBe(400);
+			expect(logged).not.toHaveBeenCalled();
+			expect(response.headers.get("Content-Type")).toMatch(/^text\/plain/);
+			expect(await response.text()).toBe(message);
+			expect(await (await send("GET", `/drawings/${id}`)).json()).toEqual(
+				before,
+			);
+		},
+	);
 });
 
 describe("drawing previews API", () => {
