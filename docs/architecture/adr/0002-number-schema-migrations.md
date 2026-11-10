@@ -26,6 +26,9 @@ second process that could migrate the same file at the same time.
   before numbered migrations, all at version 0, to the same schema: a new one,
   one from before previews and one with previews.
 - Migration 2 adds the `tags` and `drawing_tags` tables.
+- Migration 3 adds `tags.created_at`. Existing tags get times in their insertion
+  (`rowid`) order: the newest gets the migration time, each older one a second
+  less.
 - `PRAGMA journal_mode = WAL` runs on every open, outside the migrations. It is a
   setting of the file, and SQLite can't change it inside a transaction.
 
