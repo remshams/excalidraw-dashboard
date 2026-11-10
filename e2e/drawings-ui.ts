@@ -392,9 +392,7 @@ export function filterRowTag(page: Page, label: string) {
 	});
 }
 
-/** The button at the end of the "Filter by" row that empties the filter. */
-export function clearFilterInRow(page: Page) {
-	return filterRow(page)
-		.locator("xpath=..")
-		.getByRole("button", { name: "Clear filter", exact: true });
+/** The Clear filter button, while the page offers only one. */
+export function clearFilterButton(page: Page) {
+	return page.getByRole("button", { name: "Clear filter", exact: true });
 }
