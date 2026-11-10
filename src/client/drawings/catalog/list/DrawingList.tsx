@@ -280,6 +280,10 @@ type DrawingCardProps = {
 	onCancel: () => void;
 };
 
+/**
+ * A drawing's card: its sheet and name as a link that opens it, its tags as filter
+ * buttons and its actions. While it renames or deletes, the question replaces the link.
+ */
 function DrawingCard({
 	drawing,
 	tags,
