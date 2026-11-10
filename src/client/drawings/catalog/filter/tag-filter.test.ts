@@ -99,7 +99,7 @@ describe("rowOrder", () => {
 		expect(rowOrder(["c", "b", "a"], [])).toEqual(["c", "b", "a"]);
 	});
 
-	it("leaves out a selected tag that dropped out of the recent tags", () => {
-		expect(rowOrder(["b"], ["a", "b"])).toEqual(["b"]);
+	it("keeps a selected tag that dropped out of the recent tags", () => {
+		expect(rowOrder(["b", "c"], ["a", "b"])).toEqual(["a", "b", "c"]);
 	});
 });
