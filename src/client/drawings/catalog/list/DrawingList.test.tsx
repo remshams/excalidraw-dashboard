@@ -628,6 +628,24 @@ describe("DrawingList", () => {
 			expect(screen.queryByText(/^No drawing/)).toBeNull();
 		});
 
+		it("focuses the Tags button when the tags dialog took its card off the page", async () => {
+			const { user, show, onToggleTag } = setup(tagged, tags);
+			onToggleTag.mockResolvedValue(undefined);
+			await user.click(cardTag("Roadmap", "Work"));
+			await user.click(
+				screen.getByRole("button", { name: "Change tags of Roadmap" }),
+			);
+
+			await user.click(screen.getByRole("button", { name: "Remove Work" }));
+			show(tagged.map((d) => (d.id === "2" ? { ...d, tagIds: [] } : d)));
+			await user.click(screen.getByRole("button", { name: "Done" }));
+
+			expect(screen.queryByRole("link", { name: /^Roadmap/ })).toBeNull();
+			expect(
+				screen.getByRole("button", { name: "Tags, 1 in the filter" }),
+			).toHaveFocus();
+		});
+
 		it("closes a card's question when the filter changes", async () => {
 			const { user } = setup(tagged, tags);
 			await user.click(screen.getByRole("button", { name: "Rename Plan" }));

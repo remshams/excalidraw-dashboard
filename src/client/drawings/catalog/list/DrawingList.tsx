@@ -17,7 +17,7 @@ import { TagTray } from "../tags/tray/TagTray.tsx";
 import type { TagChanges } from "../tags/use-tags.ts";
 import styles from "./DrawingList.module.css";
 import { noMatchMessage } from "./no-match-message.ts";
-import { useTagRefocus } from "./use-tag-refocus.ts";
+import { useFocusAfterDialog, useTagRefocus } from "./use-tag-refocus.ts";
 
 type DrawingListProps = {
 	drawings: DrawingSummary[];
@@ -65,6 +65,8 @@ export function DrawingList({
 	const tagging = drawings.find(({ id }) => id === taggingId);
 	const searchField = useRef<HTMLInputElement>(null);
 	const { page, refocus } = useTagRefocus();
+	const tagsButton = useRef<HTMLButtonElement>(null);
+	useFocusAfterDialog(tagging !== undefined, tagsButton);
 	const close = () => setTask(null);
 	const shown = filterDrawings(drawings, filter.selectedTagIds, filter.query);
 
@@ -96,6 +98,7 @@ export function DrawingList({
 						}}
 					/>
 					<TagTray
+						ref={tagsButton}
 						tags={tags}
 						drawings={drawings}
 						changes={tagChanges}
