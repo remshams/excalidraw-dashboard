@@ -9,6 +9,8 @@ type TagTogglesProps = {
 	selectedTagIds: string[];
 	/** Keeps each tag's angle the same in this place. */
 	seed: string;
+	/** "small" for the foot of a card, "medium" for the filter row. */
+	size: "small" | "medium";
 	className?: string;
 	onToggle: (tagId: string) => void;
 	/** Follows the tags, such as "+2" for the ones a card leaves out. */
@@ -24,6 +26,7 @@ export function TagToggles({
 	tags,
 	selectedTagIds,
 	seed,
+	size,
 	className,
 	onToggle,
 	children,
@@ -46,7 +49,7 @@ export function TagToggles({
 				<button
 					key={tag.id}
 					type="button"
-					className={styles.toggle}
+					className={`${styles.toggle} ${styles[size]}`}
 					data-tag-toggle={tag.id}
 					aria-label={`Filter by ${tag.label}`}
 					aria-pressed={pressed(tag.id)}
@@ -58,7 +61,7 @@ export function TagToggles({
 						label={tag.label}
 						color={tag.color}
 						seed={seed + tag.id}
-						small
+						size={size}
 						inked={pressed(tag.id)}
 					/>
 				</button>
