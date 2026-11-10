@@ -5,8 +5,18 @@ import type { Tag } from "#shared/tags.ts";
 import { ApiError } from "../../../api.ts";
 import { TagForm } from "./TagForm.tsx";
 
-const work: Tag = { id: "w", label: "Work", color: "teal" };
-const home: Tag = { id: "h", label: "Home", color: "pink" };
+const work: Tag = {
+	id: "w",
+	label: "Work",
+	color: "teal",
+	createdAt: "2026-01-01T00:00:00.000Z",
+};
+const home: Tag = {
+	id: "h",
+	label: "Home",
+	color: "pink",
+	createdAt: "2026-01-01T00:00:00.000Z",
+};
 
 function setup(props: Partial<Parameters<typeof TagForm>[0]> = {}) {
 	const handlers = {
