@@ -406,7 +406,7 @@ the cards don't move when tags arrive. Its tags scroll sideways when they don't 
 edge where tags are cut off and nowhere else, with scroll-driven animations of two
 registered fade widths and no script. A browser without them shows no fade.
 
-`TagToggles` renders tags as toggle buttons named "Filter by <label>" with
+`TagToggles` renders tags as toggle buttons named `Filter by <label>` with
 `aria-pressed`, and a selected one as a solid `TagMark`, inked in its
 `--tag-<colour>-fill` under paper-coloured words. The caller picks the mark size:
 small on a card, medium in the row. Each button reaches past its mark, so it is
