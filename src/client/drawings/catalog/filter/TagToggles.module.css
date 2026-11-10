@@ -1,0 +1,36 @@
+/* A tag to press: it straightens up under the pointer or the keyboard. The room
+   around the mark keeps the focus ring off its edge. */
+.toggle {
+	display: flex;
+	min-width: 0;
+	max-width: 100%;
+	padding: 2px;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: none;
+	cursor: pointer;
+}
+
+.toggle:is(:hover, :focus-visible) > * {
+	rotate: 0deg;
+	translate: 0 -1px;
+}
+
+.toggle:active > * {
+	translate: 0 1px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.toggle > * {
+		transition:
+			rotate 90ms ease-out,
+			translate 90ms ease-out;
+	}
+}
+
+/* Says how the tags in the filter combine, in the hand the tags are written in. */
+.or {
+	flex: none;
+	font-family: var(--hand);
+	color: var(--ink);
+}
