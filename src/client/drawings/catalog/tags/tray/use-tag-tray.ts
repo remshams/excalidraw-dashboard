@@ -122,6 +122,10 @@ export function useTagTray(
 		);
 	};
 
+	/**
+	 * ArrowDown goes to the first row. Enter toggles the top match in the filter, or
+	 * opens the form for a new tag when no tag matches.
+	 */
 	const onFindKey = (event: KeyboardEvent) => {
 		if (event.key === "ArrowDown") {
 			event.preventDefault();
