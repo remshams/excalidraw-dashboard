@@ -3,6 +3,7 @@
    to hit than the mark it shows, also for a short label such as "ui". */
 .toggle {
 	display: flex;
+	align-items: center;
 	justify-content: center;
 	min-width: 0;
 	max-width: 100%;
@@ -13,8 +14,11 @@
 	cursor: pointer;
 }
 
+/* At least 24 pixels tall, the smallest target WCAG allows, whatever the line
+   height of the mark. */
 .toggle.small {
 	min-width: 1.75rem;
+	min-height: 1.5rem;
 }
 
 .toggle.medium {
