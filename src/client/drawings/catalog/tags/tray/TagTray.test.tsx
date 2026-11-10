@@ -325,6 +325,47 @@ describe("TagTray", () => {
 		expect(changes.create).not.toHaveBeenCalled();
 	});
 
+	describe.each([
+		["a composition is active", { isComposing: true }],
+		["the key belongs to an input method", { keyCode: 229 }],
+	])("while %s", (_, input) => {
+		it("opens no form on Enter when no tag matches", async () => {
+			const user = await openTray();
+			await user.type(findField(), "garden");
+
+			fireEvent.keyDown(findField(), { key: "Enter", ...input });
+
+			expect(screen.queryByRole("textbox", { name: "Label" })).toBeNull();
+			expect(findField()).toHaveValue("garden");
+			expect(button("Create “garden”")).toBeVisible();
+		});
+
+		it("leaves the filter alone on Enter when a tag matches", async () => {
+			const user = userEvent.setup();
+			render(<TrayWithFilter />);
+			await user.click(screen.getByRole("button", { name: /^Tags/ }));
+			await user.type(findField(), "work");
+
+			fireEvent.keyDown(findField(), { key: "Enter", ...input });
+
+			expect(button("Filter by Work")).toHaveAttribute("aria-pressed", "false");
+			expect(findField()).toHaveValue("work");
+		});
+
+		it("keeps the focus in the find field on ArrowDown", async () => {
+			const user = await openTray();
+			await user.type(findField(), "work");
+
+			const notCancelled = fireEvent.keyDown(findField(), {
+				key: "ArrowDown",
+				...input,
+			});
+
+			expect(notCancelled).toBe(true);
+			expect(findField()).toHaveFocus();
+		});
+	});
+
 	describe("changing a tag", () => {
 		it("saves the new label and colour through one change", async () => {
 			changes.update.mockResolvedValue({
