@@ -43,6 +43,14 @@ export const send = (method: string, path: string, body?: unknown) =>
 		body: body === undefined ? undefined : JSON.stringify(body),
 	});
 
+/** Sends `body` unchanged as a JSON request, for bodies that aren't valid JSON. */
+export const sendRaw = (method: string, path: string, body: string) =>
+	request(`/api${path}`, {
+		method,
+		headers: { "Content-Type": "application/json" },
+		body,
+	});
+
 export const create = async (name: string): Promise<Drawing> =>
 	(await send("POST", "/drawings", { name })).json();
 
