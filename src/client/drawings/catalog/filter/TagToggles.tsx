@@ -1,4 +1,4 @@
-import { type ReactNode, type Ref, useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { Tag } from "#shared/tags.ts";
 import { moveInRow } from "../tags/grid-keys.ts";
 import { TagMark } from "../tags/TagMark.tsx";
@@ -10,8 +10,6 @@ type TagTogglesProps = {
 	/** Keeps each tag's angle the same in this place. */
 	seed: string;
 	className?: string;
-	/** The toolbar element. */
-	ref?: Ref<HTMLDivElement>;
 	onToggle: (tagId: string) => void;
 	/** Follows the tags, such as "+2" for the ones a card leaves out. */
 	children?: ReactNode;
@@ -27,7 +25,6 @@ export function TagToggles({
 	selectedTagIds,
 	seed,
 	className,
-	ref,
 	onToggle,
 	children,
 	...label
@@ -40,7 +37,6 @@ export function TagToggles({
 
 	return (
 		<div
-			ref={ref}
 			role="toolbar"
 			className={className}
 			{...label}
