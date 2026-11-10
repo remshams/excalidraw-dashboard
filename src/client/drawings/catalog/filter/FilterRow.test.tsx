@@ -5,17 +5,19 @@ import type { Tag } from "#shared/tags.ts";
 import { FilterRow } from "./FilterRow.tsx";
 import { useTagFilter } from "./use-tag-filter.ts";
 
-const tags: Tag[] = [
-	{ id: "a", label: "Home", color: "green" },
-	{ id: "b", label: "Ideas", color: "yellow" },
-	{ id: "c", label: "Work", color: "blue" },
-	...[4, 5, 6, 7, 8, 9].map(
-		(n): Tag => ({ id: `t${n}`, label: `Tag ${n}`, color: "pink" }),
-	),
-];
+const tag = (id: string, label: string, createdAt: string): Tag => ({
+	id,
+	label,
+	color: "blue",
+	createdAt: `2026-01-${createdAt}T00:00:00.000Z`,
+});
 
-/** The row with a filter the test sets up through the buttons below it. */
-function Harness() {
+const home = tag("a", "Home", "01");
+const ideas = tag("b", "Ideas", "02");
+const work = tag("c", "Work", "03");
+
+/** The row of a filter over `tags`; the tests below it select tags through buttons. */
+function Harness({ tags }: { tags: Tag[] }) {
 	const filter = useTagFilter(tags);
 	return (
 		<>
@@ -33,15 +35,16 @@ function Harness() {
 	);
 }
 
-function setup() {
+function setup(tags: Tag[] = [home, ideas, work]) {
 	const user = userEvent.setup();
-	render(<Harness />);
+	const view = render(<Harness tags={tags} />);
 	const select = async (...labels: string[]) => {
 		for (const label of labels) {
 			await user.click(screen.getByRole("button", { name: `Select ${label}` }));
 		}
 	};
-	return { user, select };
+	const load = (loaded: Tag[]) => view.rerender(<Harness tags={loaded} />);
+	return { user, select, load };
 }
 
 const row = () => screen.getByRole("toolbar", { name: "Filter by" });
@@ -51,24 +54,37 @@ const toggle = (label: string) =>
 const clearButton = () =>
 	screen.queryByRole("button", { name: "Clear filter" });
 
+const order = () =>
+	toggles().map((button) => button.getAttribute("aria-label"));
+
 describe("FilterRow", () => {
-	it("is blank while it has no tags", () => {
-		setup();
+	it("is blank while there are no tags", () => {
+		setup([]);
 
 		expect(screen.queryByRole("toolbar")).toBeNull();
 		expect(screen.queryByText("Filter by")).toBeNull();
 		expect(clearButton()).toBeNull();
 	});
 
-	it("shows its tags in the order they joined, the selected ones pressed, with no words between them", async () => {
+	it("shows every tag, newest created first, unpressed, with no words between them", () => {
+		setup();
+
+		expect(order()).toEqual([
+			"Filter by Work",
+			"Filter by Ideas",
+			"Filter by Home",
+		]);
+		expect(row()).toHaveTextContent(/^WorkIdeasHome$/);
+		for (const button of toggles()) {
+			expect(button).toHaveAttribute("aria-pressed", "false");
+		}
+	});
+
+	it("shows the selected tags pressed", async () => {
 		const { select } = setup();
 
-		await select("Ideas", "Work", "Ideas", "Home");
+		await select("Home", "Work");
 
-		expect(
-			toggles().map((button) => button.getAttribute("aria-label")),
-		).toEqual(["Filter by Ideas", "Filter by Work", "Filter by Home"]);
-		expect(row()).toHaveTextContent(/^IdeasWorkHome$/);
 		expect(toggle("Work")).toHaveAttribute("aria-pressed", "true");
 		expect(toggle("Home")).toHaveAttribute("aria-pressed", "true");
 		expect(toggle("Ideas")).toHaveAttribute("aria-pressed", "false");
@@ -84,19 +100,33 @@ describe("FilterRow", () => {
 		expect(toggle("Work")).toHaveFocus();
 	});
 
-	it("keeps every tag in its place when one is turned on or off", async () => {
+	it("keeps every tag in its place when one is selected, turned off or cleared", async () => {
 		const { user, select } = setup();
-		await select("Work", "Home", "Ideas", "Home", "Ideas");
-		const order = () =>
-			toggles().map((button) => button.getAttribute("aria-label"));
 		const before = order();
 
-		await user.click(toggle("Ideas"));
-		expect(order()).toEqual(before);
-		await user.click(toggle("Work"));
+		await select("Home", "Ideas");
 		expect(order()).toEqual(before);
 		await user.click(toggle("Ideas"));
 		expect(order()).toEqual(before);
+		await user.click(clearButton() as HTMLElement);
+		expect(order()).toEqual(before);
+	});
+
+	it("puts a new tag first", () => {
+		const { load } = setup();
+
+		load([home, ideas, work, tag("d", "Fresh", "04")]);
+
+		expect(order()[0]).toBe("Filter by Fresh");
+		expect(order()).toHaveLength(4);
+	});
+
+	it("drops a deleted tag and leaves the others in their order", () => {
+		const { load } = setup();
+
+		load([home, work]);
+
+		expect(order()).toEqual(["Filter by Work", "Filter by Home"]);
 	});
 
 	it("clears the filter, keeps the tags and moves the focus to the first one", async () => {
@@ -106,7 +136,7 @@ describe("FilterRow", () => {
 		await user.click(clearButton() as HTMLElement);
 
 		expect(clearButton()).toBeNull();
-		expect(toggles()).toHaveLength(2);
+		expect(toggles()).toHaveLength(3);
 		for (const button of toggles()) {
 			expect(button).toHaveAttribute("aria-pressed", "false");
 		}
@@ -114,39 +144,19 @@ describe("FilterRow", () => {
 	});
 
 	it("is one tab stop, with the arrow keys moving between its tags", async () => {
-		const { user, select } = setup();
-		await select("Work", "Home", "Ideas", "Home", "Ideas");
+		const { user } = setup();
 
-		await user.click(clearButton() as HTMLElement);
-		expect(toggles()).toEqual([
-			toggle("Work"),
-			toggle("Home"),
-			toggle("Ideas"),
-		]);
+		await user.tab();
 		expect(toggle("Work")).toHaveFocus();
 		await user.keyboard("{ArrowRight}");
-		expect(toggle("Home")).toHaveFocus();
-		await user.keyboard("{ArrowRight}{ArrowRight}");
 		expect(toggle("Ideas")).toHaveFocus();
-		await user.keyboard("{ArrowLeft}");
+		await user.keyboard("{ArrowRight}{ArrowRight}");
 		expect(toggle("Home")).toHaveFocus();
+		await user.keyboard("{ArrowLeft}");
+		expect(toggle("Ideas")).toHaveFocus();
 
 		expect(toggles().filter((button) => button.tabIndex === 0)).toEqual([
-			toggle("Home"),
-		]);
-	});
-
-	it("adds a new tag at the end and, past 8, drops the oldest one not in the filter", async () => {
-		const { select } = setup();
-		const labels = tags.map(({ label }) => label);
-		const firstEight = labels.slice(0, 8);
-		await select(...firstEight, ...firstEight, "Ideas");
-
-		await select(labels[8]);
-
-		expect(toggles().map((button) => button.textContent)).toEqual([
-			"Ideas",
-			...labels.slice(2, 9),
+			toggle("Ideas"),
 		]);
 	});
 });
