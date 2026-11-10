@@ -314,8 +314,13 @@ test("search the drawings by name", async ({ page, request }) => {
 		await goToAllDrawings(page);
 	});
 
-	await test.step("the search is empty and the landing page shows every drawing again", async () => {
-		await expect(searchField(page)).toHaveValue("");
+	await test.step(`the search still shows only ${pond}`, async () => {
+		await expect(searchField(page)).toHaveValue(pond);
+		await expect(drawingCards(page)).toHaveText(["New drawing", pond]);
+	});
+
+	await test.step("emptying the search shows every drawing again", async () => {
+		await searchDrawings(page, "");
 		await expect(drawingCardLink(page, pond)).toBeVisible();
 		await expect(drawingCardLink(page, patio)).toBeVisible();
 	});
