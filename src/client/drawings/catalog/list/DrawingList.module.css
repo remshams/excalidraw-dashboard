@@ -3,13 +3,14 @@
 	margin: 0 auto;
 }
 
-/* The heading with the search field at the end of its line. */
+/* The heading with the search field at the end of its line. The "Filter by" row
+   below it takes the room a wider margin would. */
 .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--space-md);
-	margin-bottom: var(--space-lg);
+	margin-bottom: var(--space-xs);
 }
 
 .list h1 {
@@ -41,9 +42,25 @@
 	color: var(--graphite);
 }
 
-/* The status takes no space while it has no message. */
-.status:not(:empty) {
+/* The status and its Clear filter take no space while there is no message. */
+.empty:has(.status:not(:empty)) {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-sm);
 	margin-top: var(--space-lg);
+}
+
+.clearFilter {
+	padding: var(--space-xs) var(--space-sm);
+	border: var(--stroke-sm) solid var(--graphite);
+	border-radius: var(--radius-md);
+	background: var(--sheet);
+	cursor: pointer;
+}
+
+.clearFilter:hover {
+	background: var(--hover);
 }
 
 .cards {
@@ -56,6 +73,8 @@
 }
 
 .cards li {
+	--strip-height: 1.5rem;
+
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -108,12 +127,25 @@
 }
 
 /* Leaves the foot of the sheet to the tags. */
-.sheet.tagged {
-	--strip-height: 1.5rem;
-}
-
 .sheet.tagged img {
 	height: calc(100% - var(--space-md) - var(--strip-height) - var(--space-xs));
+}
+
+/* The tags of a card lie over its sheet: the same box and border, but outside the
+   card's link. Only the tags themselves take clicks; the rest opens the drawing. */
+.tagLayer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	box-sizing: border-box;
+	aspect-ratio: 4 / 3;
+	border: var(--stroke-sm) solid transparent;
+	pointer-events: none;
+}
+
+.tagLayer button {
+	pointer-events: auto;
 }
 
 /* The first tags in one line along the foot of the sheet, then "+2" for the rest. */
@@ -135,8 +167,8 @@
 
 /* The marks share the line equally, each at most as wide as its label, so a
    short one stays whole and only a long one gives way. Two classes, to win over
-   the mark's own max-width. */
-.sheet .strip > :not(.more) {
+   the button's own max-width. */
+.tagLayer .strip > :not(.more) {
 	flex: 1 1 0;
 	max-width: max-content;
 }
@@ -247,7 +279,6 @@
 		flex-direction: column;
 		align-items: stretch;
 		gap: var(--space-sm);
-		margin-bottom: var(--space-md);
 	}
 
 	.search {
