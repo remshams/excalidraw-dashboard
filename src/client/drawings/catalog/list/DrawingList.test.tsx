@@ -330,10 +330,30 @@ describe("DrawingList", () => {
 
 	describe("tags", () => {
 		const tags: Tag[] = [
-			{ id: "a", label: "Home", color: "green" },
-			{ id: "b", label: "Ideas", color: "yellow" },
-			{ id: "c", label: "Later", color: "teal" },
-			{ id: "d", label: "Work", color: "blue" },
+			{
+				id: "a",
+				label: "Home",
+				color: "green",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "b",
+				label: "Ideas",
+				color: "yellow",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "c",
+				label: "Later",
+				color: "teal",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "d",
+				label: "Work",
+				color: "blue",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
 		];
 		const tagged = [
 			summary("1", "Plan", null, ["d", "c", "b", "a"]),
@@ -429,11 +449,36 @@ describe("DrawingList", () => {
 
 	describe("tag filter", () => {
 		const tags: Tag[] = [
-			{ id: "a", label: "Home", color: "green" },
-			{ id: "b", label: "Ideas", color: "yellow" },
-			{ id: "c", label: "Later", color: "teal" },
-			{ id: "d", label: "Work", color: "blue" },
-			{ id: "e", label: "Unused", color: "red" },
+			{
+				id: "a",
+				label: "Home",
+				color: "green",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "b",
+				label: "Ideas",
+				color: "yellow",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "c",
+				label: "Later",
+				color: "teal",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "d",
+				label: "Work",
+				color: "blue",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "e",
+				label: "Unused",
+				color: "red",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
 		];
 		const tagged = [
 			summary("1", "Plan", null, ["a", "b", "c", "d"]),

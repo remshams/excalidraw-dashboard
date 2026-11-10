@@ -6,6 +6,7 @@ const tags: Tag[] = ["Ant", "Bee", "Cat", "Dog", "Eel"].map((label) => ({
 	id: label,
 	label,
 	color: "blue",
+	createdAt: "2026-01-01T00:00:00.000Z",
 }));
 
 const shown = (selected: string[], list = tags) =>
