@@ -1,4 +1,9 @@
-import { type APIRequestContext, expect, type Page } from "@playwright/test";
+import {
+	type APIRequestContext,
+	expect,
+	type Locator,
+	type Page,
+} from "@playwright/test";
 
 // The drawings UI as a user sees it: where things are and what a user does.
 // Tests group these calls into named steps with `test.step`.
@@ -395,6 +400,15 @@ export function filterRowTag(page: Page, label: string) {
 		name: `Filter by ${label}`,
 		exact: true,
 	});
+}
+
+/** Checks that a button is at least `minHeight` CSS pixels tall, so a finger can hit it. */
+export async function expectHitHeight(
+	button: Locator,
+	minHeight: number,
+): Promise<void> {
+	const box = await button.boundingBox();
+	expect(box?.height).toBeGreaterThanOrEqual(minHeight);
 }
 
 /** The Clear filter button, while the page offers only one. */
