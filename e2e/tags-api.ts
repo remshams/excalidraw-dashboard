@@ -4,7 +4,12 @@ import { type APIRequestContext, expect } from "@playwright/test";
 // stored. Tags belong to the dashboard; `drawings-api.ts` assigns them to a
 // drawing.
 
-type StoredTag = { id: string; label: string; color: string };
+type StoredTag = {
+	id: string;
+	label: string;
+	color: string;
+	createdAt: string;
+};
 
 /** Creates a tag with `POST /api/tags` and returns its ID. */
 export async function createTagThroughApi(
