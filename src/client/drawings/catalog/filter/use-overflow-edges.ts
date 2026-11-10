@@ -20,7 +20,9 @@ export function overflowEdges({
 
 /**
  * Sets `data-fade-start` and `data-fade-end` on the element while tags are cut
- * off at that edge. It looks again on scroll, on resize and when `count` changes.
+ * off at that edge. It looks again on scroll, when the element or one of its
+ * children changes size, as after a rename or once fonts load, and when `count`
+ * changes.
  */
 export function useOverflowEdges(
 	ref: RefObject<HTMLElement | null>,
@@ -38,7 +40,7 @@ export function useOverflowEdges(
 		update();
 		element.addEventListener("scroll", update);
 		const observer = new ResizeObserver(update);
-		observer.observe(element);
+		for (const box of [element, ...element.children]) observer.observe(box);
 		return () => {
 			element.removeEventListener("scroll", update);
 			observer.disconnect();
