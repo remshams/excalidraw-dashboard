@@ -387,9 +387,9 @@ is open and come back with the landing page. Nothing stores them, so a reload
 clears them. The hook derives its tags from the loaded ones on each render, so a
 deleted tag leaves the filter and the row, and a renamed one shows its new label.
 `tag-filter` is a domain service: `filterDrawings` keeps the drawings that carry any
-selected tag and narrows them by name through `search.ts`, `rememberTag` puts a
-selected tag first in the row and drops the oldest beyond 8, and `rowOrder` puts the
-selected tags first.
+selected tag and narrows them by name through `search.ts`. `rememberTag` puts a
+selected tag first among the recent tags and keeps at most 8 of them. `rowOrder`
+puts every selected tag first, so a tag in the filter never leaves the row.
 
 `FilterRow` is the "Filter by" toolbar between the header and the cards. It shows
 the selected tags in the order selected with "or" between them, then the other
@@ -400,17 +400,20 @@ move when tags arrive. On a narrow screen its tags scroll sideways.
 
 `TagToggles` renders tags as toggle buttons named "Filter by <label>" with
 `aria-pressed`, and a selected one as a solid `TagMark`, inked in its
-`--tag-<colour>-solid`. The row and each card use it as a toolbar with one tab stop;
+`--tag-<colour>-fill` under paper-coloured words. The row and each card use it as a toolbar with one tab stop;
 the left and right arrow keys move through its tags with `moveInRow` from
 `grid-keys`. A card's toggles lie over the foot of its sheet but outside its link,
 so a click filters and doesn't open the drawing. A card puts the selected tags
 first, so a match never hides behind `+N`. After a toggle, `use-tag-refocus` in
 `list/` keeps the focus on the tag: on the same card if it still shows there, else
-in the row. Changing the filter or the search closes a card's rename or delete
-question.
+in the row. When the card's tags dialog takes the card off the page, such as by
+removing the tag the filter shows it for, the browser has no tag button to return
+the focus to, so `DrawingList` gives it to the **Tags** button. Changing the filter
+or the search closes a card's rename or delete question.
 
 In the tray, each row's swatch, label and count form one toggle button, and the
-pencil stays beside it; the arrow keys move through both. Enter in the find field
+pencil stays beside it; the arrow keys move through both. A pressed row takes the
+tag's `--tag-<colour>-fill`. Enter in the find field
 toggles the top match and announces it, or opens the form when no tag matches. The
 footer offers **Clear filter** while a filter is set, and the **Tags** button shows
 how many tags are selected, as in "Tags, 2 in the filter".
@@ -424,8 +427,10 @@ In the last case a **Clear filter** button follows, which keeps the search.
 [`styles.css`](../../src/client/styles.css) holds what the whole client shares:
 design tokens for colors from open-color, the palette Excalidraw draws with, and
 for font sizes, line heights, font weights, stroke widths, corner radii and
-spacing, with a `--tag-<colour>-solid` and a `--tag-<colour>-ink` for each of the 8 tag
-colours in both palettes;
+spacing, with a `--tag-<colour>-solid`, a `--tag-<colour>-ink` and a
+`--tag-<colour>-fill` for each of the 8 tag colours in both palettes. Solid is for a
+mark on its own, ink for a label in the tag's colour, and fill for a tag in the
+filter, under `--sheet`-coloured words;
 Excalidraw's bundled fonts, Excalifont for drawing names and Assistant for
 controls; the base rules; and the focus ring. It switches to a dark palette with
 `prefers-color-scheme`. Each component keeps its own rules in a CSS module next
