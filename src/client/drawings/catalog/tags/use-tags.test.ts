@@ -12,7 +12,12 @@ vi.mock("../../api.ts", async (original) => ({
 	updateTag: vi.fn(),
 }));
 
-const tag = (label: string): Tag => ({ id: label, label, color: "blue" });
+const tag = (label: string): Tag => ({
+	id: label,
+	label,
+	color: "blue",
+	createdAt: "2026-01-01T00:00:00.000Z",
+});
 
 beforeEach(() => vi.resetAllMocks());
 
