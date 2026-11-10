@@ -16,8 +16,13 @@
 }
 
 /* The tags never wrap. When they don't fit, as on a phone, they scroll sideways.
-   The padding leaves room for the tilt of the marks and the focus ring. */
+   The padding leaves room for the tilt of the marks and the focus ring. The mask
+   fades the edge where tags are cut off; use-overflow-edges.ts sets the data
+   attributes. Only its alpha counts, so --ink stands for "opaque". */
 .tags {
+	--fade-start: 0px;
+	--fade-end: 0px;
+
 	display: flex;
 	align-items: center;
 	gap: var(--space-xs);
@@ -26,6 +31,21 @@
 	padding-inline: var(--space-xs);
 	overflow-x: auto;
 	scrollbar-width: none;
+	mask-image: linear-gradient(
+		to right,
+		transparent,
+		var(--ink) var(--fade-start),
+		var(--ink) calc(100% - var(--fade-end)),
+		transparent
+	);
+}
+
+.tags[data-fade-start] {
+	--fade-start: var(--space-lg);
+}
+
+.tags[data-fade-end] {
+	--fade-end: var(--space-lg);
 }
 
 .tags > * {
