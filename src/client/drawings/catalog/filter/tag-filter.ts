@@ -1,8 +1,6 @@
 import type { DrawingSummary } from "#shared/drawings.ts";
+import type { Tag } from "#shared/tags.ts";
 import { searchByName } from "../../search.ts";
-
-/** How many tags the "Filter by" row keeps. */
-const ROW_SIZE = 8;
 
 /**
  * The drawings that carry any of the tags and whose name matches the query. No
@@ -23,21 +21,12 @@ export function filterDrawings(
 }
 
 /**
- * The "Filter by" row after the tag joined it. The row keeps the order in which
- * tags joined, so a tag joins at the end and a tag already in the row stays where
- * it is. While the row is longer than its size, the oldest tag that isn't selected
- * leaves. A selected tag never leaves, so with more selected tags the row holds
- * more.
+ * The tags of the "Filter by" row: newest created first, labels breaking a tie.
+ * The order depends only on the tags, so a tag moves only when one is created or
+ * deleted.
  */
-export function joinRow(
-	row: string[],
-	tagId: string,
-	selected: string[],
-): string[] {
-	if (row.includes(tagId)) return row;
-	const joined = [...row, tagId];
-	const leaving = joined
-		.filter((id) => id !== tagId && !selected.includes(id))
-		.slice(0, Math.max(joined.length - ROW_SIZE, 0));
-	return joined.filter((id) => !leaving.includes(id));
-}
+export const newestFirst = (tags: Tag[]): Tag[] =>
+	[...tags].sort(
+		(a, b) =>
+			b.createdAt.localeCompare(a.createdAt) || a.label.localeCompare(b.label),
+	);
