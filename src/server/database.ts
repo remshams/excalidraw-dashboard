@@ -52,8 +52,24 @@ function createTags(db: DatabaseSync): void {
 	`);
 }
 
+/**
+ * Gives tags a creation time. Existing tags get times that follow their
+ * insertion order (`rowid`): the newest one gets the migration time and each
+ * older one a second less.
+ */
+function addTagCreatedAt(db: DatabaseSync): void {
+	db.exec("ALTER TABLE tags ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+	const ids = db.prepare("SELECT id FROM tags ORDER BY rowid").all();
+	const update = db.prepare("UPDATE tags SET created_at = ? WHERE id = ?");
+	const now = Date.now();
+	ids.forEach(({ id }, rank) => {
+		const age = (ids.length - 1 - rank) * 1000;
+		update.run(new Date(now - age).toISOString(), id as string);
+	});
+}
+
 /** Migration n is at index n - 1. Append new ones; never change one that shipped. */
-const MIGRATIONS: Migration[] = [createDrawings, createTags];
+const MIGRATIONS: Migration[] = [createDrawings, createTags, addTagCreatedAt];
 
 /** Runs `work` in a transaction and rolls it back if `work` throws. */
 export function inTransaction(db: DatabaseSync, work: () => void): void {
