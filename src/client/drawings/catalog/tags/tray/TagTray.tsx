@@ -212,9 +212,7 @@ function TagRow({
 				aria-label={`Filter by ${label}`}
 				aria-describedby={details}
 				aria-pressed={pressed}
-				style={
-					{ "--pressed-ink": `var(--tag-${color}-solid)` } as CSSProperties
-				}
+				style={{ "--pressed-ink": `var(--tag-${color}-fill)` } as CSSProperties}
 				tabIndex={tabStop === "toggle" ? 0 : -1}
 				onFocus={() => onFocus("toggle")}
 				onClick={onToggle}

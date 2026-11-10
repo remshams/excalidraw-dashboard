@@ -446,6 +446,10 @@ describe("TagTray", () => {
 			const work = button("Filter by Work");
 			expect(work).toHaveAttribute("aria-pressed", "false");
 			expect(work).toHaveAccessibleDescription("Blue, 2 drawings");
+			// Paper-coloured words read on the darker fill, not on the solid colour.
+			expect(work.style.getPropertyValue("--pressed-ink")).toBe(
+				"var(--tag-blue-fill)",
+			);
 			expect(within(rowOf("Work")).getAllByRole("button")).toEqual([
 				work,
 				button("Change Work"),
