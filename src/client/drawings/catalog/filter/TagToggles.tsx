@@ -36,6 +36,7 @@ export function TagToggles({
 	const tabStop = tags.some(({ id }) => id === stopId)
 		? stopId
 		: (tags[0]?.id ?? null);
+	/** Takes no ID for the tag before the first, which is never pressed. */
 	const pressed = (id: string | undefined) =>
 		id !== undefined && selectedTagIds.includes(id);
 
