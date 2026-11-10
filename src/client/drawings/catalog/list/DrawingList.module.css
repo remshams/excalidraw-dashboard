@@ -236,12 +236,16 @@
 }
 
 /* Card actions cover the end of the name while the card is pointed at or
-   reached by keyboard, so names use the full width otherwise. */
+   reached by keyboard, so names use the full width otherwise. The bar is as
+   tall as the name row, so its background stays off the sheet's hover outline;
+   the taller buttons overflow it evenly. */
 .actions {
 	position: absolute;
 	right: 0;
 	bottom: 0;
 	display: flex;
+	align-items: center;
+	height: calc(var(--text-lg) * var(--leading-md));
 	padding-left: var(--space-lg);
 	background: linear-gradient(
 		to right,
@@ -264,6 +268,7 @@
 		top: var(--space-sm);
 		right: var(--space-sm);
 		bottom: auto;
+		height: auto;
 		padding: 0;
 		border: var(--stroke-sm) solid var(--rule);
 		border-radius: var(--radius-md);
