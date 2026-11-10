@@ -96,7 +96,12 @@ beforeEach(() => {
 		drawing(id, id === "1" ? "Plan" : "Roadmap"),
 	);
 	vi.mocked(api.listTags).mockResolvedValue([
-		{ id: "t1", label: "Work", color: "blue" },
+		{
+			id: "t1",
+			label: "Work",
+			color: "blue",
+			createdAt: "2026-01-01T00:00:00.000Z",
+		},
 	]);
 });
 
@@ -133,6 +138,7 @@ describe("App", () => {
 			id: "t2",
 			label: "Home",
 			color: "blue",
+			createdAt: "2026-01-01T00:00:00.000Z",
 		});
 		const user = userEvent.setup();
 		render(<App />);
