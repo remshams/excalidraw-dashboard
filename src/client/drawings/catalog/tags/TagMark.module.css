@@ -42,7 +42,13 @@
 	font-size: var(--text-sm);
 }
 
-.small::after {
+.medium {
+	padding: 0 var(--space-sm);
+	font-size: var(--text-md);
+}
+
+.small::after,
+.medium::after {
 	inset: 2px;
 }
 

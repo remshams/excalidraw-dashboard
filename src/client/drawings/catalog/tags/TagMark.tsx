@@ -62,15 +62,18 @@ type TagMarkProps = {
 	color: TagColor;
 	/** Keeps the angle the same for this tag. */
 	seed: string;
-	/** A smaller mark, for the foot of a card and the filter row. */
-	small?: boolean;
+	/**
+	 * A smaller mark: "small" for the foot of a card, "medium" for the filter row,
+	 * which a finger has to hit on a phone. Without it, the full-size mark.
+	 */
+	size?: "small" | "medium";
 	/** Solid ink, for a tag in the filter. */
 	inked?: boolean;
 };
 
 /** A tag's label in its colour, inked by hand with a double edge and never quite straight. */
-export function TagMark({ label, color, seed, small, inked }: TagMarkProps) {
-	const className = [styles.mark, small && styles.small, inked && styles.inked]
+export function TagMark({ label, color, seed, size, inked }: TagMarkProps) {
+	const className = [styles.mark, size && styles[size], inked && styles.inked]
 		.filter(Boolean)
 		.join(" ");
 	return (
