@@ -21,6 +21,36 @@ function parseDrawingTagsRequest(body: unknown): DrawingTagsRequest | Invalid {
 		: { invalid: "Send the tags as JSON with an array of tag IDs" };
 }
 
+const isObject = (body: unknown): body is Record<string, unknown> =>
+	typeof body === "object" && body !== null && !Array.isArray(body);
+
+/** The name of a `POST /drawings` body, blank if absent, or why it is invalid. */
+function parseCreateDrawingRequest(
+	body: unknown,
+): CreateDrawingRequest | Invalid {
+	const invalid = { invalid: "Send the drawing as JSON with a text name" };
+	if (!isObject(body)) return invalid;
+	if (body.name === undefined) return { name: "" };
+	return typeof body.name === "string" ? { name: body.name } : invalid;
+}
+
+/** The changes of a `PUT /drawings/:id` body, or why it is invalid. */
+function parseUpdateDrawingRequest(
+	body: unknown,
+): UpdateDrawingRequest | Invalid {
+	if (!isObject(body)) {
+		return { invalid: "Send the changes as a JSON object" };
+	}
+	const { name, scene } = body;
+	if (name !== undefined && typeof name !== "string") {
+		return { invalid: "The name must be text" };
+	}
+	if (scene !== undefined && typeof scene !== "string") {
+		return { invalid: "The scene must be text" };
+	}
+	return { name, scene };
+}
+
 /**
  * The HTTP routes of the drawing aggregate, mounted at `/api/drawings`: the
  * drawing with its scene, its preview and its set of tag IDs. Scenes have no
@@ -30,19 +60,20 @@ export function drawingRoutes(store: DrawingStore) {
 	return new Hono()
 		.get("/", (c) => c.json(store.list()))
 		.post("/", async (c) => {
-			const body = await c.req.json<CreateDrawingRequest>();
-			const name = body.name?.trim() || "Untitled";
-			return c.json(store.create(name), 201);
+			const request = parseCreateDrawingRequest(await readJson(c));
+			if ("invalid" in request) return c.text(request.invalid, 400);
+			return c.json(store.create(request.name.trim() || "Untitled"), 201);
 		})
 		.get("/:id", (c) => {
 			const drawing = store.get(c.req.param("id"));
 			return drawing ? c.json(drawing) : c.notFound();
 		})
 		.put("/:id", async (c) => {
-			const body = await c.req.json<UpdateDrawingRequest>();
+			const request = parseUpdateDrawingRequest(await readJson(c));
+			if ("invalid" in request) return c.text(request.invalid, 400);
 			const drawing = store.update(c.req.param("id"), {
-				name: body.name?.trim() || undefined,
-				scene: body.scene,
+				name: request.name?.trim() || undefined,
+				scene: request.scene,
 			});
 			return drawing ? c.json(drawing) : c.notFound();
 		})

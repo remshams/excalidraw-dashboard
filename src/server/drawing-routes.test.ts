@@ -28,6 +28,13 @@ const putPreview = (
 		body,
 	});
 
+const rawJson = (method: string, path: string, body: string) =>
+	request(path, {
+		method,
+		headers: { "Content-Type": "application/json" },
+		body,
+	});
+
 const getPreview = (id: string, version = "") =>
 	request(`/api/drawings/${id}/preview${version}`);
 
@@ -266,6 +273,36 @@ describe("drawing tags API", () => {
 		).json();
 
 		expect(summary.tagIds).toEqual([tag.id]);
+	});
+
+	it.each([
+		["malformed JSON", "{nope"],
+		["a body that isn't an object", "[]"],
+		["a name that isn't text", '{"name":5}'],
+	])("rejects %s when creating a drawing with 400", async (_, body) => {
+		const before = await (await send("GET", "/drawings")).json();
+
+		const response = await rawJson("POST", "/api/drawings", body);
+
+		expect(response.status).toBe(400);
+		expect(await response.text()).not.toBe("");
+		expect(await (await send("GET", "/drawings")).json()).toEqual(before);
+	});
+
+	it.each([
+		["malformed JSON", "{nope"],
+		["a body that isn't an object", "[]"],
+		["a name that isn't text", '{"name":5}'],
+		["a scene that isn't text", '{"scene":{}}'],
+	])("rejects %s when updating a drawing with 400", async (_, body) => {
+		const { id } = await create("Plan");
+		const before = await (await send("GET", `/drawings/${id}`)).json();
+
+		const response = await rawJson("PUT", `/api/drawings/${id}`, body);
+
+		expect(response.status).toBe(400);
+		expect(await response.text()).not.toBe("");
+		expect(await (await send("GET", `/drawings/${id}`)).json()).toEqual(before);
 	});
 
 	it("rejects an unknown tag ID with 400 and keeps the tags", async () => {
