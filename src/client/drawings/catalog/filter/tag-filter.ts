@@ -21,12 +21,14 @@ export function filterDrawings(
 }
 
 /**
- * The tags of the "Filter by" row: newest created first, labels breaking a tie.
+ * The tags of the "Filter by" row: newest created first, labels breaking a tie in
+ * the Tags tray's order.
  * The order depends only on the tags, so a tag moves only when one is created or
  * deleted.
  */
 export const newestFirst = (tags: Tag[]): Tag[] =>
 	[...tags].sort(
 		(a, b) =>
-			b.createdAt.localeCompare(a.createdAt) || a.label.localeCompare(b.label),
+			b.createdAt.localeCompare(a.createdAt) ||
+			a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
 	);
