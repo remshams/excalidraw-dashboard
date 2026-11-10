@@ -377,7 +377,9 @@ describe("DrawingList", () => {
 			setup([summary("1", "Plan")], tags);
 
 			expect(screen.getByRole("link", { name: "Plan" })).toBeInTheDocument();
-			expect(screen.queryByRole("toolbar")).toBeNull();
+			expect(
+				screen.queryByRole("toolbar", { name: "Tags of Plan" }),
+			).toBeNull();
 		});
 
 		it("names every tag of a card in its accessible name", () => {
@@ -525,9 +527,8 @@ describe("DrawingList", () => {
 			await user.click(cardTag("Plan", "Home"));
 
 			expect(shownNames()).toEqual(["Plan", "Roadmap", "Garden plan"]);
-			expect(
-				screen.getByRole("toolbar", { name: "Filter by" }),
-			).toHaveTextContent(/^WorkHome$/);
+			expect(rowTag("Work")).toHaveAttribute("aria-pressed", "true");
+			expect(rowTag("Home")).toHaveAttribute("aria-pressed", "true");
 		});
 
 		it("gives a tag in the filter that would hide behind +N a slot on a card, in label order", async () => {
@@ -636,7 +637,10 @@ describe("DrawingList", () => {
 
 			await user.click(screen.getByRole("button", { name: "Tags" }));
 			await user.click(
-				screen.getByRole("button", { name: "Filter by Unused" }),
+				within(screen.getByRole("dialog", { name: "Tags" })).getByRole(
+					"button",
+					{ name: "Filter by Unused" },
+				),
 			);
 
 			await user.keyboard("{Escape}");
