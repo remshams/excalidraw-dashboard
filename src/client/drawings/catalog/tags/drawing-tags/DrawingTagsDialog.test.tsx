@@ -14,9 +14,24 @@ import { ApiError } from "../../../api.ts";
 import { DrawingTagsDialog } from "./DrawingTagsDialog.tsx";
 
 const tags: Tag[] = [
-	{ id: "a", label: "Network", color: "teal" },
-	{ id: "b", label: "Personal", color: "pink" },
-	{ id: "c", label: "Work", color: "blue" },
+	{
+		id: "a",
+		label: "Network",
+		color: "teal",
+		createdAt: "2026-01-01T00:00:00.000Z",
+	},
+	{
+		id: "b",
+		label: "Personal",
+		color: "pink",
+		createdAt: "2026-01-01T00:00:00.000Z",
+	},
+	{
+		id: "c",
+		label: "Work",
+		color: "blue",
+		createdAt: "2026-01-01T00:00:00.000Z",
+	},
 ];
 
 const changes = { create: vi.fn(), update: vi.fn(), remove: vi.fn() };
