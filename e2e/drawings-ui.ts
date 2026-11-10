@@ -379,9 +379,14 @@ export function cardTagToggle(page: Page, name: string, label: string) {
 		.getByRole("button", { name: `Filter by ${label}`, exact: true });
 }
 
-/** The "Filter by" row under the header, with the tags filtered by most recently. */
+/** The "Filter by" row under the header, with every tag, newest created first. */
 function filterRow(page: Page) {
 	return page.getByRole("toolbar", { name: "Filter by", exact: true });
+}
+
+/** Every tag in the "Filter by" row, in the order the row shows them. */
+export function filterRowTags(page: Page) {
+	return filterRow(page).getByRole("button");
 }
 
 /** A tag in the "Filter by" row. */
