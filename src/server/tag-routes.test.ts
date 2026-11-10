@@ -4,8 +4,8 @@ import {
 	create,
 	createTag,
 	putTags,
-	request,
 	send,
+	sendRaw,
 	setUpTestApi,
 	tagIdsOf,
 } from "./test-api.ts";
@@ -95,11 +95,7 @@ describe("tags API", () => {
 	});
 
 	it("rejects a body that isn't JSON with 400", async () => {
-		const response = await request("/api/tags", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: "{nope",
-		});
+		const response = await sendRaw("POST", "/tags", "{nope");
 
 		expect(response.status).toBe(400);
 	});
