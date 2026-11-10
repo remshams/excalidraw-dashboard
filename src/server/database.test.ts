@@ -59,7 +59,7 @@ function expectCurrentSchema(db: DatabaseSync): void {
 	const preview = drawings.setPreview("old", new Uint8Array([137, 80]));
 	const tagged = drawings.setTags("old", [tag.id]);
 
-	expect(userVersion(db)).toBe(2);
+	expect(userVersion(db)).toBe(3);
 	expect(drawings.get("old")).toMatchObject({
 		name: "Old plan",
 		scene: "{}",
@@ -74,11 +74,30 @@ function expectCurrentSchema(db: DatabaseSync): void {
 	});
 }
 
+/** Writes a database at version 2, with three tags and no creation times. */
+function createVersion2Database(): void {
+	const db = new DatabaseSync(file);
+	db.exec(`
+		CREATE TABLE tags (
+			id TEXT PRIMARY KEY,
+			label TEXT NOT NULL,
+			label_key TEXT NOT NULL UNIQUE,
+			color TEXT NOT NULL
+		);
+		INSERT INTO tags (id, label, label_key, color) VALUES
+			('first', 'Zebra', 'zebra', 'red'),
+			('second', 'Apple', 'apple', 'blue'),
+			('third', 'Mango', 'mango', 'green');
+		PRAGMA user_version = 2;
+	`);
+	db.close();
+}
+
 describe("database", () => {
 	it("creates the schema in a new database", () => {
 		const db = openDatabase(file);
 
-		expect(userVersion(db)).toBe(2);
+		expect(userVersion(db)).toBe(3);
 		expect(openDrawingStore(db).list()).toEqual([]);
 		expect(openTagStore(db).list()).toEqual([]);
 		db.close();
@@ -102,8 +121,24 @@ describe("database", () => {
 
 		const db = openDatabase(file);
 
-		expect(userVersion(db)).toBe(2);
+		expect(userVersion(db)).toBe(3);
 		expect(openDrawingStore(db).list()).toHaveLength(1);
+		db.close();
+	});
+
+	it("gives existing tags creation times in insertion order", () => {
+		createVersion2Database();
+
+		const db = openDatabase(file);
+		const tags = db
+			.prepare("SELECT id, created_at FROM tags ORDER BY created_at DESC")
+			.all() as { id: string; created_at: string }[];
+
+		expect(userVersion(db)).toBe(3);
+		expect(tags.map(({ id }) => id)).toEqual(["third", "second", "first"]);
+		for (const { created_at } of tags) {
+			expect(new Date(created_at).toISOString()).toBe(created_at);
+		}
 		db.close();
 	});
 });
