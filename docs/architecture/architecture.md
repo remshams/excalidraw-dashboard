@@ -29,6 +29,9 @@ Numbered migrations keep the database schema up to date
   case is ignored. The colour is one of 8 open-color hues. Tags are dashboard
   data: they live in the database and never in a scene, so an exported
   `.excalidraw` file carries none.
+- **Tag filter**: the tags the user selected on the landing page, in the order
+  selected. A drawing matches when it carries any of them; no selected tag
+  matches every drawing. The search narrows the matches by name.
 
 ## Context
 
@@ -52,7 +55,8 @@ esm.sh when the canvas shows text.
 
 The database holds every drawing and tag. A file copy of `DATA_DIR` is a
 consistent backup only while the server is stopped; a live backup uses SQLite's
-`VACUUM INTO`. The browser stores nothing; the URL names the open drawing.
+`VACUUM INTO`. The browser stores nothing; the URL names the open drawing. The tag
+filter and the search live in the client's memory, so a reload clears them.
 
 ## Processes
 
@@ -157,7 +161,7 @@ title: Modules of the client
 flowchart TD
     app["App<br>src/client/App.tsx<br>Composes the views and shows request errors"]:::module
     scheme["use-color-scheme<br>src/client/use-color-scheme.ts<br>Follows the system's light or dark setting"]:::module
-    catalog["catalog/<br>Lists, creates, renames, deletes and switches drawings; looks after tags"]:::group
+    catalog["catalog/<br>Lists, filters, creates, renames, deletes and switches drawings; looks after tags"]:::group
     editor["editor/<br>Loads and edits the open drawing"]:::group
     openId["use-open-drawing-id<br>src/client/drawings/use-open-drawing-id.ts<br>Keeps the open drawing in the URL path"]:::module
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
@@ -174,7 +178,8 @@ flowchart TD
 [`src/client/main.tsx`](../../src/client/main.tsx) is the composition root: it
 renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature, one bounded context around the `Drawing` aggregate. It has two modules:
-`catalog/` lists, creates, renames, deletes and switches drawings and looks after tags, and `editor/` edits the
+`catalog/` lists, filters, creates, renames, deletes and switches drawings and looks
+after tags, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `search.ts`, a domain service that finds
 drawings by a part of their name, sits at the root too. So does
@@ -222,21 +227,21 @@ title: Modules of the catalog
 ---
 flowchart TD
     list["DrawingList<br>src/client/drawings/catalog/list/DrawingList.tsx<br>The landing page's cards with their previews and tags"]:::module
+    filter["filter/<br>The tag filter and the search, the Filter by row and the tag toggles"]:::group
     switcher["switcher/<br>Modal search that opens or creates a drawing"]:::group
     tags["tags/<br>Loads, finds, creates, changes and deletes the tags; changes a drawing's tags"]:::group
     previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
-    icons["icons<br>src/client/drawings/catalog/icons.tsx<br>Line icons for the cards, the tray and the editor bar"]:::module
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, gives or takes off a tag, remembers deletes, forgets deleted tags"]:::module
     dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
-    list --> name & confirm & icons & link & previewImage & search & tags
-    switcher --> icons & dialog & previewImage & search
-    tags --> icons & dialog & api
-    dialog --> icons
+    list --> name & confirm & filter & link & previewImage & search & tags
+    filter --> search & tags
+    switcher --> dialog & previewImage & search
+    tags --> dialog & api
     previewImage --> api
     drawings --> api
 ```
@@ -251,7 +256,7 @@ flowchart TD
     form["TagForm<br>src/client/drawings/catalog/tags/form/TagForm.tsx<br>Creates or changes a tag, asks before deleting it"]:::module
     mark["TagMark<br>src/client/drawings/catalog/tags/TagMark.tsx<br>A tag's inked label and the ink filter"]:::module
     findTags["find-tags<br>src/client/drawings/catalog/tags/find-tags.ts<br>Finds tags by a part of their label"]:::module
-    gridKeys["grid-keys<br>src/client/drawings/catalog/tags/grid-keys.ts<br>Moves the focus through a grid with the arrow keys"]:::module
+    gridKeys["grid-keys<br>src/client/drawings/catalog/tags/grid-keys.ts<br>Moves the focus through a grid or a row with the arrow keys"]:::module
     tags["use-tags<br>src/client/drawings/catalog/tags/use-tags.ts<br>Loads the tags, applies changes, reloads after a refusal"]:::module
     drawingTags["DrawingTagsDialog<br>src/client/drawings/catalog/tags/drawing-tags/DrawingTagsDialog.tsx<br>Modal dialog that changes one drawing's tags"]:::module
     drawingTagsState["use-drawing-tags<br>src/client/drawings/catalog/tags/drawing-tags/use-drawing-tags.ts<br>The dialog's tags on the drawing and to add, find text, form and failure"]:::module
@@ -266,15 +271,17 @@ flowchart TD
     tags --> api
 ```
 
-`list/` holds the landing page, `switcher/` the quick switcher, `tags/` the tags
-and `dialog/` what the modal dialogs share: `use-modal-dialog`,
+`list/` holds the landing page, `filter/` the tag filter, `switcher/` the quick
+switcher, `tags/` the tags and `dialog/` what the modal dialogs share: `use-modal-dialog`,
 `SearchLine`, a search field on a notebook line with no box, and
 `CentredDialog.module.css`, the frame of the quick switcher and the dialog for a
 drawing's tags: a sheet in the middle of the window over the dimmed page. Directly in `catalog/`
 stay `PreviewImage`, which the landing page and the quick switcher use, `icons`,
 which all of them use, `use-drawings` for `App`, and `NameField` and
 `DeleteConfirmation`. Only
-`DrawingList` uses those two today, but neither depends on it.
+`DrawingList` uses those two today, but neither depends on it. The diagram leaves
+out `icons`, the line icons that `list/`, `switcher/`, `tags/`, `dialog/` and `App`
+take, since it depends on nothing.
 
 `tags/` has one folder per UI unit, each with its hook, CSS module and tests:
 `tray/` holds `TagTray` and `use-tag-tray`, `drawing-tags/` holds
@@ -282,9 +289,8 @@ which all of them use, `use-drawings` for `App`, and `NameField` and
 `use-tag-form`. What several units use stays at the top of `tags/`: `use-tags`,
 `TagMark`, `NewTagButton`, `find-tags`, `grid-keys` and `tag-color-name`.
 
-`App` renders `DrawingList` with the list from `use-drawings` and the tags from
-`use-tags`. A search field next to the heading filters the cards through
-`search.ts`, and a status says when no drawing has the name. The first card
+`App` renders `DrawingList` with the list from `use-drawings`, the tags from
+`use-tags` and the filter from `use-tag-filter`. The first card
 is a blank sheet that asks for a name and opens the new drawing. Every other
 card shows the drawing's preview on a sheet, with an `<img>` whose URL from
 `api.ts` carries `previewUpdatedAt` as a version. A drawing without a preview,
@@ -329,9 +335,9 @@ and each answer has its own path:
   banner would sit behind the modal tray.
 
 A card shows its drawing's first 3 tags by label as small `TagMark`s along the foot
-of its sheet, and `+N` for the rest. The marks are hidden from screen readers; the
-card's link names every tag instead, as in "Plan, tags: Home, Work". The card's tag
-button opens `DrawingTagsDialog`, a modal `<dialog>` in `CentredDialog`'s frame for
+of its sheet, and `+N` as plain text for the rest. The card's link names every tag,
+as in "Plan, tags: Home, Work". The tags are buttons of the tag filter, described
+below. The card's tag button opens `DrawingTagsDialog`, a modal `<dialog>` in `CentredDialog`'s frame for
 that drawing. `use-drawing-tags` holds its state. The tags the drawing has stand
 on top, and a click takes one off. The tags it hasn't, found by label through
 `find-tags`, stand below the find field; a click adds one, and Enter adds the top
@@ -373,6 +379,47 @@ the query as a new drawing unless a drawing has that name. Choosing a row calls
 `App`, which opens or creates the drawing as the landing page does. The editor
 remounts on `key={drawing.id}`, so its pending save is flushed as when leaving
 through "All drawings".
+
+`filter/` holds the tag filter. `use-tag-filter` keeps the selected tag IDs in the
+order selected, the recent tags of the "Filter by" row and the search query. `App`
+calls it, not `DrawingList`, so the filter and the search stay set while a drawing
+is open and come back with the landing page. Nothing stores them, so a reload
+clears them. The hook derives its tags from the loaded ones on each render, so a
+deleted tag leaves the filter and the row, and a renamed one shows its new label.
+`tag-filter` is a domain service: `filterDrawings` keeps the drawings that carry any
+selected tag and narrows them by name through `search.ts`, `rememberTag` puts a
+selected tag first in the row and drops the oldest beyond 8, and `rowOrder` puts the
+selected tags first.
+
+`FilterRow` is the "Filter by" toolbar between the header and the cards. It shows
+the selected tags in the order selected with "or" between them, then the other
+recent tags, newest first, and a **Clear filter** button while a filter is set.
+Selecting a tag anywhere adds it to the row; clearing the filter keeps the row. The
+row is one line of fixed height and stays blank without tags, so the cards don't
+move when tags arrive. On a narrow screen its tags scroll sideways.
+
+`TagToggles` renders tags as toggle buttons named "Filter by <label>" with
+`aria-pressed`, and a selected one as a solid `TagMark`, inked in its
+`--tag-<colour>-solid`. The row and each card use it as a toolbar with one tab stop;
+the left and right arrow keys move through its tags with `moveInRow` from
+`grid-keys`. A card's toggles lie over the foot of its sheet but outside its link,
+so a click filters and doesn't open the drawing. A card puts the selected tags
+first, so a match never hides behind `+N`. After a toggle, `use-tag-refocus` in
+`list/` keeps the focus on the tag: on the same card if it still shows there, else
+in the row. Changing the filter or the search closes a card's rename or delete
+question.
+
+In the tray, each row's swatch, label and count form one toggle button, and the
+pencil stays beside it; the arrow keys move through both. Enter in the find field
+toggles the top match and announces it, or opens the form when no tag matches. The
+footer offers **Clear filter** while a filter is set, and the **Tags** button shows
+how many tags are selected, as in "Tags, 2 in the filter".
+
+`DrawingList` shows the drawings from `filterDrawings`. When none shows, the status
+says why through `no-match-message`: no drawing has the selected tags, no drawing
+has the name, or no drawing in the filter has it while some outside it do, as in
+"No drawing with Work or Home is named “plan”. 2 drawings without these tags are."
+In the last case a **Clear filter** button follows, which keeps the search.
 
 [`styles.css`](../../src/client/styles.css) holds what the whole client shares:
 design tokens for colors from open-color, the palette Excalidraw draws with, and
@@ -564,8 +611,8 @@ Chromium.
   and the landing page with the browser's back button, a drawing surviving a
   reload, storing a preview when the user leaves a drawing or opens one that has
   none and showing it on the card, reopening a drawing right after leaving it,
-  following the system's dark mode, searching the drawings by name, and showing
-  a failed save. The reload test reads the saved scene from the API, then
+  following the system's dark mode, searching the drawings by name with the search
+  still set after opening a drawing, and showing a failed save. The reload test reads the saved scene from the API, then
   selects all shapes in the editor to show the scene was loaded back. The
   failed-save test deletes the open drawing through the API, as another tab
   would, then dismisses the error message above the editor. The preview-on-open
@@ -589,12 +636,17 @@ Chromium.
   tags: adding and removing them from the card and seeing them after a reload,
   doing it by keyboard alone with a tag created in place and the focus returning
   to the card, and a card that shows 3 tags and counts the fourth.
+- [`tag-filter.spec.ts`](../../e2e/tag-filter.spec.ts) covers the tag filter:
+  filtering by a tag on a card and one in the tray, searching inside the filter,
+  finding both still set after opening a drawing and returning, a reload that
+  clears them, and filtering by keyboard alone with the pressed state of each tag.
 - [`app.spec.ts`](../../e2e/app.spec.ts) checks that the page names the
   Excalidraw logo as its icon and that the server serves it as an SVG.
 - Each test groups its actions and checks into `test.step` blocks, so the test
   and its report read as a scenario.
 - [`drawings-ui.ts`](../../e2e/drawings-ui.ts) holds the locators and user
-  actions for the drawings UI, including a card's tags and their dialog, and
+  actions for the drawings UI, including a card's tags, their dialog and the
+  "Filter by" row, and
   [`drawings-api.ts`](../../e2e/drawings-api.ts) creates and deletes drawings,
   stores scenes, assigns tags, and reads stored scenes, previews and summaries
   through the HTTP API. [`tags-api.ts`](../../e2e/tags-api.ts) creates, changes
