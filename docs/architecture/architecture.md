@@ -568,6 +568,9 @@ on a preview return the drawing summary; they change `previewUpdatedAt`, not
 0001](adr/0001-version-preview-urls.md)). Scenes have no body limit, because
 scenes with embedded images can be large.
 
+A drawing body that isn't a JSON object, or whose name or scene isn't text,
+answers 400 and changes nothing.
+
 An unknown tag in the path answers 404. A tag body that isn't JSON, lacks a
 label, breaks the label rules or names an unknown colour answers 400. So does an
 assignment body that isn't JSON or lacks an array of tag IDs, and an assignment
