@@ -380,7 +380,7 @@ export function cardTagToggle(page: Page, name: string, label: string) {
 }
 
 /** The "Filter by" row under the header, with the tags filtered by most recently. */
-export function filterRow(page: Page) {
+function filterRow(page: Page) {
 	return page.getByRole("toolbar", { name: "Filter by", exact: true });
 }
 
