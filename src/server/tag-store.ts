@@ -10,13 +10,13 @@ import { isUniqueError } from "./database.ts";
  */
 export function openTagStore(db: DatabaseSync) {
 	const listStmt = db.prepare(
-		"SELECT id, label, color FROM tags ORDER BY label_key",
+		"SELECT id, label, color, created_at AS createdAt FROM tags ORDER BY label_key",
 	);
 	const insertStmt = db.prepare(
-		"INSERT INTO tags (id, label, label_key, color) VALUES (?, ?, ?, ?)",
+		"INSERT INTO tags (id, label, label_key, color, created_at) VALUES (?, ?, ?, ?, ?)",
 	);
 	const updateStmt = db.prepare(
-		"UPDATE tags SET label = ?, label_key = ?, color = ? WHERE id = ?",
+		"UPDATE tags SET label = ?, label_key = ?, color = ? WHERE id = ? RETURNING id, label, color, created_at AS createdAt",
 	);
 	const deleteStmt = db.prepare("DELETE FROM tags WHERE id = ?");
 
@@ -31,29 +31,34 @@ export function openTagStore(db: DatabaseSync) {
 	};
 
 	return {
-		/** Every tag, sorted by label with case ignored. */
+		/** Every tag, sorted by label with case ignored. Its `createdAt` is what the client orders by. */
 		list(): Tag[] {
 			return listStmt.all() as Tag[];
 		},
 
 		create({ label, color }: TagRequest): Tag | "label-taken" {
-			const tag = { id: randomUUID(), label, color };
+			const tag = {
+				id: randomUUID(),
+				label,
+				color,
+				createdAt: new Date().toISOString(),
+			};
 			return unlessLabelTaken(() => {
-				insertStmt.run(tag.id, label, tagLabelKey(label), color);
+				insertStmt.run(tag.id, label, tagLabelKey(label), color, tag.createdAt);
 				return tag;
 			});
 		},
 
-		/** Returns undefined for an unknown tag. */
+		/** Returns the stored tag with its original `createdAt`, or undefined for an unknown tag. */
 		update(
 			id: string,
 			{ label, color }: TagRequest,
 		): Tag | undefined | "label-taken" {
-			const tag = { id, label, color };
-			return unlessLabelTaken(() =>
-				updateStmt.run(label, tagLabelKey(label), color, id).changes === 0
-					? undefined
-					: tag,
+			return unlessLabelTaken(
+				() =>
+					updateStmt.get(label, tagLabelKey(label), color, id) as
+						| Tag
+						| undefined,
 			);
 		},
 
