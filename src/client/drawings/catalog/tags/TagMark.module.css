@@ -46,6 +46,21 @@
 	inset: 2px;
 }
 
+/* Solid ink: a tag in the filter. Paper-coloured letters on the full colour read in
+   both colour schemes, and the fill tells it from an outline without relying on hue. */
+.inked {
+	color: var(--sheet);
+}
+
+.inked::before {
+	background: var(--mark-edge);
+	filter: url("#tag-ink-full");
+}
+
+.inked::after {
+	border-color: var(--sheet);
+}
+
 .text {
 	position: relative;
 	min-width: 0;
