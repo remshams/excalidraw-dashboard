@@ -15,15 +15,50 @@
 	color: var(--graphite);
 }
 
+/* The fade widths are registered so a scroll-driven animation can change them. The
+   names are specific to the row, as @property is global. */
+@property --filter-row-fade-start {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
+@property --filter-row-fade-end {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
+@keyframes filterRowFadeStart {
+	from {
+		--filter-row-fade-start: 0px;
+	}
+
+	to {
+		--filter-row-fade-start: var(--space-lg);
+	}
+}
+
+@keyframes filterRowFadeEnd {
+	from {
+		--filter-row-fade-end: var(--space-lg);
+	}
+
+	to {
+		--filter-row-fade-end: 0px;
+	}
+}
+
 /* The tags never wrap. When they don't fit, as on a phone, they scroll sideways.
    The padding leaves room for the tilt of the marks and the focus ring. The mask
-   fades the edge where tags are cut off; use-overflow-edges.ts sets the data
-   attributes. Only its alpha counts, so --ink stands for "opaque". The scroll
+   fades the edge where tags are cut off. Only its alpha counts, so --ink stands
+   for "opaque". The start fade grows over the first --space-lg of scrolling, the
+   end fade shrinks over the last. Without overflow the scroll timeline is
+   inactive and both widths stay 0, so nothing fades. The duration stays auto: the
+   animation shorthand would make it 0s. A browser without
+   scroll-driven animations shows no fade either; that is accepted. The scroll
    padding keeps a tag that the arrow keys focus clear of the fade. */
 .tags {
-	--fade-start: 0px;
-	--fade-end: 0px;
-
 	display: flex;
 	align-items: center;
 	gap: var(--space-xs);
@@ -33,21 +68,20 @@
 	overflow-x: auto;
 	scrollbar-width: none;
 	scroll-padding-inline: var(--space-lg);
+	animation-name: filterRowFadeStart, filterRowFadeEnd;
+	animation-timing-function: linear;
+	animation-fill-mode: both;
+	animation-timeline: scroll(self inline);
+	animation-range:
+		0 var(--space-lg),
+		calc(100% - var(--space-lg)) 100%;
 	mask-image: linear-gradient(
 		to right,
 		transparent,
-		var(--ink) var(--fade-start),
-		var(--ink) calc(100% - var(--fade-end)),
+		var(--ink) var(--filter-row-fade-start),
+		var(--ink) calc(100% - var(--filter-row-fade-end)),
 		transparent
 	);
-}
-
-.tags[data-fade-start] {
-	--fade-start: var(--space-lg);
-}
-
-.tags[data-fade-end] {
-	--fade-end: var(--space-lg);
 }
 
 .tags > * {

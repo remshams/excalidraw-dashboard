@@ -2,7 +2,6 @@ import { useId, useRef } from "react";
 import type { TagFilter } from "./use-tag-filter.ts";
 import styles from "./FilterRow.module.css";
 import { TagToggles } from "./TagToggles.tsx";
-import { useOverflowEdges } from "./use-overflow-edges.ts";
 
 type FilterRowProps = {
 	filter: TagFilter;
@@ -20,18 +19,16 @@ type FilterRowProps = {
 export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 	const { rowTags, selectedTagIds } = filter;
 	const words = useId();
-	const tags = useRef<HTMLDivElement>(null);
-	useOverflowEdges(tags, rowTags.length);
+	const row = useRef<HTMLDivElement>(null);
 
 	return (
-		<div className={styles.row} data-filter-row>
+		<div ref={row} className={styles.row} data-filter-row>
 			{rowTags.length > 0 && (
 				<>
 					<span id={words} className={styles.words}>
 						Filter by
 					</span>
 					<TagToggles
-						ref={tags}
 						tags={rowTags}
 						selectedTagIds={selectedTagIds}
 						seed="row"
@@ -45,7 +42,7 @@ export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 							className={styles.clear}
 							onClick={() => {
 								// The button goes with the filter; the tags stay where they are.
-								tags.current
+								row.current
 									?.querySelector<HTMLElement>("[data-tag-toggle]")
 									?.focus();
 								onClear();
