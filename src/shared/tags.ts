@@ -19,6 +19,8 @@ export type Tag = {
 	id: string;
 	label: string;
 	color: TagColor;
+	/** When the tag was created, as an ISO 8601 string. It never changes. */
+	createdAt: string;
 };
 
 /** The body of `POST /api/tags` and `PUT /api/tags/:id`. */
