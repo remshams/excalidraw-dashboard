@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useRef } from "react";
 
 type Target = { tagId: string; drawingId?: string };
 
@@ -34,4 +34,25 @@ export function useTagRefocus() {
 	};
 
 	return { page, refocus };
+}
+
+/**
+ * Gives the focus to the fallback after a dialog closes, when the browser had no
+ * element to return it to. That happens when the dialog took the card it opened
+ * from off the page, such as by removing the tag the filter shows it for.
+ */
+export function useFocusAfterDialog(
+	open: boolean,
+	fallback: RefObject<HTMLElement | null>,
+) {
+	const wasOpen = useRef(false);
+
+	useEffect(() => {
+		const closed = wasOpen.current && !open;
+		wasOpen.current = open;
+		const focused = document.activeElement;
+		if (closed && (!focused || focused === document.body)) {
+			fallback.current?.focus();
+		}
+	});
 }
