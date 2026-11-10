@@ -16,6 +16,7 @@ import { TagInkFilter } from "../tags/TagMark.tsx";
 import { TagTray } from "../tags/tray/TagTray.tsx";
 import type { TagChanges } from "../tags/use-tags.ts";
 import styles from "./DrawingList.module.css";
+import { shownCardTags } from "./card-tags.ts";
 import { noMatchMessage } from "./no-match-message.ts";
 import { useFocusAfterDialog, useTagRefocus } from "./use-tag-refocus.ts";
 
@@ -397,12 +398,6 @@ function Sheet({
 	);
 }
 
-/** The tags of a card with the ones in the filter first, so a match never hides behind "+N". */
-const selectedFirst = (tags: Tag[], selectedTagIds: string[]) => [
-	...tags.filter(({ id }) => selectedTagIds.includes(id)),
-	...tags.filter(({ id }) => !selectedTagIds.includes(id)),
-];
-
 type CardTagsProps = {
 	drawing: DrawingSummary;
 	/** The drawing's tags, sorted by label. */
@@ -421,7 +416,7 @@ function CardTags({ drawing, tags, selectedTagIds, onToggle }: CardTagsProps) {
 	return (
 		<div className={styles.tagLayer} data-card={drawing.id}>
 			<TagToggles
-				tags={selectedFirst(tags, selectedTagIds).slice(0, CARD_TAGS)}
+				tags={shownCardTags(tags, selectedTagIds, CARD_TAGS)}
 				selectedTagIds={selectedTagIds}
 				seed={drawing.id}
 				className={styles.strip}
