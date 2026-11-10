@@ -381,30 +381,36 @@ remounts on `key={drawing.id}`, so its pending save is flushed as when leaving
 through "All drawings".
 
 `filter/` holds the tag filter. `use-tag-filter` keeps the selected tag IDs in the
-order selected, the recent tags of the "Filter by" row and the search query. `App`
+order selected, the tag IDs of the "Filter by" row in the order they joined it,
+and the search query. `App`
 calls it, not `DrawingList`, so the filter and the search stay set while a drawing
 is open and come back with the landing page. Nothing stores them, so a reload
 clears them. The hook derives its tags from the loaded ones on each render, so a
 deleted tag leaves the filter and the row, and a renamed one shows its new label.
 `tag-filter` is a domain service: `filterDrawings` keeps the drawings that carry any
-selected tag and narrows them by name through `search.ts`. `rememberTag` puts a
-selected tag first among the recent tags and keeps at most 8 of them. `rowOrder`
-puts every selected tag first, so a tag in the filter never leaves the row.
+selected tag and narrows them by name through `search.ts`. `joinRow` adds a newly
+selected tag at the end of the row and leaves a tag already there in its place.
+When the row grows past 8, the oldest tag that isn't selected leaves and the ones
+after it close the gap. A selected tag never leaves, so with more than 8 selected
+the row holds more.
 
 `FilterRow` is the "Filter by" toolbar between the header and the cards. It shows
-the selected tags in the order selected with "or" between them, then the other
-recent tags, newest first, and a **Clear filter** button while a filter is set.
-Selecting a tag anywhere adds it to the row; clearing the filter keeps the row. The
+its tags in the order they joined, and a **Clear filter** button while a filter is
+set. Selecting a tag on a card, in the row or in the tray adds it to the row. A
+click on a tag only turns it on or off and never moves it, and clearing the filter
+moves nothing either. Solid ink alone marks a selected tag. The
 row is one line of fixed height and stays blank without tags, so the cards don't
 move when tags arrive. On a narrow screen its tags scroll sideways.
 
 `TagToggles` renders tags as toggle buttons named "Filter by <label>" with
 `aria-pressed`, and a selected one as a solid `TagMark`, inked in its
-`--tag-<colour>-fill` under paper-coloured words. The row and each card use it as a toolbar with one tab stop;
-the left and right arrow keys move through its tags with `moveInRow` from
+`--tag-<colour>-fill` under paper-coloured words. The row and each card use it as
+a toolbar with one tab stop; the left and right arrow keys move through its tags with `moveInRow` from
 `grid-keys`. A card's toggles lie over the foot of its sheet but outside its link,
-so a click filters and doesn't open the drawing. A card puts the selected tags
-first, so a match never hides behind `+N`. After a toggle, `use-tag-refocus` in
+so a click filters and doesn't open the drawing. A card shows its first 3 tags in
+label order, and a click doesn't move one. `shownCardTags` in `list/card-tags.ts`
+gives a selected tag that would hide behind `+N` the slot of the last shown tag
+that isn't selected, and keeps the shown tags in label order. After a toggle, `use-tag-refocus` in
 `list/` keeps the focus on the tag: on the same card if it still shows there, else
 in the row. When the card's tags dialog takes the card off the page, such as by
 removing the tag the filter shows it for, the browser has no tag button to return
