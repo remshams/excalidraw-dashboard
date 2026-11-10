@@ -302,15 +302,17 @@ test("look after a tag by keyboard alone", async ({ page, request }) => {
 		await expect(trayButton(page, `Change ${renamed}`)).toBeFocused();
 	});
 
-	await test.step("the arrow keys go between the find field and the rows", async () => {
+	await test.step("the arrow keys go between the find field, the rows and a row's pencil", async () => {
 		await page.keyboard.press("Shift+Tab");
 		await expect(findTagField(page)).toBeFocused();
 		await page.keyboard.type(renamed);
 		await page.keyboard.press("ArrowDown");
-		await expect(trayButton(page, `Change ${renamed}`)).toBeFocused();
+		await expect(trayButton(page, `Filter by ${renamed}`)).toBeFocused();
 		await page.keyboard.press("ArrowUp");
 		await expect(findTagField(page)).toBeFocused();
 		await page.keyboard.press("ArrowDown");
+		await page.keyboard.press("ArrowRight");
+		await expect(trayButton(page, `Change ${renamed}`)).toBeFocused();
 	});
 
 	await test.step("Tab reaches Delete…, and the question focuses Keep it", async () => {
