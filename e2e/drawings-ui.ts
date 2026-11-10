@@ -371,3 +371,30 @@ export async function selectAllShapes(page: Page): Promise<void> {
 	await page.mouse.click(box.x + box.width - 40, box.y + box.height / 2);
 	await page.keyboard.press("ControlOrMeta+a");
 }
+
+/** A tag on a drawing's card, as the button that puts it in the filter or takes it out. */
+export function cardTagToggle(page: Page, name: string, label: string) {
+	return drawingList(page)
+		.getByRole("toolbar", { name: `Tags of ${name}`, exact: true })
+		.getByRole("button", { name: `Filter by ${label}`, exact: true });
+}
+
+/** The "Filter by" row under the header, with the tags filtered by most recently. */
+export function filterRow(page: Page) {
+	return page.getByRole("toolbar", { name: "Filter by", exact: true });
+}
+
+/** A tag in the "Filter by" row. */
+export function filterRowTag(page: Page, label: string) {
+	return filterRow(page).getByRole("button", {
+		name: `Filter by ${label}`,
+		exact: true,
+	});
+}
+
+/** The button at the end of the "Filter by" row that empties the filter. */
+export function clearFilterInRow(page: Page) {
+	return filterRow(page)
+		.locator("xpath=..")
+		.getByRole("button", { name: "Clear filter", exact: true });
+}
