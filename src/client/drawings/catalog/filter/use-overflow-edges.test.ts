@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { overflowEdges } from "./use-overflow-edges.ts";
+import { renderHook } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { overflowEdges, useOverflowEdges } from "./use-overflow-edges.ts";
 
 const edges = (scrollLeft: number, scrollWidth: number, clientWidth: number) =>
 	overflowEdges({ scrollLeft, scrollWidth, clientWidth });
@@ -24,5 +25,28 @@ describe("overflowEdges", () => {
 	it("ignores a rounding difference of one pixel", () => {
 		expect(edges(1, 600, 599)).toEqual({ start: false, end: false });
 		expect(edges(300.5, 600, 299.5)).toEqual({ start: true, end: false });
+	});
+});
+
+describe("useOverflowEdges", () => {
+	it("watches the size of each tag, so a renamed tag updates the fade", () => {
+		const observed: Element[] = [];
+		vi.stubGlobal(
+			"ResizeObserver",
+			class {
+				observe(box: Element) {
+					observed.push(box);
+				}
+				disconnect() {}
+			},
+		);
+		const element = document.createElement("div");
+		element.append(document.createElement("button"));
+		element.append(document.createElement("button"));
+
+		renderHook(() => useOverflowEdges({ current: element }, 2));
+
+		expect(observed).toEqual([element, ...element.children]);
+		vi.unstubAllGlobals();
 	});
 });
