@@ -50,14 +50,17 @@
 }
 
 /* The tags never wrap. When they don't fit, as on a phone, they scroll sideways.
-   The padding leaves room for the tilt of the marks and the focus ring. The mask
-   fades the edge where tags are cut off. Only its alpha counts, so --ink stands
-   for "opaque". The start fade grows over the first --space-lg of scrolling, the
-   end fade shrinks over the last. Without overflow the scroll timeline is
-   inactive and both widths stay 0, so nothing fades. The duration stays auto: the
-   animation shorthand would make it 0s. A browser without
-   scroll-driven animations shows no fade either; that is accepted. The scroll
-   padding keeps a tag that the arrow keys focus clear of the fade. */
+   The padding leaves room for the tilt of the marks and the focus ring, and the
+   scroll padding keeps a tag the arrow keys focus clear of the fade.
+
+   The mask fades the edges where tags are cut off. Only its alpha counts, so
+   --ink stands for "opaque". Two scroll-driven animations set the fade widths:
+   the start fade grows over the first --space-lg of scrolling, the end fade
+   shrinks over the last. Without overflow the scroll timeline is inactive, so
+   both stay 0. A browser without scroll-driven animations shows no fade.
+
+   The longhands keep the duration auto; the build expands the animation
+   shorthand to a 0s duration, which ends the start animation at once. */
 .tags {
 	display: flex;
 	align-items: center;
