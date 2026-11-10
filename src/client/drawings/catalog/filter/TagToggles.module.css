@@ -1,14 +1,25 @@
 /* A tag to press: it straightens up under the pointer or the keyboard. The room
-   around the mark keeps the focus ring off its edge. */
+   around the mark keeps the focus ring off its edge and makes the button easier
+   to hit than the mark it shows, also for a short label such as "ui". */
 .toggle {
 	display: flex;
+	justify-content: center;
 	min-width: 0;
 	max-width: 100%;
-	padding: 2px;
+	padding: var(--space-xs) 2px;
 	border: 0;
 	border-radius: var(--radius-md);
 	background: none;
 	cursor: pointer;
+}
+
+.toggle.small {
+	min-width: 1.75rem;
+}
+
+.toggle.medium {
+	min-width: 2.5rem;
+	padding-block: var(--space-sm);
 }
 
 .toggle:is(:hover, :focus-visible) > * {
