@@ -1,4 +1,4 @@
-import { type CSSProperties, useId, useState } from "react";
+import { type CSSProperties, type Ref, useId, useState } from "react";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { SearchLine } from "../../dialog/SearchLine.tsx";
@@ -23,14 +23,20 @@ type TagTrayProps = {
 	onClearFilter: () => void;
 };
 
+type TagTrayButtonProps = TagTrayProps & {
+	/** The Tags button, for the page to focus when the focus has nowhere else to go. */
+	ref?: Ref<HTMLButtonElement>;
+};
+
 /** The Tags button, which counts the tags in the filter, and the tray it opens. */
-export function TagTray(props: TagTrayProps) {
+export function TagTray({ ref, ...props }: TagTrayButtonProps) {
 	const [open, setOpen] = useState(false);
 	const filtered = props.selectedTagIds.length;
 
 	return (
 		<>
 			<button
+				ref={ref}
 				type="button"
 				className={styles.button}
 				aria-haspopup="dialog"

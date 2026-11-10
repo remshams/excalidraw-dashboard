@@ -6,7 +6,7 @@ import {
 	within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
+import { createRef, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag, TagRequest } from "#shared/tags.ts";
@@ -105,6 +105,14 @@ describe("TagTray", () => {
 		await userEvent.setup().click(tagsButton());
 
 		expect(tray()).toHaveAttribute("open");
+	});
+
+	it("hands its Tags button to a ref", () => {
+		const ref = createRef<HTMLButtonElement>();
+
+		render(<TagTray ref={ref} tags={tags} {...trayProps} />);
+
+		expect(ref.current).toBe(tagsButton());
 	});
 
 	it("lists every tag with its colour in the given order", async () => {
