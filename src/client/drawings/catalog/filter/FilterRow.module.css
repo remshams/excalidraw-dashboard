@@ -18,7 +18,8 @@
 /* The tags never wrap. When they don't fit, as on a phone, they scroll sideways.
    The padding leaves room for the tilt of the marks and the focus ring. The mask
    fades the edge where tags are cut off; use-overflow-edges.ts sets the data
-   attributes. Only its alpha counts, so --ink stands for "opaque". */
+   attributes. Only its alpha counts, so --ink stands for "opaque". The scroll
+   padding keeps a tag that the arrow keys focus clear of the fade. */
 .tags {
 	--fade-start: 0px;
 	--fade-end: 0px;
@@ -31,6 +32,7 @@
 	padding-inline: var(--space-xs);
 	overflow-x: auto;
 	scrollbar-width: none;
+	scroll-padding-inline: var(--space-lg);
 	mask-image: linear-gradient(
 		to right,
 		transparent,
