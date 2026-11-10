@@ -8,26 +8,37 @@ import type { TagChanges } from "../use-tags.ts";
 /** The open form: the tag to change, or the label to start a new one with. */
 type TrayForm = { tag?: Tag; label?: string };
 
+/** The two buttons of a row: the tag, which filters by it, and its pencil. */
+export type RowPart = "toggle" | "pencil";
+
+type RowButton = { id: string; part: RowPart };
+
 /**
  * The state of an open tag tray: its modal dialog, whether it shows the form, the
  * find text, the tags it finds and where the focus goes between them.
  */
-export function useTagTray(tags: Tag[] | null, changes: TagChanges) {
+export function useTagTray(
+	tags: Tag[] | null,
+	changes: TagChanges,
+	selectedTagIds: string[],
+	onToggleFilter: (tagId: string) => void,
+) {
 	const dialog = useModalDialog();
 	const findField = useRef<HTMLInputElement>(null);
 	const rows = useRef<HTMLUListElement>(null);
 	const [form, setForm] = useState<TrayForm | null>(null);
 	const [find, setFindText] = useState("");
 	const [notice, setNotice] = useState<string | null>(null);
-	const [activeId, setActiveId] = useState<string | null>(null);
+	const [active, setActive] = useState<RowButton | null>(null);
 	// Whether going back to the list focuses a row rather than the find field.
 	const returnToRow = useRef(false);
 
 	const shown = findTags(tags ?? [], find);
-	// One stop in the tab order for the rows: the one last used.
-	const tabStopId = shown.some(({ id }) => id === activeId)
-		? activeId
-		: (shown[0]?.id ?? null);
+	// One stop in the tab order for the rows: the button last used.
+	const first: RowButton | null = shown[0]
+		? { id: shown[0].id, part: "toggle" }
+		: null;
+	const tabStop = shown.some(({ id }) => id === active?.id) ? active : first;
 
 	useEffect(() => {
 		if (form) return;
@@ -43,7 +54,7 @@ export function useTagTray(tags: Tag[] | null, changes: TagChanges) {
 	};
 
 	const backToRow = (id: string) => {
-		setActiveId(id);
+		setActive({ id, part: "pencil" });
 		returnToRow.current = true;
 		setForm(null);
 	};
@@ -101,14 +112,25 @@ export function useTagTray(tags: Tag[] | null, changes: TagChanges) {
 		else onClose();
 	};
 
+	/** Puts the top match in the filter or takes it out, and says which. */
+	const toggleTopMatch = ({ id, label }: Tag) => {
+		onToggleFilter(id);
+		announce(
+			selectedTagIds.includes(id)
+				? `${label} is out of the filter.`
+				: `${label} is in the filter.`,
+		);
+	};
+
 	const onFindKey = (event: KeyboardEvent) => {
 		if (event.key === "ArrowDown") {
 			event.preventDefault();
 			rows.current?.querySelector("button")?.focus();
-		} else if (event.key === "Enter" && tags && shown.length === 0) {
+		} else if (event.key === "Enter" && tags) {
 			// Otherwise the same key press reaches the form's focused field and submits it.
 			event.preventDefault();
-			startNew();
+			if (!shown[0]) startNew();
+			else if (find.trim()) toggleTopMatch(shown[0]);
 		}
 	};
 
@@ -126,8 +148,8 @@ export function useTagTray(tags: Tag[] | null, changes: TagChanges) {
 		setFind,
 		shown,
 		notice,
-		tabStopId,
-		setActiveId,
+		tabStop,
+		setActive,
 		startNew,
 		startEdit,
 		cancel,
