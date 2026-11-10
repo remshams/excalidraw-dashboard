@@ -22,7 +22,12 @@ test("create, rename and delete a tag", async ({ request }) => {
 	});
 
 	await test.step(`the tag list has ${label}`, async () => {
-		expect(await storedTag(request, id)).toEqual({ id, label, color: "blue" });
+		expect(await storedTag(request, id)).toEqual({
+			id,
+			label,
+			color: "blue",
+			createdAt: expect.any(String),
+		});
 	});
 
 	await test.step(`rename the tag to ${renamed} and make it red`, async () => {
@@ -31,6 +36,7 @@ test("create, rename and delete a tag", async ({ request }) => {
 			id,
 			label: renamed,
 			color: "red",
+			createdAt: expect.any(String),
 		});
 	});
 
