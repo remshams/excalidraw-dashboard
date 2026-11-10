@@ -482,16 +482,16 @@ describe("DrawingList", () => {
 			expect(shownNames()).toEqual(["Plan", "Roadmap", "Garden plan"]);
 			expect(
 				screen.getByRole("toolbar", { name: "Filter by" }),
-			).toHaveTextContent(/^WorkorHome$/);
+			).toHaveTextContent(/^WorkHome$/);
 		});
 
-		it("shows the tags in the filter first on a card, so none hides behind +N", async () => {
+		it("gives a tag in the filter that would hide behind +N a slot on a card, in label order", async () => {
 			const { user } = setup(tagged, tags);
 			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
 
 			await user.click(cardTag("Roadmap", "Work"));
 
-			expect(marksOf("Plan")).toBe("WorkHomeIdeas+1");
+			expect(marksOf("Plan")).toBe("HomeIdeasWork+1");
 			expect(
 				screen.getByRole("link", {
 					name: "Plan, tags: Home, Ideas, Later, Work",
@@ -523,7 +523,18 @@ describe("DrawingList", () => {
 
 			expect(cardTag("Plan", "Later")).toHaveFocus();
 			expect(cardTag("Plan", "Later")).toHaveAttribute("aria-pressed", "true");
-			expect(marksOf("Plan")).toBe("LaterHomeIdeas+1");
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
+		});
+
+		it("keeps a card's tags in their places when one is turned on or off", async () => {
+			const { user } = setup(tagged, tags);
+
+			await user.click(cardTag("Plan", "Ideas"));
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
+			await user.click(cardTag("Plan", "Home"));
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
+			await user.click(cardTag("Plan", "Ideas"));
+			expect(marksOf("Plan")).toBe("HomeIdeasLater+1");
 		});
 
 		it("moves the focus to the tag in the row when its card leaves the page", async () => {
