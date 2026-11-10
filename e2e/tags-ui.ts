@@ -55,3 +55,19 @@ export function tagColor(page: Page, name: string) {
 export function tagFormError(page: Page) {
 	return tagTray(page).getByRole("alert");
 }
+
+/** The Tags button while the filter holds tags; it says how many. */
+export function tagsButtonCounting(page: Page, count: number) {
+	return page.getByRole("button", {
+		name: `Tags, ${count} in the filter`,
+		exact: true,
+	});
+}
+
+/** A tag's row in the tray, as the button that puts it in the filter or takes it out. */
+export function trayTagToggle(page: Page, label: string) {
+	return tagTray(page).getByRole("button", {
+		name: `Filter by ${label}`,
+		exact: true,
+	});
+}
