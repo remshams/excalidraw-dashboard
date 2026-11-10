@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type CSSProperties, useId, useState } from "react";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { SearchLine } from "../../dialog/SearchLine.tsx";
@@ -9,18 +9,24 @@ import { NewTagButton } from "../NewTagButton.tsx";
 import { tagColorName } from "../tag-color-name.ts";
 import type { TagChanges } from "../use-tags.ts";
 import styles from "./TagTray.module.css";
-import { useTagTray } from "./use-tag-tray.ts";
+import { type RowPart, useTagTray } from "./use-tag-tray.ts";
 
 type TagTrayProps = {
 	/** Every tag, or null while they load or when loading failed. */
 	tags: Tag[] | null;
 	drawings: DrawingSummary[];
 	changes: TagChanges;
+	/** The IDs of the tags in the landing page's filter. */
+	selectedTagIds: string[];
+	/** Puts the tag in the filter or takes it out. */
+	onToggleFilter: (tagId: string) => void;
+	onClearFilter: () => void;
 };
 
-/** The Tags button and the tray it opens. */
+/** The Tags button, which counts the tags in the filter, and the tray it opens. */
 export function TagTray(props: TagTrayProps) {
 	const [open, setOpen] = useState(false);
+	const filtered = props.selectedTagIds.length;
 
 	return (
 		<>
@@ -28,10 +34,14 @@ export function TagTray(props: TagTrayProps) {
 				type="button"
 				className={styles.button}
 				aria-haspopup="dialog"
+				aria-label={
+					filtered > 0 ? `Tags, ${filtered} in the filter` : undefined
+				}
 				onClick={() => setOpen(true)}
 			>
 				<TagIcon />
 				Tags
+				{filtered > 0 && <span className={styles.badge}>{filtered}</span>}
 			</button>
 			{open && <TrayDialog {...props} onClose={() => setOpen(false)} />}
 		</>
@@ -50,8 +60,16 @@ const drawingCount = (drawings: DrawingSummary[], tagId: string) =>
  * and swaps the list for a form to create or change one. Its backdrop is
  * transparent, so the page stays in view (ADR 0003).
  */
-function TrayDialog({ tags, drawings, changes, onClose }: TrayDialogProps) {
-	const tray = useTagTray(tags, changes);
+function TrayDialog({
+	tags,
+	drawings,
+	changes,
+	selectedTagIds,
+	onToggleFilter,
+	onClearFilter,
+	onClose,
+}: TrayDialogProps) {
+	const tray = useTagTray(tags, changes, selectedTagIds, onToggleFilter);
 	const { form, find, shown, notice } = tray;
 
 	return (
@@ -108,8 +126,12 @@ function TrayDialog({ tags, drawings, changes, onClose }: TrayDialogProps) {
 									key={tag.id}
 									tag={tag}
 									count={drawingCount(drawings, tag.id)}
-									tabStop={tag.id === tray.tabStopId}
-									onFocus={() => tray.setActiveId(tag.id)}
+									pressed={selectedTagIds.includes(tag.id)}
+									tabStop={
+										tag.id === tray.tabStop?.id ? tray.tabStop.part : null
+									}
+									onFocus={(part) => tray.setActive({ id: tag.id, part })}
+									onToggle={() => onToggleFilter(tag.id)}
 									onEdit={() => tray.startEdit(tag)}
 								/>
 							))}
@@ -127,6 +149,19 @@ function TrayDialog({ tags, drawings, changes, onClose }: TrayDialogProps) {
 							label={shown.length === 0 ? find.trim() : ""}
 							onClick={tray.startNew}
 						/>
+						{selectedTagIds.length > 0 && (
+							<button
+								type="button"
+								className={styles.clear}
+								onClick={() => {
+									// The button goes with the filter.
+									tray.findField.current?.focus();
+									onClearFilter();
+								}}
+							>
+								Clear filter
+							</button>
+						)}
 					</div>
 				)}
 			</div>
@@ -146,44 +181,69 @@ type TagRowProps = {
 	tag: Tag;
 	/** How many drawings carry the tag. */
 	count: number;
-	/** Whether Tab reaches this row's button. The arrow keys reach the others. */
-	tabStop: boolean;
-	onFocus: () => void;
+	/** Whether the tag is in the filter. */
+	pressed: boolean;
+	/** Which of this row's buttons Tab reaches, if any. The arrow keys reach the others. */
+	tabStop: RowPart | null;
+	onFocus: (part: RowPart) => void;
+	onToggle: () => void;
 	onEdit: () => void;
 };
 
-/** A tag in its colour, with the number of drawings that carry it and a way to change it. */
+/**
+ * A tag in its colour with the number of drawings that carry it, as a button that
+ * puts it in the filter or takes it out, and a way to change it.
+ */
 function TagRow({
 	tag: { label, color },
 	count,
+	pressed,
 	tabStop,
 	onFocus,
+	onToggle,
 	onEdit,
 }: TagRowProps) {
+	const details = useId();
 	return (
 		<li className={styles.row}>
-			<span
-				className={styles.swatch}
-				role="img"
-				aria-label={tagColorName(color)}
-				style={{ background: `var(--tag-${color}-solid)` }}
-			/>
-			<span className={styles.label} title={label}>
-				{label}
-			</span>
-			<span className={styles.count}>
-				{count}
-				<span className={styles.visuallyHidden}>
-					{count === 1 ? " drawing" : " drawings"}
+			<button
+				type="button"
+				className={styles.toggle}
+				aria-label={`Filter by ${label}`}
+				aria-describedby={details}
+				aria-pressed={pressed}
+				style={
+					{ "--pressed-ink": `var(--tag-${color}-solid)` } as CSSProperties
+				}
+				tabIndex={tabStop === "toggle" ? 0 : -1}
+				onFocus={() => onFocus("toggle")}
+				onClick={onToggle}
+			>
+				<span
+					className={styles.swatch}
+					role="img"
+					aria-label={tagColorName(color)}
+					style={{ background: `var(--tag-${color}-solid)` }}
+				/>
+				<span className={styles.label} title={label}>
+					{label}
 				</span>
-			</span>
+				<span className={styles.count} aria-hidden="true">
+					{count}
+				</span>
+				{/* The button's name says what it does, so the colour and the count
+				    come as its description. */}
+				<span id={details} className={styles.visuallyHidden}>
+					{`${tagColorName(color)}, ${count} ${count === 1 ? "drawing" : "drawings"}`}
+				</span>
+			</button>
 			<button
 				type="button"
 				className={styles.pencil}
-				tabIndex={tabStop ? 0 : -1}
+				tabIndex={tabStop === "pencil" ? 0 : -1}
 				aria-label={`Change ${label}`}
 				title="Rename, recolour or delete"
-				onFocus={onFocus}
+				onFocus={() => onFocus("pencil")}
 				onClick={onEdit}
 			>
 				<PencilIcon />

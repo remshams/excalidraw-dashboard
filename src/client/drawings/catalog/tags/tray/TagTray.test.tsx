@@ -38,7 +38,31 @@ const changes = { create: vi.fn(), update: vi.fn(), remove: vi.fn() };
 
 beforeEach(() => vi.resetAllMocks());
 
-const trayProps = { drawings, changes };
+const filterProps = {
+	selectedTagIds: [] as string[],
+	onToggleFilter: vi.fn(),
+	onClearFilter: vi.fn(),
+};
+
+const trayProps = { drawings, changes, ...filterProps };
+
+/** A tray that keeps the filter the way the landing page does. */
+function TrayWithFilter({ initial = [] }: { initial?: string[] }) {
+	const [selected, setSelected] = useState(initial);
+	return (
+		<TagTray
+			{...trayProps}
+			tags={tags}
+			selectedTagIds={selected}
+			onToggleFilter={(id) =>
+				setSelected((ids) =>
+					ids.includes(id) ? ids.filter((t) => t !== id) : [...ids, id],
+				)
+			}
+			onClearFilter={() => setSelected([])}
+		/>
+	);
+}
 
 /** A tray whose tags take in a created one, as `useTags` does. */
 function TrayWithStoredTags() {
@@ -384,7 +408,7 @@ describe("TagTray", () => {
 
 			expect(findField()).toHaveFocus();
 			await user.tab();
-			expect(button("Change Network")).toHaveFocus();
+			expect(button("Filter by Network")).toHaveFocus();
 			await user.tab();
 			expect(button("New tag")).toHaveFocus();
 		});
@@ -393,15 +417,108 @@ describe("TagTray", () => {
 			const user = await openTray();
 
 			await user.keyboard("{ArrowDown}");
-			expect(button("Change Network")).toHaveFocus();
+			expect(button("Filter by Network")).toHaveFocus();
 			await user.keyboard("{ArrowDown}");
+			expect(button("Filter by Personal")).toHaveFocus();
+			await user.keyboard("{ArrowRight}");
 			expect(button("Change Personal")).toHaveFocus();
 
 			await user.tab();
 			await user.tab({ shift: true });
 			expect(button("Change Personal")).toHaveFocus();
 
-			await user.keyboard("{ArrowUp}{ArrowUp}");
+			await user.keyboard("{ArrowLeft}{ArrowUp}{ArrowUp}");
+			expect(findField()).toHaveFocus();
+		});
+	});
+
+	describe("the filter", () => {
+		async function openFilterTray(initial: string[] = []) {
+			const user = userEvent.setup();
+			render(<TrayWithFilter initial={initial} />);
+			await user.click(screen.getByRole("button", { name: /^Tags/ }));
+			return user;
+		}
+
+		it("makes each row a button that filters by its tag, described by its colour and count", async () => {
+			await openTray();
+
+			const work = button("Filter by Work");
+			expect(work).toHaveAttribute("aria-pressed", "false");
+			expect(work).toHaveAccessibleDescription("Blue, 2 drawings");
+			expect(within(rowOf("Work")).getAllByRole("button")).toEqual([
+				work,
+				button("Change Work"),
+			]);
+		});
+
+		it("puts a tag in the filter and takes it out with a click", async () => {
+			const user = await openFilterTray();
+
+			await user.click(button("Filter by Work"));
+
+			expect(button("Filter by Work")).toHaveAttribute("aria-pressed", "true");
+			expect(
+				screen.getByRole("button", { name: "Tags, 1 in the filter" }),
+			).toHaveTextContent("Tags1");
+
+			await user.click(button("Filter by Work"));
+
+			expect(button("Filter by Work")).toHaveAttribute("aria-pressed", "false");
+			expect(screen.getByRole("button", { name: "Tags" })).toHaveTextContent(
+				/^Tags$/,
+			);
+		});
+
+		it("toggles the top match with Enter, says so and clears the find text", async () => {
+			const user = await openFilterTray(["b"]);
+
+			await user.type(findField(), "wor{Enter}");
+
+			expect(button("Filter by Work")).toHaveAttribute("aria-pressed", "true");
+			expect(findField()).toHaveValue("");
+			expect(findField()).toHaveFocus();
+			expect(screen.getByRole("status")).toHaveTextContent(
+				"Work is in the filter.",
+			);
+
+			await user.type(findField(), "pers{Enter}");
+
+			expect(button("Filter by Personal")).toHaveAttribute(
+				"aria-pressed",
+				"false",
+			);
+			expect(screen.getByRole("status")).toHaveTextContent(
+				"Personal is out of the filter.",
+			);
+		});
+
+		it("leaves the filter alone on Enter without a find text", async () => {
+			const user = await openFilterTray();
+
+			await user.type(findField(), "{Enter}");
+
+			expect(button("Filter by Network")).toHaveAttribute(
+				"aria-pressed",
+				"false",
+			);
+			expect(screen.queryByRole("textbox", { name: "Label" })).toBeNull();
+		});
+
+		it("offers Clear filter only while a filter is set, and keeps the focus in the tray", async () => {
+			const user = await openFilterTray(["a", "c"]);
+			expect(
+				screen.getByRole("button", { name: "Tags, 2 in the filter" }),
+			).toBeInTheDocument();
+
+			await user.click(button("Clear filter"));
+
+			expect(button("Filter by Network")).toHaveAttribute(
+				"aria-pressed",
+				"false",
+			);
+			expect(button("Filter by Work")).toHaveAttribute("aria-pressed", "false");
+			expect(screen.queryByRole("button", { name: "Clear filter" })).toBeNull();
 			expect(findField()).toHaveFocus();
 		});
 	});
