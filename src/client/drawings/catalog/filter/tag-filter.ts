@@ -23,18 +23,21 @@ export function filterDrawings(
 }
 
 /**
- * The recent tags of the "Filter by" row, newest first, after the tag joined the
- * filter. It moves to the front, and the oldest drops out beyond the row's size.
+ * The "Filter by" row after the tag joined it. The row keeps the order in which
+ * tags joined, so a tag joins at the end and a tag already in the row stays where
+ * it is. While the row is longer than its size, the oldest tag that isn't selected
+ * leaves. A selected tag never leaves, so with more selected tags the row holds
+ * more.
  */
-export function rememberTag(recent: string[], tagId: string): string[] {
-	return [tagId, ...recent.filter((id) => id !== tagId)].slice(0, ROW_SIZE);
-}
-
-/**
- * The order of the "Filter by" row: every selected tag in the order they were
- * selected, then the other recent tags, newest first. The row's size limits only
- * the recent tags, so a tag in the filter always has its place in the row.
- */
-export function rowOrder(recent: string[], selected: string[]): string[] {
-	return [...selected, ...recent.filter((id) => !selected.includes(id))];
+export function joinRow(
+	row: string[],
+	tagId: string,
+	selected: string[],
+): string[] {
+	if (row.includes(tagId)) return row;
+	const joined = [...row, tagId];
+	const leaving = joined
+		.filter((id) => id !== tagId && !selected.includes(id))
+		.slice(0, Math.max(joined.length - ROW_SIZE, 0));
+	return joined.filter((id) => !leaving.includes(id));
 }

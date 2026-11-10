@@ -27,10 +27,3 @@
 			translate 90ms ease-out;
 	}
 }
-
-/* Says how the tags in the filter combine, in the hand the tags are written in. */
-.or {
-	flex: none;
-	font-family: var(--hand);
-	color: var(--ink);
-}

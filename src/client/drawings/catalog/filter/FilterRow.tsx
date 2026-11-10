@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef } from "react";
+import { useId, useRef } from "react";
 import type { TagFilter } from "./use-tag-filter.ts";
 import styles from "./FilterRow.module.css";
 import { TagToggles } from "./TagToggles.tsx";
@@ -10,24 +10,16 @@ type FilterRowProps = {
 };
 
 /**
- * The "Filter by" row under the header: the tags filtered by most recently, each
- * one click from the filter. The ones in the filter come first in solid ink with
- * "or" between them, so the row reads as a sentence. It keeps one line of the same
- * height, blank while it has no tags, so the cards don't move when tags arrive.
+ * The "Filter by" row under the header: the tags filtered by recently, each one
+ * click from the filter, in the order they joined. A tag keeps its place, so a
+ * click only turns it on or off; the ones in the filter show in solid ink. It keeps
+ * one line of the same height, blank while it has no tags, so the cards don't move
+ * when tags arrive.
  */
 export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 	const { rowTags, selectedTagIds } = filter;
 	const words = useId();
 	const row = useRef<HTMLDivElement>(null);
-	// The Clear filter button goes with the filter, so the focus moves to the first
-	// tag once the row shows its new order.
-	const focusFirst = useRef(false);
-
-	useLayoutEffect(() => {
-		if (!focusFirst.current) return;
-		focusFirst.current = false;
-		row.current?.querySelector<HTMLElement>("[data-tag-toggle]")?.focus();
-	});
 
 	return (
 		<div ref={row} className={styles.row} data-filter-row>
@@ -42,7 +34,6 @@ export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 						seed="row"
 						className={styles.tags}
 						aria-labelledby={words}
-						orBetween
 						onToggle={onToggle}
 					/>
 					{selectedTagIds.length > 0 && (
@@ -50,7 +41,10 @@ export function FilterRow({ filter, onToggle, onClear }: FilterRowProps) {
 							type="button"
 							className={styles.clear}
 							onClick={() => {
-								focusFirst.current = true;
+								// The button goes with the filter; the tags stay where they are.
+								row.current
+									?.querySelector<HTMLElement>("[data-tag-toggle]")
+									?.focus();
 								onClear();
 							}}
 						>
