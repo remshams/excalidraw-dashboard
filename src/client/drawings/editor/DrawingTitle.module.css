@@ -12,7 +12,6 @@
 	min-width: 0;
 	margin: 0;
 	font-size: inherit;
-	font-weight: inherit;
 }
 
 /* The same box and type as the name field, so the name keeps its place and the
@@ -26,7 +25,6 @@
 	border: var(--stroke-sm) solid transparent;
 	border-radius: var(--radius-md);
 	background: none;
-	color: inherit;
 	font-family: var(--hand);
 	font-size: var(--text-lg);
 	font-weight: var(--weight-regular);
