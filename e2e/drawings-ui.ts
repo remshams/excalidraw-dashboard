@@ -311,15 +311,11 @@ export function tagToAdd(page: Page, name: string, label: string) {
 
 /**
  * The tags after the open drawing's name in the editor's bar, as the button that
- * opens the dialog for them. Its accessible name lists every tag by label, or
- * offers to add some when the drawing has none.
+ * opens the dialog for them. Its accessible name lists every tag by label.
  */
 export function editorTagsButton(page: Page, name: string, labels: string[]) {
 	return page.getByRole("banner").getByRole("button", {
-		name:
-			labels.length > 0
-				? `Change tags of ${name}: ${labels.join(", ")}`
-				: `Add tags to ${name}`,
+		name: `Change tags of ${name}: ${labels.join(", ")}`,
 		exact: true,
 	});
 }
