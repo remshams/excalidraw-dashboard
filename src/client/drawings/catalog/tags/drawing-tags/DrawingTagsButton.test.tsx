@@ -73,6 +73,15 @@ describe("DrawingTagsButton", () => {
 		expect(within(button).queryByText(/^\+/)).toBeNull();
 	});
 
+	it("leaves out a tag ID that no loaded tag has", () => {
+		setup(["a", "gone"]);
+
+		const button = screen.getByRole("button", {
+			name: "Change tags of Plan: Budget",
+		});
+		expect(within(button).getByText("1")).toBeInTheDocument();
+	});
+
 	it("offers to add tags to a drawing without any", () => {
 		setup([]);
 
