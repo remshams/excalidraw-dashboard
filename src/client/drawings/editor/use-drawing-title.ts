@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 /**
  * The state of the drawing's name in the editor bar: whether the name field is
@@ -11,6 +11,8 @@ export function useDrawingTitle(
 ) {
 	const [editing, setEditing] = useState(false);
 	const [savingName, setSavingName] = useState<string | null>(null);
+	// Counts the renames, so a rename that settles late leaves a newer one's name.
+	const renames = useRef(0);
 	// Whether the name takes the focus back when the field closes.
 	const [refocus, setRefocus] = useState(false);
 
@@ -24,7 +26,10 @@ export function useDrawingTitle(
 	const save = (newName: string) => {
 		close();
 		setSavingName(newName);
-		onRename(newName).finally(() => setSavingName(null));
+		const rename = ++renames.current;
+		onRename(newName).finally(() => {
+			if (renames.current === rename) setSavingName(null);
+		});
 	};
 
 	return {
