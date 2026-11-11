@@ -360,6 +360,54 @@ describe("App", () => {
 		expect(api.updateDrawing).toHaveBeenCalledWith("1", { name: "Sketch" });
 	});
 
+	it("renames the open drawing from the editor bar and shows the new name on its card", async () => {
+		vi.mocked(api.updateDrawing).mockResolvedValue(drawing("1", "Sketch"));
+		openAt("/drawings/1");
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.clear(
+			screen.getByRole("textbox", { name: "New name for Plan" }),
+		);
+		await user.keyboard("Sketch{Enter}");
+
+		expect(api.updateDrawing).toHaveBeenCalledWith("1", { name: "Sketch" });
+		expect(
+			await screen.findByRole("button", { name: "Rename Sketch" }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Sketch" })).toBeVisible();
+		// The editor keeps the scene it opened with.
+		expect(screen.getByText("Editing Plan")).toBeInTheDocument();
+
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		expect(
+			await cards().findByRole("link", { name: "Sketch" }),
+		).toBeInTheDocument();
+	});
+
+	it("keeps the old name in the editor bar when the rename fails", async () => {
+		vi.mocked(api.updateDrawing).mockRejectedValue(
+			new Error("PUT /drawings/1 failed with 500"),
+		);
+		openAt("/drawings/1");
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.clear(
+			screen.getByRole("textbox", { name: "New name for Plan" }),
+		);
+		await user.keyboard("Sketch{Enter}");
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"PUT /drawings/1 failed with 500",
+		);
+		expect(await screen.findByRole("heading", { name: "Plan" })).toBeVisible();
+	});
+
 	it("removes a deleted drawing from the landing page", async () => {
 		vi.mocked(api.deleteDrawing).mockResolvedValue();
 		const user = userEvent.setup();

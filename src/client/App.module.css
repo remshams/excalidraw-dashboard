@@ -67,18 +67,6 @@
 	font-weight: var(--weight-regular);
 }
 
-.editorBar h1 {
-	min-width: 0;
-	margin: 0;
-	overflow: hidden;
-	font-family: var(--hand);
-	font-size: var(--text-lg);
-	font-weight: var(--weight-regular);
-	line-height: var(--leading-md);
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
 .editor {
 	position: relative;
 	/* Keep Excalidraw's z-indexed layers inside the editor, so the error message,
