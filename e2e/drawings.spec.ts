@@ -33,6 +33,7 @@ import {
 	quickSwitcher,
 	rectangleTool,
 	renameDrawing,
+	renameOpenDrawing,
 	searchDrawings,
 	searchField,
 	searchStatus,
@@ -243,6 +244,33 @@ test("rename a drawing", async ({ page }) => {
 	await test.step(`${newName} keeps its name after a reload`, async () => {
 		await page.reload();
 		// The list is empty until it loads; the new name shows that it has.
+		await expect(drawingCardLink(page, newName)).toBeVisible();
+		await expect(drawingCardLink(page, name)).toHaveCount(0);
+	});
+});
+
+test("rename the open drawing from the editor bar", async ({ page }) => {
+	const name = uniqueName("Draft");
+	const newName = uniqueName("Final");
+
+	await test.step(`open a new drawing named ${name}`, async () => {
+		await openApp(page);
+		await createDrawing(page, name);
+	});
+
+	await test.step(`rename it to ${newName} in the editor bar`, async () => {
+		await renameOpenDrawing(page, name, newName);
+		await expectDrawingOpen(page, newName);
+	});
+
+	await test.step(`its card shows ${newName}`, async () => {
+		await goToAllDrawings(page);
+		await expect(drawingCardLink(page, newName)).toBeVisible();
+		await expect(drawingCardLink(page, name)).toHaveCount(0);
+	});
+
+	await test.step(`${newName} keeps its name after a reload`, async () => {
+		await page.reload();
 		await expect(drawingCardLink(page, newName)).toBeVisible();
 		await expect(drawingCardLink(page, name)).toHaveCount(0);
 	});
