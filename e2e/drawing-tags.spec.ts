@@ -5,9 +5,9 @@ import {
 	storedSummary,
 } from "./drawings-api.ts";
 import {
+	barWidths,
 	changeTagsButton,
 	drawingCardLink,
-	drawingHeading,
 	drawingTagsDialog,
 	editorTagsButton,
 	expectDrawingOpen,
@@ -209,7 +209,7 @@ test("a short name stays whole next to long tags", async ({
 		"Customer research",
 	].map(uniqueName);
 	let drawingId = "";
-	let wideWidth = 0;
+	let wide = { name: 0, tags: 0 };
 
 	await test.step(`${name} has three tags with long labels`, async () => {
 		drawingId = await createDrawingThroughApi(request, name);
@@ -224,13 +224,16 @@ test("a short name stays whole next to long tags", async ({
 		await page.setViewportSize({ width: 1400, height: 600 });
 		await openApp(page, drawingId);
 		await expect(editorTagsButton(page, name, labels)).toBeVisible();
-		wideWidth = (await drawingHeading(page, name).boundingBox())?.width ?? 0;
-		expect(wideWidth).toBeGreaterThan(0);
+		wide = await barWidths(page, name, labels);
+		expect(wide.name).toBeGreaterThan(0);
 	});
 
 	await test.step("in a window too narrow for all of it, the tags give way and the name keeps its width", async () => {
 		await page.setViewportSize({ width: 900, height: 600 });
-		const narrow = await drawingHeading(page, name).boundingBox();
-		expect(narrow?.width).toBeCloseTo(wideWidth, 0);
+		await expect
+			.poll(async () => (await barWidths(page, name, labels)).tags)
+			.toBeLessThan(wide.tags - 50);
+		const narrow = await barWidths(page, name, labels);
+		expect(narrow.name).toBeCloseTo(wide.name, 0);
 	});
 });
