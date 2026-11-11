@@ -183,22 +183,21 @@ flowchart TD
 [`src/client/main.tsx`](../../src/client/main.tsx) is the composition root: it
 renders `App` and loads `styles.css`. `src/client/drawings/` is the drawings
 feature, one bounded context around the `Drawing` aggregate. It has two modules:
-`catalog/` lists, filters, creates, renames, deletes and switches drawings and looks
-after tags, and `editor/` edits the
-open one and keeps its scene and preview saved. They don't import each other;
-both use `api.ts` at the root. `search.ts`, a domain service that finds
-drawings by a part of their name, sits at the root too, with `NameField`, which
-renames a drawing on its card and in the editor bar, and `icons`, the line icons
-of both modules and `App`. So does
-`use-open-drawing-id.ts`,
-and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
-and `/` opens none. `App` shows the landing page at `/` and the editor view
-otherwise: the editor below a bar with an "All drawings" link, the drawing's
-name, which renames the drawing, and its tags, which change them. Cards and "All
-drawings" are `DrawingLink`s: real links to a drawing's path, so a middle click
-opens a new tab, while a plain click opens the drawing without loading the page.
-Any client module may import `shared`; the diagrams show only `api`, the main
-user. Nothing enforces the dependencies inside the client beyond code review.
+`catalog/` lists, filters, creates, renames, deletes and switches drawings and
+looks after tags, and `editor/` edits the open one and keeps its scene and
+preview saved. They don't import each other; both use `api.ts` at the root.
+`search.ts`, a domain service that finds drawings by a part of their name, sits
+at the root too, with `NameField`, which renames a drawing on its card and in
+the editor bar, and `icons`, the line icons of both modules and `App`. So does
+`use-open-drawing-id.ts`, and `App` uses it to track the open drawing:
+`/drawings/<id>` opens a drawing, and `/` opens none. `App` shows the landing
+page at `/` and the editor view otherwise: the editor below a bar with an "All
+drawings" link, the drawing's name, which renames the drawing, and its tags,
+which open a dialog to change them. Cards and "All drawings" are `DrawingLink`s:
+real links to a drawing's path, so a middle click opens a new tab, while a plain
+click opens the drawing without loading the page. Any client module may import
+`shared`; the diagrams show only `api`, the main user. Nothing enforces the
+dependencies inside the client beyond code review.
 
 ```mermaid
 ---
@@ -245,13 +244,14 @@ the field is open.
 
 After the name, `App` renders `DrawingTagsButton` from `catalog/tags/` with the
 drawing as `use-drawings` has it and the tags from `use-tags`, so the bar shows
-a tag change at once, like the card. It shows the first three tags as on a card,
-with the card's tilt, then "+2" for the rest; on a narrow screen only a tag icon
-and the count. Without tags it shows only the icon. When the name and the tags
-don't both fit, each gets half the room, and a short one keeps its full width. A
-click opens `DrawingTagsDialog`, the dialog the card opens, and `App` gives or
-takes off a tag through `use-drawings`. While the tags load or after they failed
-to load, the bar shows none.
+a tag change at once, like the card. It shows the first three tags by label with
+the card's tilt, then "+2" for the rest, even while the tag filter would bring
+other tags forward on the card; on a narrow screen only a tag icon and the
+count. Without tags it shows only the icon. When the name and the tags don't
+both fit, each gets half the room, and a short one keeps its full width. A click
+opens `DrawingTagsDialog`, the dialog the card opens, and `App` gives or takes
+off a tag through `use-drawings`. While the drawings or the tags load, or after
+the tags failed to load, the bar shows no tags.
 
 ```mermaid
 ---
