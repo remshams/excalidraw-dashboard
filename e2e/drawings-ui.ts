@@ -309,6 +309,21 @@ export function tagToAdd(page: Page, name: string, label: string) {
 		.getByRole("button", { name: `Add ${label}`, exact: true });
 }
 
+/**
+ * The tags after the open drawing's name in the editor's bar, as the button that
+ * opens the dialog for them. Its accessible name lists every tag by label, or
+ * offers to add some when the drawing has none.
+ */
+export function editorTagsButton(page: Page, name: string, labels: string[]) {
+	return page.getByRole("banner").getByRole("button", {
+		name:
+			labels.length > 0
+				? `Change tags of ${name}: ${labels.join(", ")}`
+				: `Add tags to ${name}`,
+		exact: true,
+	});
+}
+
 /** The button in the editor's bar that opens the quick switcher. */
 export function switchDrawingButton(page: Page) {
 	return page.getByRole("button", { name: "Switch drawing" });
