@@ -12,6 +12,7 @@ import {
 import { useTags } from "./drawings/catalog/tags/use-tags.ts";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
 import { DrawingLink } from "./drawings/DrawingLink.tsx";
+import { DrawingTitle } from "./drawings/editor/DrawingTitle.tsx";
 import { Editor } from "./drawings/editor/Editor.tsx";
 import { useDrawing } from "./drawings/editor/use-drawing.ts";
 import { useOpenDrawingId } from "./drawings/use-open-drawing-id.ts";
@@ -59,6 +60,7 @@ export function App() {
 					theme={theme}
 					onOpen={openDrawing}
 					onCreate={createAndOpen}
+					onRename={(id, name) => rename(id, name).catch(showError)}
 					onSaved={replace}
 					onError={(id, cause) => {
 						// The last save can still be in flight when the user deletes the
@@ -103,6 +105,8 @@ type EditorViewProps = {
 	theme: "light" | "dark";
 	onOpen: (id: string | null) => void;
 	onCreate: (name: string) => void;
+	/** Renames a drawing; resolves once the rename succeeded or failed. */
+	onRename: (id: string, name: string) => Promise<void>;
 	onSaved: (summary: DrawingSummary) => void;
 	/** Reports a failed save of the drawing with the given ID. */
 	onError: (id: string, error: unknown) => void;
@@ -119,6 +123,7 @@ function EditorView({
 	theme,
 	onOpen,
 	onCreate,
+	onRename,
 	onSaved,
 	onError,
 }: EditorViewProps) {
@@ -137,7 +142,17 @@ function EditorView({
 					<BackIcon />
 					All drawings
 				</DrawingLink>
-				{drawing && <h1>{drawing.name}</h1>}
+				{drawing && (
+					<DrawingTitle
+						key={drawing.id}
+						// The list has the name after a rename; the loaded drawing keeps the
+						// one it opened with.
+						name={
+							drawings.find(({ id }) => id === drawing.id)?.name ?? drawing.name
+						}
+						onRename={(name) => onRename(drawing.id, name)}
+					/>
+				)}
 				<button
 					type="button"
 					className={`${styles.barAction} ${styles.switch}`}
