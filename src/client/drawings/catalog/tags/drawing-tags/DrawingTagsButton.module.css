@@ -1,0 +1,66 @@
+/* The tags after the name, as one button. It shrinks with the name when the bar
+   runs out of room; the marks then shorten their labels. */
+.tags {
+	display: inline-flex;
+	flex: 0 1 auto;
+	align-items: center;
+	min-width: 0;
+	padding: var(--space-xs);
+	border: var(--stroke-sm) dashed transparent;
+	border-radius: var(--radius-md);
+	background: none;
+	color: var(--graphite);
+	cursor: pointer;
+}
+
+.tags svg {
+	flex-shrink: 0;
+}
+
+/* A dashed violet outline, like the dashed line under the name. */
+.tags:is(:hover, :focus-visible) {
+	border-color: var(--selection);
+	color: var(--selection);
+}
+
+.marks {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	min-width: 0;
+}
+
+/* Each mark at most as wide as its label, and a long label stops at about 15
+   characters, so one tag can't take the whole bar. Two classes, to win over the
+   mark's own max-width. */
+.marks > :not(.more) {
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 10rem;
+}
+
+.more,
+.count {
+	flex: none;
+	font-family: var(--hand);
+	font-size: var(--text-sm);
+}
+
+/* Only on a narrow screen, in place of the marks. */
+.count {
+	display: none;
+	align-items: center;
+	gap: var(--space-xs);
+}
+
+/* The breakpoint where the bar's switch button drops its text: the tag icon and
+   the count leave the drawing's name the room. */
+@media (max-width: 40rem) {
+	.marks {
+		display: none;
+	}
+
+	.count {
+		display: inline-flex;
+	}
+}
