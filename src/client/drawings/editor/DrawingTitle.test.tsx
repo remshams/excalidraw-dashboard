@@ -16,22 +16,17 @@ function slowRename() {
 }
 
 function setup(onRename = vi.fn(() => Promise.resolve())) {
-	const view = render(
+	const ui = (name: string) => (
 		<>
-			<DrawingTitle name="Plan" onRename={onRename} />
+			<DrawingTitle name={name} onRename={onRename} />
 			<button type="button">Elsewhere</button>
-		</>,
+		</>
 	);
+	const view = render(ui("Plan"));
 	return {
 		onRename,
 		user: userEvent.setup(),
-		rerender: (name: string) =>
-			view.rerender(
-				<>
-					<DrawingTitle name={name} onRename={onRename} />
-					<button type="button">Elsewhere</button>
-				</>,
-			),
+		rerender: (name: string) => view.rerender(ui(name)),
 	};
 }
 
