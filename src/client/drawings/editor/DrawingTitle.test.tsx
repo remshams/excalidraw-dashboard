@@ -134,4 +134,30 @@ describe("DrawingTitle", () => {
 
 		expect(heading("Plan")).toBeVisible();
 	});
+
+	it("keeps showing the newer name while an earlier rename settles first", async () => {
+		const finishes: (() => void)[] = [];
+		const onRename = vi.fn(
+			() =>
+				new Promise<void>((resolve) => {
+					finishes.push(resolve);
+				}),
+		);
+		const { user } = setup(onRename);
+
+		await user.click(renameButton());
+		await user.clear(nameField());
+		await user.type(nameField(), "Roadmap{Enter}");
+		await user.click(renameButton());
+		await user.clear(
+			screen.getByRole("textbox", { name: "New name for Roadmap" }),
+		);
+		await user.type(
+			screen.getByRole("textbox", { name: "New name for Roadmap" }),
+			"Plan B{Enter}",
+		);
+		await act(async () => finishes[0]?.());
+
+		expect(heading("Plan B")).toBeVisible();
+	});
 });
