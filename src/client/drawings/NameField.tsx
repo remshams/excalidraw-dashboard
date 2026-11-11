@@ -4,6 +4,8 @@ import styles from "./NameField.module.css";
 type NameFieldProps = {
 	label: string;
 	initialName?: string;
+	/** Added to the field's own class, for a view that sizes it differently. */
+	className?: string;
 	onSubmit: (name: string) => void;
 	onCancel: () => void;
 };
@@ -12,6 +14,7 @@ type NameFieldProps = {
 export function NameField({
 	label,
 	initialName = "",
+	className,
 	onSubmit,
 	onCancel,
 }: NameFieldProps) {
@@ -29,7 +32,7 @@ export function NameField({
 
 	return (
 		<form
-			className={styles.field}
+			className={className ? `${styles.field} ${className}` : styles.field}
 			onSubmit={(event) => {
 				event.preventDefault();
 				finish(true);
