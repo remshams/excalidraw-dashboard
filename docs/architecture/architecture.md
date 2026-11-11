@@ -196,8 +196,8 @@ and `/` opens none. `App` shows the landing page at `/` and the editor view
 otherwise: the editor below a bar with an "All drawings" link and the drawing's
 name, which renames the drawing. Cards and "All drawings" are `DrawingLink`s:
 real links to a drawing's path, so a middle click opens a new tab, while a plain
-click opens the drawing without loading the page. Any client module may import `shared`; the diagrams
-show only `api`, the main user. Nothing enforces the dependencies inside the
+click opens the drawing without loading the page. Any client module may import
+`shared`; the diagrams show only `api`, the main user. Nothing enforces the dependencies inside the
 client beyond code review.
 
 ```mermaid
@@ -233,14 +233,15 @@ Excalidraw's `exportToBlob`. A scene with nothing visible removes the preview. A
 failed preview is only logged, and the next open tries again.
 
 The bar shows the drawing's name through `DrawingTitle`. `App` gives it the name
-from `use-drawings`, not the one `use-drawing` loaded, so a rename shows in the bar
-and on the card alike. Clicking the name opens `NameField` in its place, with the
-same type and box, so the bar doesn't move. `App` renames through `use-drawings`.
-While the rename saves, `use-drawing-title` shows the new name, so the bar never
-falls back to the old one before the list has the new one; a failed rename shows
-the old name and `App`'s error message. After Enter or Escape the focus goes back
-to the name; a click elsewhere keeps it there. Renaming doesn't touch the scene, so
-autosave goes on while the field is open.
+from `use-drawings`, not the one `use-drawing` loaded, so a rename shows in the
+bar and on the card alike. Clicking the name opens `NameField` in its place,
+with the same type and box, so the bar doesn't move. `App` renames through
+`use-drawings`. While the rename saves, `use-drawing-title` shows the new name,
+so the bar never falls back to the old one before the list has the new one; a
+failed rename shows the old name and `App`'s error message. After Enter or
+Escape the focus goes back to the name; a click elsewhere leaves the focus where
+the user clicked. Renaming doesn't touch the scene, so autosave goes on while
+the field is open.
 
 ```mermaid
 ---
