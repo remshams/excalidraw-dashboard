@@ -48,6 +48,12 @@ describe("DrawingTitle", () => {
 		expect(renameButton()).toHaveAccessibleName("Rename Plan");
 	});
 
+	it("leaves the focus where it is when the drawing opens", () => {
+		setup();
+
+		expect(renameButton()).not.toHaveFocus();
+	});
+
 	it("opens a field with the name when the name is clicked", async () => {
 		const { user } = setup();
 
