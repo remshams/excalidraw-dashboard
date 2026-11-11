@@ -111,14 +111,17 @@ export async function dismissErrorMessage(page: Page): Promise<void> {
 	await errorMessage(page).getByRole("button", { name: "Dismiss" }).click();
 }
 
+/** The open drawing's name in the editor's bar. */
+export function drawingHeading(page: Page, name: string) {
+	return page.getByRole("heading", { level: 1, name, exact: true });
+}
+
 /** The editor's bar names the drawing and the editor shows Excalidraw's tools. */
 export async function expectDrawingOpen(
 	page: Page,
 	name: string,
 ): Promise<void> {
-	await expect(
-		page.getByRole("heading", { level: 1, name, exact: true }),
-	).toBeVisible();
+	await expect(drawingHeading(page, name)).toBeVisible();
 	await expect(editorTools(page)).toBeVisible();
 }
 
