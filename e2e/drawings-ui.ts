@@ -228,6 +228,19 @@ export async function renameDrawing(
 	await page.keyboard.press("Enter");
 }
 
+/** Renames the open drawing through its name in the editor's bar. */
+export async function renameOpenDrawing(
+	page: Page,
+	name: string,
+	newName: string,
+): Promise<void> {
+	await page.getByRole("button", { name: `Rename ${name}` }).click();
+	await page
+		.getByRole("textbox", { name: `New name for ${name}` })
+		.fill(newName);
+	await page.keyboard.press("Enter");
+}
+
 /** Deletes a drawing through its card and confirms the question. */
 export async function deleteDrawing(page: Page, name: string): Promise<void> {
 	await drawingCard(page, name).hover();
