@@ -59,7 +59,9 @@
    half and a short one keeps its full width, so neither crowds out the other. */
 .barDrawing {
 	display: grid;
-	grid-template-columns: minmax(0, max-content) minmax(0, max-content);
+	/* A column per item, so the name alone has no gap after it. */
+	grid-auto-columns: minmax(0, max-content);
+	grid-auto-flow: column;
 	align-items: center;
 	gap: var(--space-md);
 	min-width: 0;
