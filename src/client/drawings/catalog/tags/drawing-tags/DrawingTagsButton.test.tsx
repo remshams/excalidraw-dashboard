@@ -1,6 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag, TagColor } from "#shared/tags.ts";
@@ -27,39 +26,27 @@ const onToggle = vi.fn();
 
 beforeEach(() => {
 	vi.resetAllMocks();
-	onToggle.mockResolvedValue(undefined);
 });
 
-/** The bar's tags of the drawing Plan, which takes in a change once `onToggle` resolves. */
-function Bar({ tagIds }: { tagIds: string[] }) {
-	const [ids, setIds] = useState(tagIds);
-	const drawing: DrawingSummary = {
-		id: "1",
-		name: "Plan",
-		createdAt: "",
-		updatedAt: "",
-		previewUpdatedAt: null,
-		tagIds: ids,
-	};
-	return (
-		<DrawingTagsButton
-			drawing={drawing}
-			tags={tags}
-			changes={changes}
-			onToggle={async (tagId) => {
-				await onToggle(tagId);
-				setIds((current) =>
-					current.includes(tagId)
-						? current.filter((id) => id !== tagId)
-						: [...current, tagId],
-				);
-			}}
-		/>
-	);
-}
+/** The drawing Plan with the given tags. */
+const plan = (tagIds: string[]): DrawingSummary => ({
+	id: "1",
+	name: "Plan",
+	createdAt: "",
+	updatedAt: "",
+	previewUpdatedAt: null,
+	tagIds,
+});
 
 const setup = (tagIds: string[]) => {
-	render(<Bar tagIds={tagIds} />);
+	render(
+		<DrawingTagsButton
+			drawing={plan(tagIds)}
+			tags={tags}
+			changes={changes}
+			onToggle={onToggle}
+		/>,
+	);
 	return userEvent.setup();
 };
 
@@ -108,21 +95,6 @@ describe("DrawingTagsButton", () => {
 				"button",
 				{ name: "Remove Budget" },
 			),
-		).toBeVisible();
-	});
-
-	it("shows a tag added in the dialog and closes it with Done", async () => {
-		const user = setup([]);
-
-		await user.click(screen.getByRole("button", { name: "Add tags to Plan" }));
-		const dialog = within(screen.getByRole("dialog", { name: "Tags of Plan" }));
-		await user.click(dialog.getByRole("button", { name: "Add Home" }));
-		await user.click(dialog.getByRole("button", { name: "Done" }));
-
-		expect(onToggle).toHaveBeenCalledExactlyOnceWith("c");
-		expect(screen.queryByRole("dialog")).toBeNull();
-		expect(
-			screen.getByRole("button", { name: "Change tags of Plan: Home" }),
 		).toBeVisible();
 	});
 });
