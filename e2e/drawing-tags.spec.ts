@@ -7,6 +7,7 @@ import {
 import {
 	changeTagsButton,
 	drawingCardLink,
+	drawingHeading,
 	drawingTagsDialog,
 	editorTagsButton,
 	expectDrawingOpen,
@@ -194,5 +195,42 @@ test("change the open drawing's tags from the editor bar", async ({
 	await test.step("the card shows both tags", async () => {
 		await goToAllDrawings(page);
 		await expect(taggedCardLink(page, name, [home, work].sort())).toBeVisible();
+	});
+});
+
+test("a short name stays whole next to long tags", async ({
+	page,
+	request,
+}) => {
+	const name = uniqueName("Roadmap");
+	const labels = [
+		"Architecture notes",
+		"Backlog grooming",
+		"Customer research",
+	].map(uniqueName);
+	let drawingId = "";
+	let wideWidth = 0;
+
+	await test.step(`${name} has three tags with long labels`, async () => {
+		drawingId = await createDrawingThroughApi(request, name);
+		const ids = [];
+		for (const label of labels) {
+			ids.push(await createTagThroughApi(request, label));
+		}
+		await assignTagsThroughApi(request, drawingId, ids);
+	});
+
+	await test.step("in a wide window, the bar has room for the name and every tag", async () => {
+		await page.setViewportSize({ width: 1400, height: 600 });
+		await openApp(page, drawingId);
+		await expect(editorTagsButton(page, name, labels)).toBeVisible();
+		wideWidth = (await drawingHeading(page, name).boundingBox())?.width ?? 0;
+		expect(wideWidth).toBeGreaterThan(0);
+	});
+
+	await test.step("in a window too narrow for all of it, the tags give way and the name keeps its width", async () => {
+		await page.setViewportSize({ width: 900, height: 600 });
+		const narrow = await drawingHeading(page, name).boundingBox();
+		expect(narrow?.width).toBeCloseTo(wideWidth, 0);
 	});
 });
