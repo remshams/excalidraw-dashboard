@@ -159,11 +159,13 @@ test("change the open drawing's tags from the editor bar", async ({
 	const work = uniqueName("Work");
 	const home = uniqueName("Home");
 	let drawingId = "";
+	let tagIds: string[] = [];
 
 	await test.step(`${name} has ${work}, and ${home} exists`, async () => {
 		drawingId = await createDrawingThroughApi(request, name);
 		const workId = await createTagThroughApi(request, work, "blue");
-		await createTagThroughApi(request, home, "green");
+		const homeId = await createTagThroughApi(request, home, "green");
+		tagIds = [workId, homeId];
 		await assignTagsThroughApi(request, drawingId, [workId]);
 	});
 
@@ -192,7 +194,10 @@ test("change the open drawing's tags from the editor bar", async ({
 		await expect(bar).toHaveText("2", { useInnerText: true });
 	});
 
-	await test.step("the card shows both tags", async () => {
+	await test.step("the server stores both tags, and the card shows them", async () => {
+		await expect
+			.poll(async () => (await storedSummary(request, drawingId))?.tagIds)
+			.toEqual(tagIds.sort());
 		await goToAllDrawings(page);
 		await expect(taggedCardLink(page, name, [home, work].sort())).toBeVisible();
 	});
