@@ -230,7 +230,7 @@ function BarDrawing({
 	// drawing keeps the ones it opened with. The list can still be loading.
 	const listed = drawings.find(({ id }) => id === drawing.id);
 	return (
-		<>
+		<div className={styles.barDrawing}>
 			<DrawingTitle
 				name={listed?.name ?? drawing.name}
 				onRename={(name) => onRename(drawing.id, name)}
@@ -243,6 +243,6 @@ function BarDrawing({
 					onToggle={(tagId) => onToggle(listed, tagId)}
 				/>
 			)}
-		</>
+		</div>
 	);
 }

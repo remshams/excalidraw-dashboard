@@ -55,6 +55,16 @@
 	color: var(--selection);
 }
 
+/* The drawing's name and its tags. With less room than both need, each gets
+   half and a short one keeps its full width, so neither crowds out the other. */
+.barDrawing {
+	display: grid;
+	grid-template-columns: minmax(0, max-content) minmax(0, max-content);
+	align-items: center;
+	gap: var(--space-md);
+	min-width: 0;
+}
+
 /* At the far end of the bar. */
 .switch {
 	margin-left: auto;
