@@ -49,6 +49,8 @@ export function App() {
 	const filter = useTagFilter(tags);
 	const createAndOpen = (name: string) =>
 		create(name).then((created) => openDrawing(created.id), showError);
+	const renameDrawing = (id: string, name: string) =>
+		rename(id, name).catch(showError);
 
 	return (
 		<>
@@ -60,7 +62,7 @@ export function App() {
 					theme={theme}
 					onOpen={openDrawing}
 					onCreate={createAndOpen}
-					onRename={(id, name) => rename(id, name).catch(showError)}
+					onRename={renameDrawing}
 					onSaved={replace}
 					onError={(id, cause) => {
 						// The last save can still be in flight when the user deletes the
@@ -77,7 +79,7 @@ export function App() {
 						filter={filter}
 						onOpen={openDrawing}
 						onCreate={createAndOpen}
-						onRename={(id, name) => rename(id, name).catch(showError)}
+						onRename={renameDrawing}
 						onDelete={(id) => remove(id).catch(showError)}
 						// The dialog says why a change failed.
 						onToggleTag={toggleTag}
