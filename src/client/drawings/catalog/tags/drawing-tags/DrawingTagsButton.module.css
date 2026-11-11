@@ -1,8 +1,7 @@
-/* The tags after the name, as one button. It shrinks with the name when the bar
-   runs out of room; the marks then shorten their labels. */
+/* The tags after the name, as one button. With less room than they need, the
+   marks shorten their labels. */
 .tags {
 	display: inline-flex;
-	flex: 0 1 auto;
 	align-items: center;
 	min-width: 0;
 	padding: var(--space-xs);
