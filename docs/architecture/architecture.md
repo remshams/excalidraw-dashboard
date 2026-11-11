@@ -248,10 +248,10 @@ drawing as `use-drawings` has it and the tags from `use-tags`, so the bar shows
 a tag change at once, like the card. It shows the first three tags as on a card,
 with the card's tilt, then "+2" for the rest; on a narrow screen only a tag icon
 and the count. Without tags it shows only the icon. When the name and the tags
-don't both fit, each gets half the room, and a short one keeps its full width. A click opens
-`DrawingTagsDialog`, the dialog the card opens, and `App` gives or takes off a
-tag through `use-drawings`. While the tags load or after they failed to load,
-the bar shows none.
+don't both fit, each gets half the room, and a short one keeps its full width. A
+click opens `DrawingTagsDialog`, the dialog the card opens, and `App` gives or
+takes off a tag through `use-drawings`. While the tags load or after they failed
+to load, the bar shows none.
 
 ```mermaid
 ---
