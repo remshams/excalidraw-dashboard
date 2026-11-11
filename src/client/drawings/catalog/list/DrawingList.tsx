@@ -8,7 +8,7 @@ import { FilterRow } from "../filter/FilterRow.tsx";
 import { filterDrawings } from "../filter/tag-filter.ts";
 import { TagToggles } from "../filter/TagToggles.tsx";
 import type { TagFilter } from "../filter/use-tag-filter.ts";
-import { PencilIcon, PlusIcon, TagIcon, TrashIcon } from "../icons.tsx";
+import { PencilIcon, PlusIcon, TagIcon, TrashIcon } from "../../icons.tsx";
 import { NameField } from "../../NameField.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
 import { DrawingTagsDialog } from "../tags/drawing-tags/DrawingTagsDialog.tsx";

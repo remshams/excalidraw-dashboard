@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { SearchIcon } from "../icons.tsx";
+import { SearchIcon } from "../../icons.tsx";
 import styles from "./SearchLine.module.css";
 
 type SearchLineProps = Omit<ComponentProps<"input">, "className"> & {

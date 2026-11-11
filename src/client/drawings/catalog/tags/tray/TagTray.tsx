@@ -3,7 +3,7 @@ import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { SearchLine } from "../../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../../dialog/use-modal-dialog.ts";
-import { PencilIcon, TagIcon } from "../../icons.tsx";
+import { PencilIcon, TagIcon } from "../../../icons.tsx";
 import { TagForm } from "../form/TagForm.tsx";
 import { NewTagButton } from "../NewTagButton.tsx";
 import { tagColorName } from "../tag-color-name.ts";

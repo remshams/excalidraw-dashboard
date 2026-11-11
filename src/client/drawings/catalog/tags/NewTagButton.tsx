@@ -1,4 +1,4 @@
-import { PlusIcon } from "../icons.tsx";
+import { PlusIcon } from "../../icons.tsx";
 import styles from "./NewTagButton.module.css";
 
 type NewTagButtonProps = {
