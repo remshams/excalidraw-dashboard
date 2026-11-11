@@ -194,9 +194,9 @@ of both modules and `App`. So does
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
 and `/` opens none. `App` shows the landing page at `/` and the editor view
 otherwise: the editor below a bar with an "All drawings" link and the drawing's
-name, which renames the drawing. Cards and "All drawings" are `DrawingLink`s: real links to a drawing's
-path, so a middle click opens a new tab, while a plain click opens the drawing
-without loading the page. Any client module may import `shared`; the diagrams
+name, which renames the drawing. Cards and "All drawings" are `DrawingLink`s:
+real links to a drawing's path, so a middle click opens a new tab, while a plain
+click opens the drawing without loading the page. Any client module may import `shared`; the diagrams
 show only `api`, the main user. Nothing enforces the dependencies inside the
 client beyond code review.
 
