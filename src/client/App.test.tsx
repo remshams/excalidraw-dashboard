@@ -387,6 +387,43 @@ describe("App", () => {
 		).toBeInTheDocument();
 	});
 
+	it("tags the open drawing from the editor bar and shows the tag on its card", async () => {
+		vi.mocked(api.setDrawingTags).mockResolvedValue({
+			...drawing("1", "Plan"),
+			tagIds: ["t1"],
+		});
+		openAt("/drawings/1");
+		const user = userEvent.setup();
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		await user.click(
+			await screen.findByRole("button", { name: "Add tags to Plan" }),
+		);
+		const dialog = within(screen.getByRole("dialog", { name: "Tags of Plan" }));
+		await user.click(dialog.getByRole("button", { name: "Add Work" }));
+		await user.click(dialog.getByRole("button", { name: "Done" }));
+
+		expect(api.setDrawingTags).toHaveBeenCalledExactlyOnceWith("1", ["t1"]);
+		expect(
+			screen.getByRole("button", { name: "Change tags of Plan: Work" }),
+		).toBeVisible();
+
+		await user.click(screen.getByRole("link", { name: "All drawings" }));
+		expect(
+			await cards().findByRole("link", { name: "Plan, tags: Work" }),
+		).toBeInTheDocument();
+	});
+
+	it("shows no tags in the editor bar when they could not be loaded", async () => {
+		vi.mocked(api.listTags).mockRejectedValue(new Error("Tags failed"));
+		openAt("/drawings/1");
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		expect(screen.queryByRole("button", { name: /tags/ })).toBeNull();
+	});
+
 	it("names the open drawing in the bar before the list has it", async () => {
 		vi.mocked(api.listDrawings).mockReturnValue(new Promise(() => {}));
 		openAt("/drawings/1");

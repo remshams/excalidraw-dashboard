@@ -1,15 +1,17 @@
 import { useCallback, useState } from "react";
 import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
+import type { Tag } from "#shared/tags.ts";
 import styles from "./App.module.css";
 import { BackIcon, SearchIcon } from "./drawings/icons.tsx";
 import { useTagFilter } from "./drawings/catalog/filter/use-tag-filter.ts";
 import { DrawingList } from "./drawings/catalog/list/DrawingList.tsx";
+import { DrawingTagsButton } from "./drawings/catalog/tags/drawing-tags/DrawingTagsButton.tsx";
 import { QuickSwitcher } from "./drawings/catalog/switcher/QuickSwitcher.tsx";
 import {
 	switcherShortcutHint,
 	useSwitcherShortcut,
 } from "./drawings/catalog/switcher/use-switcher-shortcut.ts";
-import { useTags } from "./drawings/catalog/tags/use-tags.ts";
+import { type TagChanges, useTags } from "./drawings/catalog/tags/use-tags.ts";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
 import { DrawingLink } from "./drawings/DrawingLink.tsx";
 import { DrawingTitle } from "./drawings/editor/DrawingTitle.tsx";
@@ -58,6 +60,7 @@ export function App() {
 				<EditorView
 					drawing={drawing}
 					drawings={drawings}
+					tagging={{ tags, changes: tagChanges, onToggle: toggleTag }}
 					failed={failed}
 					theme={theme}
 					onOpen={openDrawing}
@@ -98,11 +101,24 @@ export function App() {
 	);
 }
 
+/** What the editor bar needs to show and change the open drawing's tags. */
+type Tagging = {
+	/** Every tag, or null while they load or when loading failed. */
+	tags: Tag[] | null;
+	changes: TagChanges;
+	/**
+	 * Gives the drawing the tag or takes it off. Rejects when the server refuses;
+	 * the dialog says why.
+	 */
+	onToggle: (drawing: DrawingSummary, tagId: string) => Promise<void>;
+};
+
 type EditorViewProps = {
 	/** The open drawing, or null while it loads or when loading failed. */
 	drawing: Drawing | null;
 	/** Every drawing, for the quick switcher. */
 	drawings: DrawingSummary[];
+	tagging: Tagging;
 	failed: boolean;
 	theme: "light" | "dark";
 	onOpen: (id: string | null) => void;
@@ -115,12 +131,13 @@ type EditorViewProps = {
 };
 
 /**
- * The open drawing across the window, below a bar that leads back to all drawings
- * and opens the quick switcher.
+ * The open drawing across the window, below a bar that leads back to all drawings,
+ * names the drawing and its tags, and opens the quick switcher.
  */
 function EditorView({
 	drawing,
 	drawings,
+	tagging,
 	failed,
 	theme,
 	onOpen,
@@ -145,14 +162,12 @@ function EditorView({
 					All drawings
 				</DrawingLink>
 				{drawing && (
-					<DrawingTitle
+					<BarDrawing
 						key={drawing.id}
-						// The list has the name after a rename; the loaded drawing keeps the
-						// one it opened with.
-						name={
-							drawings.find(({ id }) => id === drawing.id)?.name ?? drawing.name
-						}
-						onRename={(name) => onRename(drawing.id, name)}
+						drawing={drawing}
+						drawings={drawings}
+						tagging={tagging}
+						onRename={onRename}
 					/>
 				)}
 				<button
@@ -193,5 +208,41 @@ function EditorView({
 				/>
 			)}
 		</div>
+	);
+}
+
+type BarDrawingProps = {
+	/** The open drawing as it was loaded. */
+	drawing: Drawing;
+	drawings: DrawingSummary[];
+	tagging: Tagging;
+	onRename: (id: string, name: string) => Promise<void>;
+};
+
+/** The open drawing's name in the bar, then its tags once the list and the tags have loaded. */
+function BarDrawing({
+	drawing,
+	drawings,
+	tagging: { tags, changes, onToggle },
+	onRename,
+}: BarDrawingProps) {
+	// The list has the name after a rename and the tags after a change; the loaded
+	// drawing keeps the ones it opened with. The list can still be loading.
+	const listed = drawings.find(({ id }) => id === drawing.id);
+	return (
+		<>
+			<DrawingTitle
+				name={listed?.name ?? drawing.name}
+				onRename={(name) => onRename(drawing.id, name)}
+			/>
+			{listed && tags && (
+				<DrawingTagsButton
+					drawing={listed}
+					tags={tags}
+					changes={changes}
+					onToggle={(tagId) => onToggle(listed, tagId)}
+				/>
+			)}
+		</>
 	);
 }
