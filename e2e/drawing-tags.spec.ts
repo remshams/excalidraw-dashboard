@@ -178,7 +178,7 @@ test("change the open drawing's tags from the editor bar", async ({
 	});
 
 	await test.step(`add ${home} from the bar, and Escape returns to it`, async () => {
-		await editorTagsButton(page, name, [work]).click();
+		await openDrawingTags(page, name, editorTagsButton(page, name, [work]));
 		await tagToAdd(page, name, home).click();
 		await expect(tagOnDrawing(page, name, home)).toBeVisible();
 		await page.keyboard.press("Escape");
