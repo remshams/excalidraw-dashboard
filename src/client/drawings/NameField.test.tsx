@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import styles from "./NameField.module.css";
 import { NameField } from "./NameField.tsx";
 
 function setup(initialName?: string) {
@@ -58,5 +59,25 @@ describe("NameField", () => {
 
 		expect(onSubmit).not.toHaveBeenCalled();
 		expect(onCancel).toHaveBeenCalledOnce();
+	});
+
+	it("adds a view's class to its own", () => {
+		render(
+			<NameField
+				label="Name"
+				className="wide"
+				onSubmit={vi.fn()}
+				onCancel={vi.fn()}
+			/>,
+		);
+
+		const form = screen.getByRole("textbox").closest("form");
+		expect(form).toHaveClass(styles.field, "wide");
+	});
+
+	it("has only its own class without a view's", () => {
+		const { field } = setup();
+
+		expect(field.closest("form")?.className).toBe(styles.field);
 	});
 });
