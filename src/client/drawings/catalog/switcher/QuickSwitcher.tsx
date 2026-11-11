@@ -3,7 +3,7 @@ import type { DrawingSummary } from "#shared/drawings.ts";
 import frame from "../dialog/CentredDialog.module.css";
 import { SearchLine } from "../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
-import { PlusIcon } from "../icons.tsx";
+import { PlusIcon } from "../../icons.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
 import styles from "./QuickSwitcher.module.css";
 import {

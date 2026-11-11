@@ -1,4 +1,4 @@
-import { PencilIcon } from "../catalog/icons.tsx";
+import { PencilIcon } from "../icons.tsx";
 import { NameField } from "../NameField.tsx";
 import styles from "./DrawingTitle.module.css";
 import { useDrawingTitle } from "./use-drawing-title.ts";

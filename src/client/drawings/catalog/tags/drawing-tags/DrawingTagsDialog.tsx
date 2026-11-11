@@ -2,7 +2,7 @@ import type { Tag } from "#shared/tags.ts";
 import frame from "../../dialog/CentredDialog.module.css";
 import { SearchLine } from "../../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../../dialog/use-modal-dialog.ts";
-import { CrossIcon } from "../../icons.tsx";
+import { CrossIcon } from "../../../icons.tsx";
 import { TagForm } from "../form/TagForm.tsx";
 import { NewTagButton } from "../NewTagButton.tsx";
 import { TagMark } from "../TagMark.tsx";

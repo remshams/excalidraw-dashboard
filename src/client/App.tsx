@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import styles from "./App.module.css";
-import { BackIcon, SearchIcon } from "./drawings/catalog/icons.tsx";
+import { BackIcon, SearchIcon } from "./drawings/icons.tsx";
 import { useTagFilter } from "./drawings/catalog/filter/use-tag-filter.ts";
 import { DrawingList } from "./drawings/catalog/list/DrawingList.tsx";
 import { QuickSwitcher } from "./drawings/catalog/switcher/QuickSwitcher.tsx";
