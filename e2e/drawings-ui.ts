@@ -280,9 +280,16 @@ export function changeTagsButton(page: Page, name: string) {
 	});
 }
 
-/** Opens the dialog for the drawing's tags from its card. */
-export async function openDrawingTags(page: Page, name: string): Promise<void> {
-	await changeTagsButton(page, name).click();
+/**
+ * Opens the dialog for the drawing's tags through the given button, by default
+ * the one on its card.
+ */
+export async function openDrawingTags(
+	page: Page,
+	name: string,
+	button: Locator = changeTagsButton(page, name),
+): Promise<void> {
+	await button.click();
 	await expect(drawingTagsDialog(page, name)).toBeVisible();
 }
 
