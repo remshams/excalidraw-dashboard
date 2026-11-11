@@ -387,6 +387,14 @@ describe("App", () => {
 		).toBeInTheDocument();
 	});
 
+	it("names the open drawing in the bar before the list has it", async () => {
+		vi.mocked(api.listDrawings).mockReturnValue(new Promise(() => {}));
+		openAt("/drawings/1");
+		render(<App />);
+
+		expect(await screen.findByRole("heading", { name: "Plan" })).toBeVisible();
+	});
+
 	it("keeps the old name in the editor bar when the rename fails", async () => {
 		vi.mocked(api.updateDrawing).mockRejectedValue(
 			new Error("PUT /drawings/1 failed with 500"),
