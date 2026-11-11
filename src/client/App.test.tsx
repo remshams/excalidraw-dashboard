@@ -420,6 +420,7 @@ describe("App", () => {
 		openAt("/drawings/1");
 		render(<App />);
 		await screen.findByText("Editing Plan");
+		expect(await screen.findByRole("alert")).toHaveTextContent("Tags failed");
 
 		expect(screen.queryByRole("button", { name: /tags/ })).toBeNull();
 	});
