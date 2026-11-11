@@ -14,11 +14,13 @@ type DrawingTitleProps = {
  * its place that renames the drawing.
  */
 export function DrawingTitle({ name, onRename }: DrawingTitleProps) {
-	const { editing, shownName, title, button, start, save, cancel } =
-		useDrawingTitle(name, onRename);
+	const { editing, shownName, refocus, start, save, cancel } = useDrawingTitle(
+		name,
+		onRename,
+	);
 
 	return (
-		<div ref={title} className={styles.title}>
+		<div className={styles.title}>
 			{editing ? (
 				<NameField
 					label={`New name for ${shownName}`}
@@ -31,10 +33,11 @@ export function DrawingTitle({ name, onRename }: DrawingTitleProps) {
 				// The heading keeps the drawing's name; the button inside says what it does.
 				<h1 aria-label={shownName}>
 					<button
-						ref={button}
 						type="button"
 						className={styles.rename}
 						aria-label={`Rename ${shownName}`}
+						// biome-ignore lint/a11y/noAutofocus: the focus comes back from the name field the user just closed.
+						autoFocus={refocus}
 						onClick={start}
 					>
 						<span className={styles.name}>{shownName}</span>

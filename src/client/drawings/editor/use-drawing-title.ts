@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 /**
  * The state of the drawing's name in the editor bar: whether the name field is
@@ -11,20 +11,13 @@ export function useDrawingTitle(
 ) {
 	const [editing, setEditing] = useState(false);
 	const [savingName, setSavingName] = useState<string | null>(null);
-	const title = useRef<HTMLDivElement>(null);
-	const button = useRef<HTMLButtonElement>(null);
-	// Enter and Escape keep the focus in the field until it closes; a click
-	// elsewhere has already moved it, and the bar leaves it there.
-	const refocus = useRef(false);
-
-	useEffect(() => {
-		if (editing || !refocus.current) return;
-		refocus.current = false;
-		button.current?.focus();
-	}, [editing]);
+	// Whether the name takes the focus back when the field closes.
+	const [refocus, setRefocus] = useState(false);
 
 	const close = () => {
-		refocus.current = title.current?.contains(document.activeElement) ?? false;
+		// Enter and Escape close the field while it still has the focus. A click
+		// elsewhere has already moved the focus, and the bar leaves it there.
+		setRefocus(document.activeElement instanceof HTMLInputElement);
 		setEditing(false);
 	};
 
@@ -37,8 +30,7 @@ export function useDrawingTitle(
 	return {
 		editing,
 		shownName: savingName ?? name,
-		title,
-		button,
+		refocus,
 		start: () => setEditing(true),
 		save,
 		cancel: close,
