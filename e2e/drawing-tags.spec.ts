@@ -8,8 +8,12 @@ import {
 	changeTagsButton,
 	drawingCardLink,
 	drawingTagsDialog,
+	editorTagsButton,
+	expectDrawingOpen,
 	findTagToAddField,
+	goToAllDrawings,
 	hiddenTagCount,
+	openApp,
 	openDrawingTags,
 	taggedCardLink,
 	tagOnDrawing,
@@ -143,5 +147,52 @@ test("a card shows its first three tags and counts the rest", async ({
 	await test.step("the card names all four and shows +1 for the fourth", async () => {
 		await expect(taggedCardLink(page, name, labels)).toBeVisible();
 		await expect(hiddenTagCount(page, name, 1)).toBeVisible();
+	});
+});
+
+test("change the open drawing's tags from the editor bar", async ({
+	page,
+	request,
+}) => {
+	const name = uniqueName("Plan");
+	const work = uniqueName("Work");
+	const home = uniqueName("Home");
+	let drawingId = "";
+
+	await test.step(`${name} has ${work}, and ${home} exists`, async () => {
+		drawingId = await createDrawingThroughApi(request, name);
+		const workId = await createTagThroughApi(request, work, "blue");
+		await createTagThroughApi(request, home, "green");
+		await assignTagsThroughApi(request, drawingId, [workId]);
+	});
+
+	await test.step(`the bar shows ${work} after the open drawing's name`, async () => {
+		await openApp(page, drawingId);
+		await expectDrawingOpen(page, name);
+		const bar = editorTagsButton(page, name, [work]);
+		await expect(bar).toBeVisible();
+		await expect(bar.getByText(work, { exact: true })).toBeVisible();
+	});
+
+	await test.step(`add ${home} from the bar, and Escape returns to it`, async () => {
+		await editorTagsButton(page, name, [work]).click();
+		await tagToAdd(page, name, home).click();
+		await expect(tagOnDrawing(page, name, home)).toBeVisible();
+		await page.keyboard.press("Escape");
+		await expect(drawingTagsDialog(page, name)).toBeHidden();
+		await expect(
+			editorTagsButton(page, name, [home, work].sort()),
+		).toBeFocused();
+	});
+
+	await test.step("a narrow screen shows the number of tags in place of their labels", async () => {
+		await page.setViewportSize({ width: 375, height: 700 });
+		const bar = editorTagsButton(page, name, [home, work].sort());
+		await expect(bar).toHaveText("2", { useInnerText: true });
+	});
+
+	await test.step("the card shows both tags", async () => {
+		await goToAllDrawings(page);
+		await expect(taggedCardLink(page, name, [home, work].sort())).toBeVisible();
 	});
 });
