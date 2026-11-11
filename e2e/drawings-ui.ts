@@ -112,7 +112,7 @@ export async function dismissErrorMessage(page: Page): Promise<void> {
 }
 
 /** The open drawing's name in the editor's bar. */
-export function drawingHeading(page: Page, name: string) {
+function drawingHeading(page: Page, name: string) {
 	return page.getByRole("heading", { level: 1, name, exact: true });
 }
 
@@ -321,6 +321,17 @@ export function editorTagsButton(page: Page, name: string, labels: string[]) {
 		name: `Change tags of ${name}: ${labels.join(", ")}`,
 		exact: true,
 	});
+}
+
+/** How wide the open drawing's name and its tags are in the editor's bar. */
+export async function barWidths(
+	page: Page,
+	name: string,
+	labels: string[],
+): Promise<{ name: number; tags: number }> {
+	const heading = await drawingHeading(page, name).boundingBox();
+	const tags = await editorTagsButton(page, name, labels).boundingBox();
+	return { name: heading?.width ?? 0, tags: tags?.width ?? 0 };
 }
 
 /** The button in the editor's bar that opens the quick switcher. */
