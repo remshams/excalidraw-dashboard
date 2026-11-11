@@ -193,10 +193,10 @@ of both modules and `App`. So does
 `use-open-drawing-id.ts`,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
 and `/` opens none. `App` shows the landing page at `/` and the editor view
-otherwise: the editor below a bar with an "All drawings" link and the drawing's
-name, which renames the drawing. Cards and "All drawings" are `DrawingLink`s:
-real links to a drawing's path, so a middle click opens a new tab, while a plain
-click opens the drawing without loading the page. Any client module may import
+otherwise: the editor below a bar with an "All drawings" link, the drawing's
+name, which renames the drawing, and its tags, which change them. Cards and "All
+drawings" are `DrawingLink`s: real links to a drawing's path, so a middle click
+opens a new tab, while a plain click opens the drawing without loading the page. Any client module may import
 `shared`; the diagrams show only `api`, the main user. Nothing enforces the dependencies inside the
 client beyond code review.
 
@@ -243,6 +243,15 @@ Escape the focus goes back to the name; a click elsewhere leaves the focus where
 the user clicked. Renaming doesn't touch the scene, so autosave goes on while
 the field is open.
 
+After the name, `App` renders `DrawingTagsButton` from `catalog/tags/` with the
+drawing as `use-drawings` has it and the tags from `use-tags`, so the bar shows
+a tag change at once, like the card. It shows the first three tags as on a card,
+with the card's tilt, then "+2" for the rest; on a narrow screen only a tag icon
+and the count. Without tags it shows only the icon. A click opens
+`DrawingTagsDialog`, the dialog the card opens, and `App` gives or takes off a
+tag through `use-drawings`. While the tags load or after they failed to load,
+the bar shows none.
+
 ```mermaid
 ---
 title: Modules of the catalog
@@ -273,23 +282,23 @@ flowchart TD
 title: Modules of the tags
 ---
 flowchart TD
-    tray["TagTray<br>src/client/drawings/catalog/tags/tray/TagTray.tsx<br>The Tags button and the tray with its list and form"]:::module
-    trayState["use-tag-tray<br>src/client/drawings/catalog/tags/tray/use-tag-tray.ts<br>The open tray's view, find text, tab stop and focus"]:::module
+    tray["tray/<br>The Tags button and the tray with its list and form"]:::group
     form["TagForm<br>src/client/drawings/catalog/tags/form/TagForm.tsx<br>Creates or changes a tag, asks before deleting it"]:::module
     mark["TagMark<br>src/client/drawings/catalog/tags/TagMark.tsx<br>A tag's inked label and the ink filter"]:::module
     findTags["find-tags<br>src/client/drawings/catalog/tags/find-tags.ts<br>Finds tags by a part of their label"]:::module
     gridKeys["grid-keys<br>src/client/drawings/catalog/tags/grid-keys.ts<br>Moves the focus through a grid or a row with the arrow keys"]:::module
     tags["use-tags<br>src/client/drawings/catalog/tags/use-tags.ts<br>Loads the tags, applies changes, reloads after a refusal"]:::module
     drawingTags["DrawingTagsDialog<br>src/client/drawings/catalog/tags/drawing-tags/DrawingTagsDialog.tsx<br>Modal dialog that changes one drawing's tags"]:::module
+    drawingTagsButton["DrawingTagsButton<br>src/client/drawings/catalog/tags/drawing-tags/DrawingTagsButton.tsx<br>A drawing's tags in the editor bar, which open the dialog"]:::module
     drawingTagsState["use-drawing-tags<br>src/client/drawings/catalog/tags/drawing-tags/use-drawing-tags.ts<br>The dialog's tags on the drawing and to add, find text, form and failure"]:::module
     newTag["NewTagButton<br>src/client/drawings/catalog/tags/NewTagButton.tsx<br>Opens the form for a new tag"]:::module
     dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
-    tray --> form & trayState & tags & dialog & newTag
+    tray --> form & tags & dialog & newTag & findTags & gridKeys
+    drawingTagsButton --> drawingTags & mark
     drawingTags --> form & mark & drawingTagsState & newTag & dialog
     drawingTagsState --> findTags & gridKeys & api & dialog
     form --> mark & api
-    trayState --> findTags & gridKeys & tags & dialog
     tags --> api
 ```
 
@@ -306,7 +315,8 @@ icons at the root of `drawings/` that `list/`, `switcher/`, `tags/`, `dialog/`,
 
 `tags/` has one folder per UI unit, each with its hook, CSS module and tests:
 `tray/` holds `TagTray` and `use-tag-tray`, `drawing-tags/` holds
-`DrawingTagsDialog` and `use-drawing-tags`, and `form/` holds `TagForm` and
+`DrawingTagsDialog`, `use-drawing-tags` and `DrawingTagsButton`, which opens the
+dialog from the editor bar, and `form/` holds `TagForm` and
 `use-tag-form`. What several units use stays at the top of `tags/`: `use-tags`,
 `TagMark`, `NewTagButton`, `find-tags`, `grid-keys` and `tag-color-name`.
 
