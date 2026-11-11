@@ -424,6 +424,15 @@ describe("App", () => {
 		expect(screen.queryByRole("button", { name: /tags/ })).toBeNull();
 	});
 
+	it("shows the open drawing's tags in the bar only once the list has it", async () => {
+		vi.mocked(api.listDrawings).mockReturnValue(new Promise(() => {}));
+		openAt("/drawings/1");
+		render(<App />);
+		await screen.findByText("Editing Plan");
+
+		expect(screen.queryByRole("button", { name: /tags/ })).toBeNull();
+	});
+
 	it("names the open drawing in the bar before the list has it", async () => {
 		vi.mocked(api.listDrawings).mockReturnValue(new Promise(() => {}));
 		openAt("/drawings/1");
