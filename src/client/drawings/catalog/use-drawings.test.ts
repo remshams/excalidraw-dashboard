@@ -36,6 +36,26 @@ describe("useDrawings", () => {
 		]);
 	});
 
+	it("keeps a newer tag when a save answers with the tags it started with", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([drawing("a", ["t1"])]);
+		vi.mocked(api.setDrawingTags).mockReturnValue(new Promise(() => {}));
+		const { result } = renderHook(() => useDrawings(vi.fn()));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+
+		act(() => void result.current.toggleTag(result.current.drawings[0], "t2"));
+		act(() =>
+			result.current.replace({
+				...drawing("a", ["t1"]),
+				updatedAt: "2026-11-11T15:00:00.000Z",
+			}),
+		);
+
+		expect(result.current.drawings[0]).toMatchObject({
+			updatedAt: "2026-11-11T15:00:00.000Z",
+			tagIds: ["t1", "t2"],
+		});
+	});
+
 	describe("toggleTag", () => {
 		async function setup(tagIds: string[]) {
 			vi.mocked(api.listDrawings).mockResolvedValue([

@@ -20,9 +20,18 @@ export function useDrawings(onError: (error: unknown) => void) {
 		listDrawings().then(setDrawings, onError);
 	}, [onError]);
 
+	/**
+	 * Takes in the summary a save or a rename answered with. The drawing keeps the
+	 * tags the list has: only `toggleTag` and `forgetTag` change them, and a save
+	 * that started before a tag change answers with the old ones.
+	 */
 	const replace = (summary: DrawingSummary) => {
 		setDrawings((list) =>
-			list.map((d) => (d.id === summary.id ? summary : d)).sort(byName),
+			list
+				.map((d) =>
+					d.id === summary.id ? { ...summary, tagIds: d.tagIds } : d,
+				)
+				.sort(byName),
 		);
 	};
 
