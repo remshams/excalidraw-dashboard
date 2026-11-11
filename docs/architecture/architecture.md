@@ -171,11 +171,12 @@ flowchart TD
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
     search["search<br>src/client/drawings/search.ts<br>Finds drawings by a part of their name"]:::module
+    name["NameField<br>src/client/drawings/NameField.tsx<br>Edits a drawing name inline"]:::module
     shared["shared<br>src/shared/<br>API types and the tag rules"]:::module
     app --> scheme & catalog & editor & openId & link
-    catalog --> api & link & search
+    catalog --> api & link & search & name
     link --> openId
-    editor --> api
+    editor --> api & name
     api --> shared
 ```
 
@@ -186,12 +187,14 @@ feature, one bounded context around the `Drawing` aggregate. It has two modules:
 after tags, and `editor/` edits the
 open one and keeps its scene and preview saved. They don't import each other;
 both use `api.ts` at the root. `search.ts`, a domain service that finds
-drawings by a part of their name, sits at the root too. So does
+drawings by a part of their name, sits at the root too, with `NameField`, which
+renames a drawing on its card and in the editor bar, and `icons`, the line icons
+of both modules and `App`. So does
 `use-open-drawing-id.ts`,
 and `App` uses it to track the open drawing: `/drawings/<id>` opens a drawing,
 and `/` opens none. `App` shows the landing page at `/` and the editor view
 otherwise: the editor below a bar with an "All drawings" link and the drawing's
-name. Cards and "All drawings" are `DrawingLink`s: real links to a drawing's
+name, which renames the drawing. Cards and "All drawings" are `DrawingLink`s: real links to a drawing's
 path, so a middle click opens a new tab, while a plain click opens the drawing
 without loading the page. Any client module may import `shared`; the diagrams
 show only `api`, the main user. Nothing enforces the dependencies inside the
@@ -208,7 +211,11 @@ flowchart TD
     scheduler["save-scheduler<br>src/client/drawings/editor/save-scheduler.ts<br>Debounces, deduplicates and orders saves"]:::module
     usePreview["use-preview<br>src/client/drawings/editor/use-preview.ts<br>Refreshes an out-of-date preview on open and leave"]:::module
     preview["preview<br>src/client/drawings/editor/preview.ts<br>Renders the scene as a PNG and stores it"]:::module
+    title["DrawingTitle<br>src/client/drawings/editor/DrawingTitle.tsx<br>The drawing's name in the bar, which opens a name field"]:::module
+    titleState["use-drawing-title<br>src/client/drawings/editor/use-drawing-title.ts<br>Whether the field is open, the name to show and the focus"]:::module
+    name["NameField<br>src/client/drawings/NameField.tsx<br>Edits a drawing name inline"]:::module
     api["api<br>src/client/drawings/api.ts<br>Calls the HTTP API"]:::module
+    title --> titleState & name
     editor --> autosave & usePreview
     autosave --> scheduler & api
     usePreview --> preview
@@ -225,6 +232,16 @@ then is it rendered: a light PNG, at most 640 px on the longer side, from
 Excalidraw's `exportToBlob`. A scene with nothing visible removes the preview. A
 failed preview is only logged, and the next open tries again.
 
+The bar shows the drawing's name through `DrawingTitle`. `App` gives it the name
+from `use-drawings`, not the one `use-drawing` loaded, so a rename shows in the bar
+and on the card alike. Clicking the name opens `NameField` in its place, with the
+same type and box, so the bar doesn't move. `App` renames through `use-drawings`.
+While the rename saves, `use-drawing-title` shows the new name, so the bar never
+falls back to the old one before the list has the new one; a failed rename shows
+the old name and `App`'s error message. After Enter or Escape the focus goes back
+to the name; a click elsewhere keeps it there. Renaming doesn't touch the scene, so
+autosave goes on while the field is open.
+
 ```mermaid
 ---
 title: Modules of the catalog
@@ -235,7 +252,7 @@ flowchart TD
     switcher["switcher/<br>Modal search that opens or creates a drawing"]:::group
     tags["tags/<br>Loads, finds, creates, changes and deletes the tags; changes a drawing's tags"]:::group
     previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
-    name["NameField<br>src/client/drawings/catalog/NameField.tsx<br>Edits a drawing name inline"]:::module
+    name["NameField<br>src/client/drawings/NameField.tsx<br>Edits a drawing name inline"]:::module
     confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, gives or takes off a tag, remembers deletes, forgets deleted tags"]:::module
     dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
@@ -280,12 +297,11 @@ switcher, `tags/` the tags and `dialog/` what the modal dialogs share: `use-moda
 `SearchLine`, a search field on a notebook line with no box, and
 `CentredDialog.module.css`, the frame of the quick switcher and the dialog for a
 drawing's tags: a sheet in the middle of the window over the dimmed page. Directly in `catalog/`
-stay `PreviewImage`, which the landing page and the quick switcher use, `icons`,
-which all of them use, `use-drawings` for `App`, and `NameField` and
-`DeleteConfirmation`. Only
-`DrawingList` uses those two today, but neither depends on it. The diagram leaves
-out `icons`, the line icons that `list/`, `switcher/`, `tags/`, `dialog/` and `App`
-take, since it depends on nothing.
+stay `PreviewImage`, which the landing page and the quick switcher use,
+`use-drawings` for `App`, and `DeleteConfirmation`, which only `DrawingList` uses
+today but which doesn't depend on it. The diagrams leave out `icons`, the line
+icons at the root of `drawings/` that `list/`, `switcher/`, `tags/`, `dialog/`,
+`DrawingTitle` and `App` take, since it depends on nothing.
 
 `tags/` has one folder per UI unit, each with its hook, CSS module and tests:
 `tray/` holds `TagTray` and `use-tag-tray`, `drawing-tags/` holds
@@ -303,8 +319,7 @@ sends its new preview's summary to `use-drawings`, so the card changes its URL
 and the browser loads the new image. A card renames its drawing through
 `NameField` and deletes it only after `DeleteConfirmation`. `use-drawings`
 remembers which drawings it deleted, so `App` can ignore a last save that was
-still in flight and fails once the drawing is gone. `App` takes the icons for
-its bar from `icons`.
+still in flight and fails once the drawing is gone.
 
 `tags/` holds the tag aggregate's part of the catalog. `use-tags` loads the tags
 once when `App` mounts and sorts them with `localeCompare`, as `use-drawings` sorts
