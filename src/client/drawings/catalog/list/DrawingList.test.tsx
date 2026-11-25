@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
+import { scratchpadName } from "../../scratchpad.ts";
 import { useTagFilter } from "../filter/use-tag-filter.ts";
 import { DrawingList } from "./DrawingList.tsx";
 
@@ -17,7 +18,7 @@ function FilteredList(
 
 const summary = (
 	id: string,
-	name: string,
+	name: string | null,
 	previewUpdatedAt: string | null = null,
 	tagIds: string[] = [],
 ): DrawingSummary => ({
@@ -37,9 +38,9 @@ const drawings = [
 function setup(shown = drawings, tags: Tag[] = []) {
 	const props = {
 		onOpen: vi.fn(),
-		onCreate: vi.fn(),
 		onRename: vi.fn(),
 		onDelete: vi.fn(),
+		onDiscardAll: vi.fn(),
 		onToggleTag: vi.fn(),
 		tagChanges: { create: vi.fn(), update: vi.fn(), remove: vi.fn() },
 	};
@@ -133,30 +134,15 @@ describe("DrawingList", () => {
 		);
 	});
 
-	it("creates a drawing with the entered name", async () => {
-		const { user, onCreate } = setup();
+	it("starts a new scratchpad from the blank sheet without asking for a name", async () => {
+		const { user, onOpen } = setup();
+		const blank = screen.getByRole("link", { name: "New drawing" });
+		expect(blank).toHaveAttribute("href", "/drawings/new");
+
+		await user.click(blank);
+
+		expect(onOpen).toHaveBeenCalledExactlyOnceWith("new");
 		expect(screen.queryByRole("textbox")).toBeNull();
-
-		await user.click(screen.getByRole("button", { name: "New drawing" }));
-		await user.type(
-			screen.getByRole("textbox", { name: "Name of the new drawing" }),
-			"Sketch{Enter}",
-		);
-
-		expect(onCreate).toHaveBeenCalledWith("Sketch");
-		expect(screen.queryByRole("textbox")).toBeNull();
-	});
-
-	it("does not create a drawing when naming is cancelled", async () => {
-		const { user, onCreate } = setup();
-
-		await user.click(screen.getByRole("button", { name: "New drawing" }));
-		await user.type(screen.getByRole("textbox"), "Sketch{Escape}");
-
-		expect(onCreate).not.toHaveBeenCalled();
-		expect(
-			screen.getByRole("button", { name: "New drawing" }),
-		).toBeInTheDocument();
 	});
 
 	it("renames a drawing in place", async () => {
@@ -219,36 +205,210 @@ describe("DrawingList", () => {
 		).toBeInTheDocument();
 	});
 
-	it("closes the new drawing's name field when another card asks", async () => {
-		const { user } = setup();
-
-		await user.click(screen.getByRole("button", { name: "New drawing" }));
-		await user.click(screen.getByRole("button", { name: "Delete Plan" }));
-
-		expect(
-			screen.queryByRole("textbox", { name: "Name of the new drawing" }),
-		).toBeNull();
-		expect(screen.getByText("Delete “Plan”?")).toBeInTheDocument();
-	});
-
-	it("closes a card's question when the new drawing asks for a name", async () => {
-		const { user } = setup();
-
-		await user.click(screen.getByRole("button", { name: "Delete Plan" }));
-		await user.click(screen.getByRole("button", { name: "New drawing" }));
-
-		expect(screen.queryByText("Delete “Plan”?")).toBeNull();
-		expect(
-			screen.getByRole("textbox", { name: "Name of the new drawing" }),
-		).toBeInTheDocument();
-	});
-
 	it("keeps the preview on the sheet while a card asks", async () => {
 		const { user } = setup();
 
 		await user.click(screen.getByRole("button", { name: "Delete Plan" }));
 
 		expect(cards()[1].querySelector("img")).not.toBeNull();
+	});
+
+	describe("scratchpads", () => {
+		const scratchpad = (id: string, updatedAt: string): DrawingSummary => ({
+			...summary(id, null),
+			updatedAt,
+		});
+		const older = scratchpad("s1", "2026-11-20T09:00:00.000Z");
+		const newer = scratchpad("s2", "2026-11-25T16:40:00.000Z");
+		const withScratchpads = [older, ...drawings, newer];
+		const row = () => screen.getByRole("list", { name: "Scratchpads" });
+		const search = () =>
+			screen.getByRole("searchbox", { name: "Search drawings" });
+
+		it("shows the scratchpads in their own row, most recently edited first", () => {
+			setup(withScratchpads);
+
+			expect(
+				within(row())
+					.getAllByRole("link")
+					.map((link) => link.getAttribute("aria-label")),
+			).toEqual([scratchpadName(newer), scratchpadName(older)]);
+			expect(
+				screen.getByRole("heading", { name: "Scratchpads" }),
+			).toBeInTheDocument();
+			expect(cards()).toHaveLength(3);
+		});
+
+		it("shows no row without scratchpads", () => {
+			setup();
+
+			expect(screen.queryByRole("heading", { name: "Scratchpads" })).toBeNull();
+		});
+
+		it("opens a scratchpad from its card", async () => {
+			const { user, onOpen } = setup(withScratchpads);
+
+			await user.click(
+				screen.getByRole("link", { name: scratchpadName(older) }),
+			);
+
+			expect(onOpen).toHaveBeenCalledExactlyOnceWith("s1");
+		});
+
+		it("offers no tags on a scratchpad's card", () => {
+			setup([newer]);
+
+			expect(
+				within(row())
+					.getAllByRole("button")
+					.map((button) => button.title),
+			).toEqual(["Save as drawing", "Discard"]);
+		});
+
+		it("saves a scratchpad as a drawing under the entered name", async () => {
+			const { user, onRename } = setup(withScratchpads);
+
+			await user.click(
+				screen.getByRole("button", {
+					name: `Save ${scratchpadName(older)} as drawing`,
+				}),
+			);
+			await user.type(
+				screen.getByRole("textbox", { name: "Name of the drawing" }),
+				"Sketch{Enter}",
+			);
+
+			expect(onRename).toHaveBeenCalledExactlyOnceWith("s1", "Sketch");
+			expect(screen.queryByRole("textbox")).toBeNull();
+		});
+
+		it("keeps a scratchpad when saving it is cancelled", async () => {
+			const { user, onRename } = setup(withScratchpads);
+
+			await user.click(
+				screen.getByRole("button", {
+					name: `Save ${scratchpadName(older)} as drawing`,
+				}),
+			);
+			await user.keyboard("Sketch{Escape}");
+
+			expect(onRename).not.toHaveBeenCalled();
+			expect(
+				screen.getByRole("link", { name: scratchpadName(older) }),
+			).toBeInTheDocument();
+		});
+
+		it("discards a scratchpad after confirmation", async () => {
+			const { user, onDelete } = setup(withScratchpads);
+
+			await user.click(
+				screen.getByRole("button", {
+					name: `Discard ${scratchpadName(newer)}`,
+				}),
+			);
+			expect(screen.getByRole("button", { name: "Keep" })).toHaveFocus();
+			await user.click(screen.getByRole("button", { name: "Discard" }));
+
+			expect(onDelete).toHaveBeenCalledExactlyOnceWith("s2");
+		});
+
+		it("keeps a scratchpad when discarding it is cancelled", async () => {
+			const { user, onDelete } = setup(withScratchpads);
+
+			await user.click(
+				screen.getByRole("button", {
+					name: `Discard ${scratchpadName(newer)}`,
+				}),
+			);
+			await user.keyboard("{Escape}");
+
+			expect(onDelete).not.toHaveBeenCalled();
+			expect(screen.queryByText("Discard this scratchpad?")).toBeNull();
+		});
+
+		it("discards every scratchpad after confirmation", async () => {
+			const { user, onDiscardAll } = setup(withScratchpads);
+
+			await user.click(screen.getByRole("button", { name: "Discard all" }));
+			expect(
+				screen.getByText("Discard all 2 scratchpads?"),
+			).toBeInTheDocument();
+			await user.click(screen.getByRole("button", { name: "Discard all" }));
+
+			expect(onDiscardAll).toHaveBeenCalledExactlyOnceWith(["s2", "s1"]);
+		});
+
+		it("asks about the one scratchpad when there is only one", async () => {
+			const { user } = setup([newer]);
+
+			await user.click(screen.getByRole("button", { name: "Discard all" }));
+
+			expect(screen.getByText("Discard the scratchpad?")).toBeInTheDocument();
+		});
+
+		it("keeps the scratchpads when discarding them all is cancelled", async () => {
+			const { user, onDiscardAll } = setup(withScratchpads);
+
+			await user.click(screen.getByRole("button", { name: "Discard all" }));
+			await user.click(screen.getByRole("button", { name: "Keep" }));
+
+			expect(onDiscardAll).not.toHaveBeenCalled();
+			expect(within(row()).getAllByRole("link")).toHaveLength(2);
+		});
+
+		it("asks one question at a time across the scratchpads and the drawings", async () => {
+			const { user } = setup(withScratchpads);
+
+			await user.click(screen.getByRole("button", { name: "Delete Plan" }));
+			await user.click(screen.getByRole("button", { name: "Discard all" }));
+
+			expect(screen.queryByText("Delete “Plan”?")).toBeNull();
+			expect(
+				screen.getByText("Discard all 2 scratchpads?"),
+			).toBeInTheDocument();
+		});
+
+		it("hides the row while searching, as scratchpads have no name", async () => {
+			const { user } = setup(withScratchpads);
+
+			await user.type(search(), "plan");
+
+			expect(screen.queryByRole("heading", { name: "Scratchpads" })).toBeNull();
+			expect(screen.getByRole("link", { name: "Plan" })).toBeVisible();
+		});
+
+		it("hides the row while the tag filter is on", async () => {
+			const work: Tag = {
+				id: "w",
+				label: "Work",
+				color: "blue",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			};
+			const { user } = setup(
+				[older, summary("1", "Plan", null, ["w"])],
+				[work],
+			);
+
+			await user.click(
+				within(screen.getByRole("toolbar", { name: "Filter by" })).getByRole(
+					"button",
+					{ name: "Filter by Work" },
+				),
+			);
+
+			expect(screen.queryByRole("heading", { name: "Scratchpads" })).toBeNull();
+			expect(screen.getByRole("link", { name: /^Plan/ })).toBeVisible();
+		});
+
+		it("finds no scratchpad for a search that matches nothing", async () => {
+			const { user } = setup(withScratchpads);
+
+			await user.type(search(), "Scratchpad");
+
+			expect(screen.getByRole("status")).toHaveTextContent(
+				"No drawing is named “Scratchpad”.",
+			);
+		});
 	});
 
 	describe("search", () => {
@@ -293,17 +453,6 @@ describe("DrawingList", () => {
 			await user.type(search(), "   ");
 
 			expect(screen.getByRole("status")).toBeEmptyDOMElement();
-		});
-
-		it("doesn't name a new drawing after the query", async () => {
-			const { user } = setup();
-
-			await user.type(search(), "road");
-			await user.click(screen.getByRole("button", { name: "New drawing" }));
-
-			expect(
-				screen.getByRole("textbox", { name: "Name of the new drawing" }),
-			).toHaveValue("");
 		});
 
 		it("closes a card's question when the query changes", async () => {
@@ -402,9 +551,9 @@ describe("DrawingList", () => {
 					tags={null}
 					tagChanges={{ create: vi.fn(), update: vi.fn(), remove: vi.fn() }}
 					onOpen={vi.fn()}
-					onCreate={vi.fn()}
 					onRename={vi.fn()}
 					onDelete={vi.fn()}
+					onDiscardAll={vi.fn()}
 					onToggleTag={vi.fn()}
 				/>,
 			);
@@ -501,7 +650,8 @@ describe("DrawingList", () => {
 		const shownNames = () =>
 			within(screen.getByRole("list", { name: "Drawings" }))
 				.queryAllByRole("link")
-				.map((link) => link.textContent);
+				.map((link) => link.textContent)
+				.filter((name) => name !== "New drawing");
 		const search = () =>
 			screen.getByRole("searchbox", { name: "Search drawings" });
 

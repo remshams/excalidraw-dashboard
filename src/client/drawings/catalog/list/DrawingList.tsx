@@ -2,22 +2,26 @@ import { useRef, useState } from "react";
 import type { DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
-import { searchByName } from "../../search.ts";
-import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
-import { FilterRow } from "../filter/FilterRow.tsx";
-import { filterDrawings } from "../filter/tag-filter.ts";
-import { TagToggles } from "../filter/TagToggles.tsx";
-import type { TagFilter } from "../filter/use-tag-filter.ts";
 import { PencilIcon, PlusIcon, TagIcon, TrashIcon } from "../../icons.tsx";
 import { NameField } from "../../NameField.tsx";
+import { isSaved, type SavedDrawing } from "../../scratchpad.ts";
+import { searchByName } from "../../search.ts";
+import { NEW_SCRATCHPAD } from "../../use-open-drawing-id.ts";
+import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
+import { FilterRow } from "../filter/FilterRow.tsx";
+import { TagToggles } from "../filter/TagToggles.tsx";
+import { filterDrawings } from "../filter/tag-filter.ts";
+import type { TagFilter } from "../filter/use-tag-filter.ts";
 import { PreviewImage } from "../PreviewImage.tsx";
 import { DrawingTagsDialog } from "../tags/drawing-tags/DrawingTagsDialog.tsx";
 import { TagInkFilter } from "../tags/TagMark.tsx";
 import { TagTray } from "../tags/tray/TagTray.tsx";
 import type { TagChanges } from "../tags/use-tags.ts";
-import styles from "./DrawingList.module.css";
 import { shownCardTags } from "./card-tags.ts";
+import styles from "./DrawingList.module.css";
 import { noMatchMessage } from "./no-match-message.ts";
+import { type CardTask, cardTaskOf, type OpenTask } from "./open-task.ts";
+import { Scratchpads } from "./Scratchpads.tsx";
 import { useFocusAfterDialog, useTagRefocus } from "./use-tag-refocus.ts";
 
 type DrawingListProps = {
@@ -28,9 +32,10 @@ type DrawingListProps = {
 	/** The tag filter and the search, which `App` keeps while a drawing is open. */
 	filter: TagFilter;
 	onOpen: (id: string | null) => void;
-	onCreate: (name: string) => void;
 	onRename: (id: string, name: string) => void;
 	onDelete: (id: string) => void;
+	/** Deletes every scratchpad with the given IDs. */
+	onDiscardAll: (ids: string[]) => void;
 	/** Gives the drawing the tag or takes it off. Rejects when the server refuses. */
 	onToggleTag: (drawing: DrawingSummary, tagId: string) => Promise<void>;
 };
@@ -38,17 +43,11 @@ type DrawingListProps = {
 /** How many tags a card shows before it counts the rest. */
 const CARD_TAGS = 3;
 
-type CardTask = "rename" | "delete";
-
 /**
- * The one card that asks something, if any: the blank sheet for a new name, or
- * a drawing's card for a new name or a delete confirmation.
- */
-type OpenTask = { kind: "create" } | { kind: CardTask; id: string } | null;
-
-/**
- * The landing page: every drawing in the tag filter that matches the search, as a
- * sheet with its preview, after a blank sheet that starts a new one.
+ * The landing page: the scratchpads, then every drawing in the tag filter that
+ * matches the search, as a sheet with its preview, after a blank sheet that
+ * starts a new scratchpad. A search or a filter hides the scratchpads, which
+ * have neither a name nor tags to match.
  */
 export function DrawingList({
 	drawings,
@@ -56,9 +55,9 @@ export function DrawingList({
 	tagChanges,
 	filter,
 	onOpen,
-	onCreate,
 	onRename,
 	onDelete,
+	onDiscardAll,
 	onToggleTag,
 }: DrawingListProps) {
 	const [task, setTask] = useState<OpenTask>(null);
@@ -69,7 +68,9 @@ export function DrawingList({
 	const tagsButton = useRef<HTMLButtonElement>(null);
 	useFocusAfterDialog(tagging !== undefined, tagsButton);
 	const close = () => setTask(null);
-	const shown = filterDrawings(drawings, filter.selectedTagIds, filter.query);
+	const saved = drawings.filter(isSaved);
+	const shown = filterDrawings(saved, filter.selectedTagIds, filter.query);
+	const asked = filter.query.trim() !== "" || filter.selectedTagIds.length > 0;
 
 	// A question on a card the search or the filter hides would come back with it.
 	const toggleFilter = (tagId: string) => {
@@ -118,27 +119,26 @@ export function DrawingList({
 				}}
 				onClear={clearFilter}
 			/>
-			<ul className={styles.cards} aria-label="Drawings">
-				<NewDrawingCard
-					creating={task?.kind === "create"}
-					onStart={() => setTask({ kind: "create" })}
-					onCreate={(name) => {
-						close();
-						onCreate(name);
-					}}
-					onCancel={close}
+			{!asked && (
+				<Scratchpads
+					drawings={drawings}
+					task={task}
+					onTask={setTask}
+					onOpen={onOpen}
+					onSave={onRename}
+					onDiscard={onDelete}
+					onDiscardAll={onDiscardAll}
 				/>
+			)}
+			<ul className={styles.cards} aria-label="Drawings">
+				<NewDrawingCard onOpen={onOpen} />
 				{shown.map((drawing) => (
 					<DrawingCard
 						key={drawing.id}
 						drawing={drawing}
 						tags={(tags ?? []).filter(({ id }) => drawing.tagIds.includes(id))}
 						selectedTagIds={filter.selectedTagIds}
-						task={
-							task && task.kind !== "create" && task.id === drawing.id
-								? task.kind
-								: null
-						}
+						task={cardTaskOf(task, drawing.id)}
 						onOpen={onOpen}
 						onStart={(kind) => setTask({ kind, id: drawing.id })}
 						onEditTags={() => setTaggingId(drawing.id)}
@@ -159,7 +159,7 @@ export function DrawingList({
 				))}
 			</ul>
 			<NoMatch
-				drawings={drawings}
+				drawings={saved}
 				shown={shown}
 				filter={filter}
 				onClearFilter={() => {
@@ -180,51 +180,30 @@ export function DrawingList({
 	);
 }
 
-type NewDrawingCardProps = {
-	/** Whether the card asks for the new drawing's name. */
-	creating: boolean;
-	onStart: () => void;
-	onCreate: (name: string) => void;
-	onCancel: () => void;
-};
-
-/** A blank sheet that asks for a name and creates the drawing. */
-function NewDrawingCard({
-	creating,
-	onStart,
-	onCreate,
-	onCancel,
-}: NewDrawingCardProps) {
-	const sheet = (
-		<span className={`${styles.sheet} ${styles.blank}`}>
-			<PlusIcon />
-		</span>
-	);
-
+/**
+ * A blank sheet that opens the editor on a new scratchpad. The server stores it
+ * once the user draws something.
+ */
+function NewDrawingCard({ onOpen }: { onOpen: (id: string | null) => void }) {
 	return (
 		<li>
-			{creating ? (
-				<>
-					{sheet}
-					<NameField
-						label="Name of the new drawing"
-						onSubmit={onCreate}
-						onCancel={onCancel}
-					/>
-				</>
-			) : (
-				<button type="button" className={styles.open} onClick={onStart}>
-					{sheet}
-					<span className={styles.name}>New drawing</span>
-				</button>
-			)}
+			<DrawingLink
+				drawingId={NEW_SCRATCHPAD}
+				onOpen={onOpen}
+				className={styles.open}
+			>
+				<span className={`${styles.sheet} ${styles.blank}`}>
+					<PlusIcon />
+				</span>
+				<span className={styles.name}>New drawing</span>
+			</DrawingLink>
 		</li>
 	);
 }
 
 type NoMatchProps = {
-	drawings: DrawingSummary[];
-	shown: DrawingSummary[];
+	drawings: SavedDrawing[];
+	shown: SavedDrawing[];
 	filter: TagFilter;
 	onClearFilter: () => void;
 };
@@ -265,7 +244,7 @@ function NoMatch({ drawings, shown, filter, onClearFilter }: NoMatchProps) {
 }
 
 type DrawingCardProps = {
-	drawing: DrawingSummary;
+	drawing: SavedDrawing;
 	/** The drawing's tags, sorted by label. */
 	tags: Tag[];
 	selectedTagIds: string[];
@@ -324,7 +303,8 @@ function DrawingCard({
 					/>
 				) : (
 					<DeleteConfirmation
-						name={name}
+						question={`Delete “${name}”?`}
+						action="Delete"
 						onConfirm={onDelete}
 						onCancel={onCancel}
 					/>
