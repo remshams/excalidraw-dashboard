@@ -71,3 +71,11 @@ export function CrossIcon() {
 		</svg>
 	);
 }
+
+export function CheckIcon() {
+	return (
+		<svg aria-hidden="true" {...iconProps}>
+			<path d="M5 12.5l4.5 4.5L19 7.5" />
+		</svg>
+	);
+}
