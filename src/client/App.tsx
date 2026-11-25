@@ -78,7 +78,8 @@ export function App() {
 					onCreate={createAndOpen}
 					onRename={renameDrawing}
 					onDiscard={(id) => {
-						// Leaving first saves the last edit, which the delete then removes.
+						// The delete goes out before the editor closes and flushes its last
+						// edit; that save then fails with 404, which onError ignores.
 						openDrawing(null);
 						deleteDrawing(id);
 					}}
