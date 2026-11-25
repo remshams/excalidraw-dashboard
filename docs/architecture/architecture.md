@@ -365,7 +365,10 @@ and the browser loads the new image. A card renames its drawing through
 remembers which drawings it deleted, so `App` can ignore a last save that was
 still in flight and fails once the drawing is gone, and doesn't add one back
 when such a save answers. A save of a drawing the list doesn't have yet, a new
-scratchpad's first, adds it.
+scratchpad's first, adds it, also while the list still loads. A rename shows in
+the list before the server answers and goes back if the server refuses it, so a
+scratchpad being saved leaves the row at once. A save that answers without a
+name keeps the name the list has, since a drawing never loses its name.
 
 `tags/` holds the tag aggregate's part of the catalog. `use-tags` loads the tags
 once when `App` mounts and sorts them with `localeCompare`, as `use-drawings` sorts
@@ -645,7 +648,8 @@ scenes with embedded images can be large.
 `POST /api/drawings` takes an optional `id`, `name` and `scene`. A client that
 sends the `id` must send a UUID; an ID another drawing has answers 409. A blank
 or absent name makes a scratchpad, whose `name` is `null`. A blank name in `PUT`
-is ignored, so a drawing never goes back to being a scratchpad.
+is ignored, so a drawing never goes back to being a scratchpad. Tags on a
+scratchpad answer 400; an empty set of tags is fine.
 
 A drawing body that isn't a JSON object, or whose name or scene isn't text,
 answers 400 and changes nothing.
