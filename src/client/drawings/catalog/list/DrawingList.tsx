@@ -162,6 +162,7 @@ export function DrawingList({
 				drawings={saved}
 				shown={shown}
 				filter={filter}
+				asked={asked}
 				onClearFilter={() => {
 					searchField.current?.focus();
 					clearFilter();
@@ -205,6 +206,8 @@ type NoMatchProps = {
 	drawings: SavedDrawing[];
 	shown: SavedDrawing[];
 	filter: TagFilter;
+	/** Whether a search or a tag filter is set. */
+	asked: boolean;
 	onClearFilter: () => void;
 };
 
@@ -212,10 +215,15 @@ type NoMatchProps = {
  * Says why no drawing shows, if none does. When the filter hides drawings the
  * search finds, it offers to clear the filter and keep the search.
  */
-function NoMatch({ drawings, shown, filter, onClearFilter }: NoMatchProps) {
+function NoMatch({
+	drawings,
+	shown,
+	filter,
+	asked,
+	onClearFilter,
+}: NoMatchProps) {
 	const searched = filter.query.trim();
 	const selected = filter.selectedTags;
-	const asked = searched !== "" || selected.length > 0;
 	const empty = asked && shown.length === 0;
 	// The drawings the search would find if the filter weren't in the way.
 	const outside =
