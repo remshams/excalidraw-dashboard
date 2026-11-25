@@ -59,7 +59,7 @@ function expectCurrentSchema(db: DatabaseSync): void {
 	const preview = drawings.setPreview("old", new Uint8Array([137, 80]));
 	const tagged = drawings.setTags("old", [tag.id]);
 
-	expect(userVersion(db)).toBe(3);
+	expect(userVersion(db)).toBe(4);
 	expect(drawings.get("old")).toMatchObject({
 		name: "Old plan",
 		scene: "{}",
@@ -74,10 +74,19 @@ function expectCurrentSchema(db: DatabaseSync): void {
 	});
 }
 
-/** Writes a database at version 2, with three tags and no creation times. */
+/** Writes a database at version 2, with no drawings and three tags without creation times. */
 function createVersion2Database(): void {
 	const db = new DatabaseSync(file);
 	db.exec(`
+		CREATE TABLE drawings (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			scene TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			preview BLOB,
+			preview_updated_at TEXT
+		);
 		CREATE TABLE tags (
 			id TEXT PRIMARY KEY,
 			label TEXT NOT NULL,
@@ -97,7 +106,7 @@ describe("database", () => {
 	it("creates the schema in a new database", () => {
 		const db = openDatabase(file);
 
-		expect(userVersion(db)).toBe(3);
+		expect(userVersion(db)).toBe(4);
 		expect(openDrawingStore(db).list()).toEqual([]);
 		expect(openTagStore(db).list()).toEqual([]);
 		db.close();
@@ -121,8 +130,45 @@ describe("database", () => {
 
 		const db = openDatabase(file);
 
-		expect(userVersion(db)).toBe(3);
+		expect(userVersion(db)).toBe(4);
 		expect(openDrawingStore(db).list()).toHaveLength(1);
+		db.close();
+	});
+
+	it("lets drawings go without a name and keeps their tags", () => {
+		createUnversionedDatabase(true);
+		const before = openDatabase(file);
+		const tag = openTagStore(before).create({ label: "Work", color: "blue" });
+		if (tag === "label-taken") throw new Error("label taken");
+		openDrawingStore(before).setTags("old", [tag.id]);
+		before.exec("PRAGMA user_version = 3");
+		before.close();
+
+		const db = openDatabase(file);
+		const drawings = openDrawingStore(db);
+		const scratchpad = drawings.create({ name: null });
+
+		expect(userVersion(db)).toBe(4);
+		expect(drawings.get("old")).toMatchObject({ tagIds: [tag.id] });
+		expect(scratchpad).toMatchObject({ name: null });
+		expect(drawings.list().map(({ name }) => name)).toEqual([null, "Old plan"]);
+		db.close();
+	});
+
+	it("deletes a drawing's tag assignments with it after the upgrade", () => {
+		const db = openDatabase(file);
+		const drawings = openDrawingStore(db);
+		const tag = openTagStore(db).create({ label: "Work", color: "blue" });
+		const drawing = drawings.create({ name: "Plan" });
+		if (tag === "label-taken" || drawing === "id-taken") throw new Error();
+		drawings.setTags(drawing.id, [tag.id]);
+
+		drawings.delete(drawing.id);
+
+		expect(openTagStore(db).list()).toMatchObject([{ id: tag.id }]);
+		expect(
+			db.prepare("SELECT COUNT(*) AS count FROM drawing_tags").get(),
+		).toEqual({ count: 0 });
 		db.close();
 	});
 
@@ -134,7 +180,7 @@ describe("database", () => {
 			.prepare("SELECT id, created_at FROM tags ORDER BY created_at DESC")
 			.all() as { id: string; created_at: string }[];
 
-		expect(userVersion(db)).toBe(3);
+		expect(userVersion(db)).toBe(4);
 		expect(tags.map(({ id }) => id)).toEqual(["third", "second", "first"]);
 		for (const { created_at } of tags) {
 			expect(new Date(created_at).toISOString()).toBe(created_at);

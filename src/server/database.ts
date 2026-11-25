@@ -68,8 +68,40 @@ function addTagCreatedAt(db: DatabaseSync): void {
 	});
 }
 
+/**
+ * Lets a drawing go without a name, for scratchpads. SQLite can't drop NOT NULL
+ * from a column, so this copies the table into one without it. `migrate` runs
+ * with foreign keys off, so dropping the old table keeps the tag assignments.
+ */
+function allowDrawingsWithoutName(db: DatabaseSync): void {
+	db.exec(`
+		CREATE TABLE drawings_new (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			scene TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			preview BLOB,
+			preview_updated_at TEXT
+		);
+		INSERT INTO drawings_new
+			SELECT id, name, scene, created_at, updated_at, preview, preview_updated_at
+			FROM drawings;
+		DROP TABLE drawings;
+		ALTER TABLE drawings_new RENAME TO drawings;
+	`);
+	if (db.prepare("PRAGMA foreign_key_check").all().length > 0) {
+		throw new Error("A tag assignment points to a missing drawing or tag");
+	}
+}
+
 /** Migration n is at index n - 1. Append new ones; never change one that shipped. */
-const MIGRATIONS: Migration[] = [createDrawings, createTags, addTagCreatedAt];
+const MIGRATIONS: Migration[] = [
+	createDrawings,
+	createTags,
+	addTagCreatedAt,
+	allowDrawingsWithoutName,
+];
 
 /** Runs `work` in a transaction and rolls it back if `work` throws. */
 export function inTransaction(db: DatabaseSync, work: () => void): void {
@@ -84,6 +116,7 @@ export function inTransaction(db: DatabaseSync, work: () => void): void {
 }
 
 const SQLITE_CONSTRAINT_FOREIGNKEY = 787;
+const SQLITE_CONSTRAINT_PRIMARYKEY = 1555;
 const SQLITE_CONSTRAINT_UNIQUE = 2067;
 
 const hasErrorCode = (error: unknown, code: number): boolean =>
@@ -92,6 +125,10 @@ const hasErrorCode = (error: unknown, code: number): boolean =>
 /** True if a statement failed because a foreign key points nowhere. */
 export const isForeignKeyError = (error: unknown): boolean =>
 	hasErrorCode(error, SQLITE_CONSTRAINT_FOREIGNKEY);
+
+/** True if a statement failed because a row with the primary key exists. */
+export const isPrimaryKeyError = (error: unknown): boolean =>
+	hasErrorCode(error, SQLITE_CONSTRAINT_PRIMARYKEY);
 
 /** True if a statement failed because a UNIQUE column already holds the value. */
 export const isUniqueError = (error: unknown): boolean =>
@@ -115,10 +152,14 @@ function migrate(db: DatabaseSync): void {
  * and brings its schema up to date. See ADR 0002.
  */
 export function openDatabase(file: string): DatabaseSync {
-	// The cascades on drawing_tags need SQLite to enforce foreign keys.
-	const db = new DatabaseSync(file, { enableForeignKeyConstraints: true });
+	// Foreign keys stay off while migrating, so a migration can copy a table
+	// without its cascades deleting the rows that point at it.
+	const db = new DatabaseSync(file, { enableForeignKeyConstraints: false });
 	// WAL belongs to the file, not the schema, and can't change inside a transaction.
 	db.exec("PRAGMA journal_mode = WAL");
 	migrate(db);
+	// The cascades on drawing_tags need SQLite to enforce foreign keys. The
+	// setting can't change inside a transaction either.
+	db.exec("PRAGMA foreign_keys = ON");
 	return db;
 }
