@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
-import type { SavedDrawing } from "../../scratchpad.ts";
 import { filterDrawings, newestFirst } from "./tag-filter.ts";
 
-const drawing = (name: string, tagIds: string[]): SavedDrawing => ({
+const drawing = (name: string, tagIds: string[]): SavedDrawingSummary => ({
 	id: name,
 	name,
 	createdAt: "",
