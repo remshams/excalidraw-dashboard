@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { DrawingSummary, ScratchpadSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { scratchpadName } from "../../scratchpad.ts";
 import { useTagFilter } from "../filter/use-tag-filter.ts";
@@ -266,8 +266,9 @@ describe("DrawingList", () => {
 	});
 
 	describe("scratchpads", () => {
-		const scratchpad = (id: string, updatedAt: string): DrawingSummary => ({
+		const scratchpad = (id: string, updatedAt: string): ScratchpadSummary => ({
 			...summary(id, null),
+			name: null,
 			updatedAt,
 		});
 		const older = scratchpad("s1", "2026-11-20T09:00:00.000Z");
