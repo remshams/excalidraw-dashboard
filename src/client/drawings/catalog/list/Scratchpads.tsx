@@ -33,7 +33,7 @@ type ScratchpadsProps = {
  */
 export function Scratchpads({
 	drawings,
-	questions: { task, cancelled, ask, close, cancel },
+	questions: { task, returnTo, ask, close, closeToButton },
 	onOpen,
 	onSave,
 	onDiscard,
@@ -62,14 +62,14 @@ export function Scratchpads({
 							close();
 							onDiscardAll(scratchpads.map(({ id }) => id));
 						}}
-						onCancel={cancel}
+						onCancel={closeToButton}
 					/>
 				) : (
 					<button
 						type="button"
 						className={styles.discardAll}
-						// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
-						autoFocus={cancelled?.kind === "discard-all"}
+						// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just closed.
+						autoFocus={returnTo?.kind === "discard-all"}
 						onClick={() => ask({ kind: "discard-all" })}
 					>
 						Discard all
@@ -83,7 +83,7 @@ export function Scratchpads({
 						scratchpad={scratchpad}
 						name={scratchpadName(scratchpad, index + 1)}
 						task={scratchpadTaskOf(task, scratchpad.id)}
-						refocus={scratchpadTaskOf(cancelled, scratchpad.id)}
+						refocus={scratchpadTaskOf(returnTo, scratchpad.id)}
 						onOpen={onOpen}
 						onStart={(kind) => ask({ kind, id: scratchpad.id })}
 						onSave={(name) => {
@@ -94,7 +94,7 @@ export function Scratchpads({
 							close();
 							onDiscard(scratchpad.id);
 						}}
-						onCancel={cancel}
+						onCancel={closeToButton}
 					/>
 				))}
 			</ul>
@@ -107,7 +107,7 @@ type ScratchpadCardProps = {
 	/** What the card and its actions are called. */
 	name: string;
 	task: ScratchpadTask | null;
-	/** The question just cancelled, whose button takes the focus back. */
+	/** The question just closed, whose button takes the focus back. */
 	refocus: ScratchpadTask | null;
 	onOpen: (id: string | null) => void;
 	onStart: (task: ScratchpadTask) => void;
@@ -182,7 +182,7 @@ function ScratchpadCard({
 					className={styles.icon}
 					aria-label={`Save ${name} as drawing`}
 					title="Save as drawing"
-					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just closed.
 					autoFocus={refocus === "save"}
 					onClick={() => onStart("save")}
 				>
@@ -193,7 +193,7 @@ function ScratchpadCard({
 					className={styles.icon}
 					aria-label={`Discard ${name}`}
 					title="Discard"
-					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just closed.
 					autoFocus={refocus === "discard"}
 					onClick={() => onStart("discard")}
 				>
