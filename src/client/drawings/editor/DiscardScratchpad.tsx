@@ -3,7 +3,7 @@ import { DeleteConfirmation } from "../catalog/DeleteConfirmation.tsx";
 
 type DiscardScratchpadProps = {
 	/** The class of the bar's buttons. */
-	className?: string;
+	className: string;
 	onDiscard: () => void;
 };
 
