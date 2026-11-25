@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { SavedDrawing } from "./scratchpad.ts";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import { searchByName } from "./search.ts";
 
-const drawing = (name: string): SavedDrawing => ({
+const drawing = (name: string): SavedDrawingSummary => ({
 	id: name,
 	name,
 	createdAt: "",
