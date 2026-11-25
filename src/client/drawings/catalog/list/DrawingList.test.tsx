@@ -190,8 +190,29 @@ describe("DrawingList", () => {
 
 			expect(onDelete).not.toHaveBeenCalled();
 			expect(screen.getByRole("link", { name: "Roadmap" })).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: "Delete Roadmap" }),
+			).toHaveFocus();
 		},
 	);
+
+	it("gives the focus back to Rename when renaming is cancelled with Escape", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.keyboard("{Escape}");
+
+		expect(screen.getByRole("button", { name: "Rename Plan" })).toHaveFocus();
+	});
+
+	it("leaves the focus on another card's action that closed the question", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.click(screen.getByRole("button", { name: "Delete Roadmap" }));
+
+		expect(screen.getByRole("button", { name: "Keep" })).toHaveFocus();
+	});
 
 	it("asks on one card at a time", async () => {
 		const { user } = setup();
@@ -232,7 +253,7 @@ describe("DrawingList", () => {
 				within(row())
 					.getAllByRole("link")
 					.map((link) => link.getAttribute("aria-label")),
-			).toEqual([scratchpadName(newer), scratchpadName(older)]);
+			).toEqual([scratchpadName(newer, 1), scratchpadName(older, 2)]);
 			expect(
 				screen.getByRole("heading", { name: "Scratchpads" }),
 			).toBeInTheDocument();
@@ -249,7 +270,7 @@ describe("DrawingList", () => {
 			const { user, onOpen } = setup(withScratchpads);
 
 			await user.click(
-				screen.getByRole("link", { name: scratchpadName(older) }),
+				screen.getByRole("link", { name: scratchpadName(older, 2) }),
 			);
 
 			expect(onOpen).toHaveBeenCalledExactlyOnceWith("s1");
@@ -270,7 +291,7 @@ describe("DrawingList", () => {
 
 			await user.click(
 				screen.getByRole("button", {
-					name: `Save ${scratchpadName(older)} as drawing`,
+					name: `Save ${scratchpadName(older, 2)} as drawing`,
 				}),
 			);
 			await user.type(
@@ -287,15 +308,20 @@ describe("DrawingList", () => {
 
 			await user.click(
 				screen.getByRole("button", {
-					name: `Save ${scratchpadName(older)} as drawing`,
+					name: `Save ${scratchpadName(older, 2)} as drawing`,
 				}),
 			);
 			await user.keyboard("Sketch{Escape}");
 
 			expect(onRename).not.toHaveBeenCalled();
 			expect(
-				screen.getByRole("link", { name: scratchpadName(older) }),
+				screen.getByRole("link", { name: scratchpadName(older, 2) }),
 			).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", {
+					name: `Save ${scratchpadName(older, 2)} as drawing`,
+				}),
+			).toHaveFocus();
 		});
 
 		it("discards a scratchpad after confirmation", async () => {
@@ -303,7 +329,7 @@ describe("DrawingList", () => {
 
 			await user.click(
 				screen.getByRole("button", {
-					name: `Discard ${scratchpadName(newer)}`,
+					name: `Discard ${scratchpadName(newer, 1)}`,
 				}),
 			);
 			expect(screen.getByRole("button", { name: "Keep" })).toHaveFocus();
@@ -317,13 +343,18 @@ describe("DrawingList", () => {
 
 			await user.click(
 				screen.getByRole("button", {
-					name: `Discard ${scratchpadName(newer)}`,
+					name: `Discard ${scratchpadName(newer, 1)}`,
 				}),
 			);
 			await user.keyboard("{Escape}");
 
 			expect(onDelete).not.toHaveBeenCalled();
 			expect(screen.queryByText("Discard this scratchpad?")).toBeNull();
+			expect(
+				screen.getByRole("button", {
+					name: `Discard ${scratchpadName(newer, 1)}`,
+				}),
+			).toHaveFocus();
 		});
 
 		it("discards every scratchpad after confirmation", async () => {
@@ -354,6 +385,21 @@ describe("DrawingList", () => {
 
 			expect(onDiscardAll).not.toHaveBeenCalled();
 			expect(within(row()).getAllByRole("link")).toHaveLength(2);
+			expect(screen.getByRole("button", { name: "Discard all" })).toHaveFocus();
+		});
+
+		it("names scratchpads edited in the same minute apart by their place in the row", () => {
+			setup([
+				scratchpad("a", "2026-11-25T16:40:10.000Z"),
+				scratchpad("b", "2026-11-25T16:40:50.000Z"),
+			]);
+
+			const names = within(row())
+				.getAllByRole("link")
+				.map((link) => link.getAttribute("aria-label"));
+			expect(names[0]).toMatch(/^Scratchpad 1, edited /);
+			expect(names[1]).toMatch(/^Scratchpad 2, edited /);
+			expect(names[0]?.slice(13)).toBe(names[1]?.slice(13));
 		});
 
 		it("asks one question at a time across the scratchpads and the drawings", async () => {
