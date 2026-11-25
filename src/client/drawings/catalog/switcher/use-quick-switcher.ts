@@ -1,10 +1,10 @@
 import { useState } from "react";
-import type { SavedDrawing } from "../../scratchpad.ts";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import { searchByName } from "../../search.ts";
 import { useModalDialog } from "../dialog/use-modal-dialog.ts";
 
 export type SwitcherResult =
-	| { kind: "drawing"; drawing: SavedDrawing }
+	| { kind: "drawing"; drawing: SavedDrawingSummary }
 	| { kind: "create"; name: string };
 
 /** Identifies a row across changes to the list. */
@@ -16,7 +16,7 @@ export const resultKey = (result: SwitcherResult) =>
  * create the query as a new drawing unless a drawing already has that name.
  */
 function switcherResults(
-	drawings: SavedDrawing[],
+	drawings: SavedDrawingSummary[],
 	query: string,
 ): SwitcherResult[] {
 	const found: SwitcherResult[] = searchByName(drawings, query)
@@ -37,7 +37,7 @@ const firstKey = ([first]: SwitcherResult[]) =>
  * the selected row. The selection follows its row, not a position, because a save
  * of the open drawing can reorder the rows while the switcher is open.
  */
-export function useQuickSwitcher(drawings: SavedDrawing[]) {
+export function useQuickSwitcher(drawings: SavedDrawingSummary[]) {
 	const dialog = useModalDialog();
 	const [query, setQuery] = useState("");
 	const results = switcherResults(drawings, query);

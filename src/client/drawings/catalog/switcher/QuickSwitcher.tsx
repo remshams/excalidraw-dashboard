@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useId } from "react";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import { PlusIcon } from "../../icons.tsx";
-import type { SavedDrawing } from "../../scratchpad.ts";
 import frame from "../dialog/CentredDialog.module.css";
 import { SearchLine } from "../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
@@ -14,7 +14,7 @@ import {
 
 type QuickSwitcherProps = {
 	/** The named drawings; scratchpads have no name to find them by. */
-	drawings: SavedDrawing[];
+	drawings: SavedDrawingSummary[];
 	/** The drawing the editor shows, or null while it loads. */
 	openDrawingId: string | null;
 	onOpen: (id: string) => void;
