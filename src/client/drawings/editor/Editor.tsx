@@ -8,7 +8,7 @@ import { usePreview } from "./use-preview.ts";
 type EditorProps = {
 	drawing: Drawing;
 	/** Whether the drawing is a new scratchpad the server doesn't have yet. */
-	isNew?: boolean;
+	isNew: boolean;
 	/** Display only: Excalidraw leaves the theme out of the stored scene. */
 	theme?: "light" | "dark";
 	onSaved: (summary: DrawingSummary) => void;
@@ -18,7 +18,7 @@ type EditorProps = {
 /** Edits one drawing. Render it with `key={drawing.id}` so switching drawings remounts it. */
 export function Editor({
 	drawing,
-	isNew = false,
+	isNew,
 	theme,
 	onSaved,
 	onError,
