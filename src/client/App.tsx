@@ -1,22 +1,24 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import styles from "./App.module.css";
-import { BackIcon, SearchIcon } from "./drawings/icons.tsx";
 import { useTagFilter } from "./drawings/catalog/filter/use-tag-filter.ts";
 import { DrawingList } from "./drawings/catalog/list/DrawingList.tsx";
-import { DrawingTagsButton } from "./drawings/catalog/tags/drawing-tags/DrawingTagsButton.tsx";
 import { QuickSwitcher } from "./drawings/catalog/switcher/QuickSwitcher.tsx";
 import {
 	switcherShortcutHint,
 	useSwitcherShortcut,
 } from "./drawings/catalog/switcher/use-switcher-shortcut.ts";
+import { DrawingTagsButton } from "./drawings/catalog/tags/drawing-tags/DrawingTagsButton.tsx";
 import { type TagChanges, useTags } from "./drawings/catalog/tags/use-tags.ts";
 import { useDrawings } from "./drawings/catalog/use-drawings.ts";
 import { DrawingLink } from "./drawings/DrawingLink.tsx";
+import { DiscardScratchpad } from "./drawings/editor/DiscardScratchpad.tsx";
 import { DrawingTitle } from "./drawings/editor/DrawingTitle.tsx";
 import { Editor } from "./drawings/editor/Editor.tsx";
 import { useDrawing } from "./drawings/editor/use-drawing.ts";
+import { BackIcon, SearchIcon } from "./drawings/icons.tsx";
+import { isSaved, newScratchpad } from "./drawings/scratchpad.ts";
 import { useOpenDrawingId } from "./drawings/use-open-drawing-id.ts";
 import { useColorScheme } from "./use-color-scheme.ts";
 
@@ -33,14 +35,21 @@ export function App() {
 	}, []);
 
 	const theme = useColorScheme();
-	const [openDrawingId, openDrawing] = useOpenDrawingId();
-	const { drawing, failed } = useDrawing(openDrawingId, showError);
+	const { openId, isNew, openDrawing, markStored } = useOpenDrawingId();
+	// A new scratchpad starts in the editor; the server has nothing to load yet.
+	const loaded = useDrawing(isNew ? null : openId, showError);
+	const scratchpad = useMemo(
+		() => (isNew && openId ? newScratchpad(openId) : null),
+		[isNew, openId],
+	);
+	const drawing = scratchpad ?? loaded.drawing;
 	const {
 		drawings,
 		replace,
 		create,
 		rename,
 		remove,
+		removeAll,
 		toggleTag,
 		forgetTag,
 		wasDeleted,
@@ -53,20 +62,30 @@ export function App() {
 		create(name).then((created) => openDrawing(created.id), showError);
 	const renameDrawing = (id: string, name: string) =>
 		rename(id, name).catch(showError);
+	const deleteDrawing = (id: string) => remove(id).catch(showError);
 
 	return (
 		<>
-			{openDrawingId ? (
+			{openId ? (
 				<EditorView
 					drawing={drawing}
+					isNew={isNew}
 					drawings={drawings}
 					tagging={{ tags, changes: tagChanges, onToggle: toggleTag }}
-					failed={failed}
+					failed={loaded.failed}
 					theme={theme}
 					onOpen={openDrawing}
 					onCreate={createAndOpen}
 					onRename={renameDrawing}
-					onSaved={replace}
+					onDiscard={(id) => {
+						// Leaving first saves the last edit, which the delete then removes.
+						openDrawing(null);
+						deleteDrawing(id);
+					}}
+					onSaved={(summary) => {
+						replace(summary);
+						markStored(summary.id);
+					}}
 					onError={(id, cause) => {
 						// The last save can still be in flight when the user deletes the
 						// drawing right after leaving it; that save then fails.
@@ -81,9 +100,9 @@ export function App() {
 						tagChanges={tagChanges}
 						filter={filter}
 						onOpen={openDrawing}
-						onCreate={createAndOpen}
 						onRename={renameDrawing}
-						onDelete={(id) => remove(id).catch(showError)}
+						onDelete={deleteDrawing}
+						onDiscardAll={(ids) => removeAll(ids).catch(showError)}
 						// The dialog says why a change failed.
 						onToggleTag={toggleTag}
 					/>
@@ -116,6 +135,8 @@ type Tagging = {
 type EditorViewProps = {
 	/** The open drawing, or null while it loads or when loading failed. */
 	drawing: Drawing | null;
+	/** Whether the drawing is a scratchpad the user started in this editor. */
+	isNew: boolean;
 	/** Every drawing, for the quick switcher. */
 	drawings: DrawingSummary[];
 	tagging: Tagging;
@@ -125,6 +146,8 @@ type EditorViewProps = {
 	onCreate: (name: string) => void;
 	/** Renames a drawing; resolves once the rename succeeded or failed. */
 	onRename: (id: string, name: string) => Promise<void>;
+	/** Deletes the open scratchpad and leaves it. */
+	onDiscard: (id: string) => void;
 	onSaved: (summary: DrawingSummary) => void;
 	/** Reports a failed save of the drawing with the given ID. */
 	onError: (id: string, error: unknown) => void;
@@ -136,6 +159,7 @@ type EditorViewProps = {
  */
 function EditorView({
 	drawing,
+	isNew,
 	drawings,
 	tagging,
 	failed,
@@ -143,6 +167,7 @@ function EditorView({
 	onOpen,
 	onCreate,
 	onRename,
+	onDiscard,
 	onSaved,
 	onError,
 }: EditorViewProps) {
@@ -168,6 +193,7 @@ function EditorView({
 						drawings={drawings}
 						tagging={tagging}
 						onRename={onRename}
+						onDiscard={onDiscard}
 					/>
 				)}
 				<button
@@ -188,19 +214,18 @@ function EditorView({
 					<Editor
 						key={drawing.id}
 						drawing={drawing}
+						isNew={isNew}
 						theme={theme}
 						onSaved={onSaved}
 						onError={(cause) => onError(drawing.id, cause)}
 					/>
 				) : (
-					<p className={styles.placeholder}>
-						{failed ? "This drawing couldn't be opened." : "Opening drawing…"}
-					</p>
+					<EditorPlaceholder failed={failed} />
 				)}
 			</main>
 			{switching && (
 				<QuickSwitcher
-					drawings={drawings}
+					drawings={drawings.filter(isSaved)}
 					openDrawingId={drawing?.id ?? null}
 					onOpen={onOpen}
 					onCreate={onCreate}
@@ -211,31 +236,56 @@ function EditorView({
 	);
 }
 
+/** Takes the editor's place while the drawing loads, or says it couldn't. */
+function EditorPlaceholder({ failed }: { failed: boolean }) {
+	return (
+		<p className={styles.placeholder}>
+			{failed ? "This drawing couldn't be opened." : "Opening drawing…"}
+		</p>
+	);
+}
+
 type BarDrawingProps = {
 	/** The open drawing as it was loaded. */
 	drawing: Drawing;
 	drawings: DrawingSummary[];
 	tagging: Tagging;
 	onRename: (id: string, name: string) => Promise<void>;
+	onDiscard: (id: string) => void;
 };
 
-/** The open drawing's name in the bar, then its tags once the list and the tags have loaded. */
+/**
+ * The open drawing's name in the bar, then its tags once the list and the tags
+ * have loaded. A scratchpad shows "Save as drawing" and "Discard" instead, once
+ * the server has stored it.
+ */
 function BarDrawing({
 	drawing,
 	drawings,
 	tagging: { tags, changes, onToggle },
 	onRename,
+	onDiscard,
 }: BarDrawingProps) {
 	// The list has the name after a rename and the tags after a change; the loaded
-	// drawing keeps the ones it opened with. The list can still be loading.
+	// drawing keeps the ones it opened with. The list can still be loading, and a
+	// new scratchpad joins it with its first save.
 	const listed = drawings.find(({ id }) => id === drawing.id);
+	const name = listed ? listed.name : drawing.name;
 	return (
 		<div className={styles.barDrawing}>
 			<DrawingTitle
-				name={listed?.name ?? drawing.name}
-				onRename={(name) => onRename(drawing.id, name)}
+				name={name}
+				canSave={listed !== undefined}
+				buttonClassName={styles.barAction}
+				onRename={(newName) => onRename(drawing.id, newName)}
 			/>
-			{listed && tags && (
+			{listed && name === null && (
+				<DiscardScratchpad
+					className={styles.barAction}
+					onDiscard={() => onDiscard(drawing.id)}
+				/>
+			)}
+			{listed && isSaved(listed) && tags && (
 				<DrawingTagsButton
 					drawing={listed}
 					tags={tags}

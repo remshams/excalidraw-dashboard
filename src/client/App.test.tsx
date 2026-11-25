@@ -1,4 +1,5 @@
 import {
+	act,
 	fireEvent,
 	render,
 	screen,
@@ -7,7 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Drawing } from "#shared/drawings.ts";
+import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
 import { App } from "./App.tsx";
 import * as api from "./drawings/api.ts";
 
@@ -17,6 +18,10 @@ import * as api from "./drawings/api.ts";
  */
 const editor = vi.hoisted(() => ({
 	failOnClose: undefined as Promise<Error> | undefined,
+	/** The open editor's drawing and whether it is a new scratchpad. */
+	mounted: undefined as { drawing: Drawing; isNew: boolean } | undefined,
+	/** Reports a stored scene, the way the editor's autosave does. */
+	saved: (_summary: DrawingSummary) => {},
 }));
 
 vi.mock("./drawings/api.ts");
@@ -25,16 +30,22 @@ vi.mock("./drawings/editor/Editor.tsx", async () => {
 	return {
 		Editor: ({
 			drawing,
+			isNew = false,
 			theme,
+			onSaved,
 			onError,
 		}: {
 			drawing: Drawing;
+			isNew?: boolean;
 			theme: string;
+			onSaved: (summary: DrawingSummary) => void;
 			onError: (error: unknown) => void;
 		}) => {
 			// Like the real editor, keep the drawing it mounted with; Excalidraw reads
 			// its initial data only once.
 			const [mounted] = useState(drawing);
+			editor.mounted = { drawing: mounted, isNew };
+			editor.saved = onSaved;
 			const report = useRef(onError);
 			report.current = onError;
 			useEffect(
@@ -45,7 +56,7 @@ vi.mock("./drawings/editor/Editor.tsx", async () => {
 			);
 			return (
 				<>
-					<p>Editing {mounted.name}</p>
+					<p>Editing {mounted.name ?? "a scratchpad"}</p>
 					<p>Theme: {theme}</p>
 				</>
 			);
@@ -107,6 +118,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	editor.failOnClose = undefined;
+	editor.mounted = undefined;
 	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 });
@@ -214,7 +226,7 @@ describe("App", () => {
 			cards()
 				.getAllByRole("link")
 				.map((link) => link.getAttribute("aria-label") ?? link.textContent),
-		).toEqual(["Plan, tags: Work"]);
+		).toEqual(["New drawing", "Plan, tags: Work"]);
 	});
 
 	it("shows why the tags could not be loaded", async () => {
@@ -309,38 +321,197 @@ describe("App", () => {
 		expect(await screen.findByText("Theme: dark")).toBeInTheDocument();
 	});
 
-	it("opens a created drawing", async () => {
-		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
-		vi.mocked(api.getDrawing).mockResolvedValue(drawing("3", "Ideas"));
-		const user = userEvent.setup();
-		render(<App />);
-		await cards().findByRole("link", { name: "Plan" });
+	describe("scratchpads", () => {
+		/** Starts a new scratchpad from the landing page and returns its ID. */
+		async function startScratchpad(user: ReturnType<typeof userEvent.setup>) {
+			await user.click(
+				await cards().findByRole("link", { name: "New drawing" }),
+			);
+			await screen.findByText("Editing a scratchpad");
+			return editor.mounted?.drawing.id ?? "";
+		}
 
-		await user.click(cards().getByRole("button", { name: "New drawing" }));
-		await user.type(cards().getByRole("textbox"), "Ideas{Enter}");
+		/** Reports the scratchpad's first save, as the editor does after a stroke. */
+		function storeScratchpad(id: string) {
+			act(() =>
+				editor.saved({ ...drawing(id, ""), name: null, updatedAt: "later" }),
+			);
+		}
 
-		expect(await screen.findByText("Editing Ideas")).toBeInTheDocument();
-		expect(api.createDrawing).toHaveBeenCalledWith("Ideas");
-		expect(window.location.pathname).toBe("/drawings/3");
-	});
+		it("opens a new scratchpad in the editor without asking for a name", async () => {
+			const user = userEvent.setup();
+			render(<App />);
 
-	it("lists a created drawing in name order", async () => {
-		vi.mocked(api.createDrawing).mockResolvedValue(drawing("3", "Ideas"));
-		vi.mocked(api.getDrawing).mockResolvedValue(drawing("3", "Ideas"));
-		const user = userEvent.setup();
-		render(<App />);
-		await cards().findByRole("link", { name: "Plan" });
-		await user.click(cards().getByRole("button", { name: "New drawing" }));
-		await user.type(cards().getByRole("textbox"), "Ideas{Enter}");
-		await screen.findByText("Editing Ideas");
+			const id = await startScratchpad(user);
 
-		await user.click(screen.getByRole("link", { name: "All drawings" }));
+			expect(window.location.pathname).toBe("/drawings/new");
+			expect(editor.mounted?.isNew).toBe(true);
+			expect(id).toMatch(
+				/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+			);
+			expect(api.getDrawing).not.toHaveBeenCalled();
+			expect(api.createDrawing).not.toHaveBeenCalled();
+			expect(screen.getByRole("heading", { name: "Scratchpad" })).toBeVisible();
+			// Nothing to save or discard before the server has it.
+			expect(
+				screen.queryByRole("button", { name: "Save as drawing" }),
+			).toBeNull();
+			expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
+		});
 
-		expect(
-			cards()
-				.getAllByRole("link")
-				.map((link) => link.textContent),
-		).toEqual(["Ideas", "Plan", "Roadmap"]);
+		it("takes the stored scratchpad's path and offers to save or discard it", async () => {
+			const user = userEvent.setup();
+			render(<App />);
+			const id = await startScratchpad(user);
+
+			storeScratchpad(id);
+
+			expect(window.location.pathname).toBe(`/drawings/${id}`);
+			expect(
+				await screen.findByRole("button", { name: "Save as drawing" }),
+			).toBeVisible();
+			expect(screen.getByRole("button", { name: "Discard" })).toBeVisible();
+			expect(screen.queryByRole("button", { name: /tags/ })).toBeNull();
+			// The editor stays open on the same scratchpad.
+			expect(editor.mounted?.drawing.id).toBe(id);
+			expect(api.getDrawing).not.toHaveBeenCalled();
+		});
+
+		it("saves the open scratchpad as a drawing under the entered name", async () => {
+			const user = userEvent.setup();
+			render(<App />);
+			const id = await startScratchpad(user);
+			storeScratchpad(id);
+			vi.mocked(api.updateDrawing).mockResolvedValue(drawing(id, "Ideas"));
+
+			await user.click(
+				await screen.findByRole("button", { name: "Save as drawing" }),
+			);
+			await user.type(
+				screen.getByRole("textbox", { name: "Name of the drawing" }),
+				"Ideas{Enter}",
+			);
+
+			expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith(id, {
+				name: "Ideas",
+			});
+			expect(
+				await screen.findByRole("button", { name: "Rename Ideas" }),
+			).toBeVisible();
+			expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
+			expect(
+				await screen.findByRole("button", { name: "Add tags to Ideas" }),
+			).toBeVisible();
+
+			await user.click(screen.getByRole("link", { name: "All drawings" }));
+			expect(
+				await cards().findByRole("link", { name: "Ideas" }),
+			).toBeInTheDocument();
+			expect(screen.queryByRole("heading", { name: "Scratchpads" })).toBeNull();
+		});
+
+		it("discards the open scratchpad after confirmation and goes back to all drawings", async () => {
+			vi.mocked(api.deleteDrawing).mockResolvedValue();
+			const user = userEvent.setup();
+			render(<App />);
+			const id = await startScratchpad(user);
+			storeScratchpad(id);
+
+			await user.click(await screen.findByRole("button", { name: "Discard" }));
+			expect(screen.getByText("Discard this scratchpad?")).toBeVisible();
+			await user.click(screen.getByRole("button", { name: "Discard" }));
+
+			expect(api.deleteDrawing).toHaveBeenCalledExactlyOnceWith(id);
+			expect(window.location.pathname).toBe("/");
+			expect(
+				await cards().findByRole("link", { name: "Plan" }),
+			).toBeInTheDocument();
+			expect(screen.queryByRole("heading", { name: "Scratchpads" })).toBeNull();
+		});
+
+		it("keeps the open scratchpad when discarding it is cancelled", async () => {
+			const user = userEvent.setup();
+			render(<App />);
+			const id = await startScratchpad(user);
+			storeScratchpad(id);
+
+			await user.click(await screen.findByRole("button", { name: "Discard" }));
+			await user.click(screen.getByRole("button", { name: "Keep" }));
+
+			expect(api.deleteDrawing).not.toHaveBeenCalled();
+			expect(screen.getByRole("button", { name: "Discard" })).toBeVisible();
+		});
+
+		it("keeps a scratchpad the user leaves without deciding", async () => {
+			const user = userEvent.setup();
+			render(<App />);
+			const id = await startScratchpad(user);
+			storeScratchpad(id);
+
+			await user.click(screen.getByRole("link", { name: "All drawings" }));
+
+			const row = within(
+				await screen.findByRole("list", { name: "Scratchpads" }),
+			);
+			expect(row.getByRole("link")).toHaveAttribute("href", `/drawings/${id}`);
+		});
+
+		it("keeps nothing when the user leaves before drawing", async () => {
+			const user = userEvent.setup();
+			render(<App />);
+			await startScratchpad(user);
+
+			await user.click(screen.getByRole("link", { name: "All drawings" }));
+
+			await cards().findByRole("link", { name: "Plan" });
+			expect(screen.queryByRole("heading", { name: "Scratchpads" })).toBeNull();
+		});
+
+		it("opens a stored scratchpad from its card like any drawing", async () => {
+			const stored = { ...drawing("s1", ""), name: null };
+			vi.mocked(api.listDrawings).mockResolvedValue([stored]);
+			vi.mocked(api.getDrawing).mockResolvedValue(stored);
+			const user = userEvent.setup();
+			render(<App />);
+
+			const row = within(
+				await screen.findByRole("list", { name: "Scratchpads" }),
+			);
+			await user.click(row.getByRole("link"));
+
+			await screen.findByText("Editing a scratchpad");
+			expect(editor.mounted?.isNew).toBe(false);
+			expect(api.getDrawing).toHaveBeenCalledWith("s1");
+			expect(
+				await screen.findByRole("button", { name: "Save as drawing" }),
+			).toBeVisible();
+		});
+
+		it("discards every scratchpad from the landing page", async () => {
+			vi.mocked(api.listDrawings).mockResolvedValue([
+				{ ...drawing("s1", ""), name: null },
+				drawing("1", "Plan"),
+				{ ...drawing("s2", ""), name: null },
+			]);
+			vi.mocked(api.deleteDrawing).mockResolvedValue();
+			const user = userEvent.setup();
+			render(<App />);
+
+			await user.click(
+				await screen.findByRole("button", { name: "Discard all" }),
+			);
+			await user.click(screen.getByRole("button", { name: "Discard all" }));
+
+			await waitFor(() =>
+				expect(
+					screen.queryByRole("heading", { name: "Scratchpads" }),
+				).toBeNull(),
+			);
+			expect(api.deleteDrawing).toHaveBeenCalledTimes(2);
+			expect(api.deleteDrawing).toHaveBeenCalledWith("s1");
+			expect(api.deleteDrawing).toHaveBeenCalledWith("s2");
+			expect(cards().getByRole("link", { name: "Plan" })).toBeInTheDocument();
+		});
 	});
 
 	it("shows a renamed drawing under its new name", async () => {
@@ -700,8 +871,31 @@ describe("App", () => {
 			await user.type(screen.getByRole("combobox"), "Attic{Enter}");
 
 			expect(await screen.findByText("Editing Attic")).toBeInTheDocument();
-			expect(api.createDrawing).toHaveBeenCalledWith("Attic");
+			expect(api.createDrawing).toHaveBeenCalledWith({ name: "Attic" });
 			expect(window.location.pathname).toBe("/drawings/3");
+
+			await user.click(screen.getByRole("link", { name: "All drawings" }));
+			expect(
+				cards()
+					.getAllByRole("link")
+					.map((link) => link.textContent),
+			).toEqual(["New drawing", "Attic", "Plan", "Roadmap"]);
+		});
+
+		it("lists only named drawings", async () => {
+			vi.mocked(api.listDrawings).mockResolvedValue([
+				drawing("1", "Plan"),
+				{ ...drawing("s1", ""), name: null },
+			]);
+			const user = await openEditor();
+
+			await user.click(switchButton());
+
+			expect(
+				within(screen.getByRole("dialog"))
+					.getAllByRole("option")
+					.map((row) => row.textContent?.trim()),
+			).toEqual(["Plan Open"]);
 		});
 
 		it("shows an error when creating fails and stays on the drawing", async () => {
