@@ -1,19 +1,27 @@
-import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
+import type {
+	Drawing,
+	DrawingSummary,
+	SavedDrawingSummary,
+	ScratchpadSummary,
+} from "#shared/drawings.ts";
 
-/** A drawing the user has named, as opposed to a scratchpad. */
-export type SavedDrawing = DrawingSummary & { name: string };
+export const isSaved = (
+	drawing: DrawingSummary,
+): drawing is SavedDrawingSummary => drawing.name !== null;
 
-export const isSaved = (drawing: DrawingSummary): drawing is SavedDrawing =>
-	drawing.name !== null;
+const isScratchpad = (drawing: DrawingSummary): drawing is ScratchpadSummary =>
+	drawing.name === null;
 
 /** The scratchpads among the drawings, most recently edited first. */
-export const scratchpadsOf = (drawings: DrawingSummary[]): DrawingSummary[] =>
+export const scratchpadsOf = (
+	drawings: DrawingSummary[],
+): ScratchpadSummary[] =>
 	drawings
-		.filter((drawing) => !isSaved(drawing))
+		.filter(isScratchpad)
 		.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
 /** When the scratchpad was last edited, such as "25 Nov 2026, 16:40". */
-export const editedAt = ({ updatedAt }: DrawingSummary): string =>
+export const editedAt = ({ updatedAt }: ScratchpadSummary): string =>
 	new Date(updatedAt).toLocaleString(undefined, {
 		dateStyle: "medium",
 		timeStyle: "short",
@@ -24,7 +32,7 @@ export const editedAt = ({ updatedAt }: DrawingSummary): string =>
  * position in the row tells apart scratchpads edited in the same minute.
  */
 export const scratchpadName = (
-	scratchpad: DrawingSummary,
+	scratchpad: ScratchpadSummary,
 	position: number,
 ): string => `Scratchpad ${position}, edited ${editedAt(scratchpad)}`;
 
@@ -32,7 +40,7 @@ export const scratchpadName = (
  * A scratchpad that the server doesn't have yet. The editor stores it, with this
  * ID, on its first save.
  */
-export function newScratchpad(id: string): Drawing {
+export function newScratchpad(id: string): Drawing & ScratchpadSummary {
 	const now = new Date().toISOString();
 	return {
 		id,
