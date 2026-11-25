@@ -102,6 +102,41 @@ function createVersion2Database(): void {
 	db.close();
 }
 
+/** Writes a database at version 3, with a drawing that has a preview and a tag. */
+function createVersion3Database(): void {
+	const db = new DatabaseSync(file, { enableForeignKeyConstraints: true });
+	db.exec(`
+		CREATE TABLE drawings (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			scene TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			preview BLOB,
+			preview_updated_at TEXT
+		);
+		CREATE TABLE tags (
+			id TEXT PRIMARY KEY,
+			label TEXT NOT NULL,
+			label_key TEXT NOT NULL UNIQUE,
+			color TEXT NOT NULL,
+			created_at TEXT NOT NULL DEFAULT ''
+		);
+		CREATE TABLE drawing_tags (
+			drawing_id TEXT NOT NULL REFERENCES drawings (id) ON DELETE CASCADE,
+			tag_id TEXT NOT NULL REFERENCES tags (id) ON DELETE CASCADE,
+			PRIMARY KEY (drawing_id, tag_id)
+		) WITHOUT ROWID;
+		CREATE INDEX drawing_tags_tag_id ON drawing_tags (tag_id);
+		INSERT INTO drawings VALUES
+			('old', 'Old plan', '{}', '2026-01-01', '2026-01-02', X'8950', '2026-01-03');
+		INSERT INTO tags VALUES ('work', 'Work', 'work', 'blue', '2026-01-01');
+		INSERT INTO drawing_tags VALUES ('old', 'work');
+		PRAGMA user_version = 3;
+	`);
+	db.close();
+}
+
 describe("database", () => {
 	it("creates the schema in a new database", () => {
 		const db = openDatabase(file);
@@ -135,21 +170,22 @@ describe("database", () => {
 		db.close();
 	});
 
-	it("lets drawings go without a name and keeps their tags", () => {
-		createUnversionedDatabase(true);
-		const before = openDatabase(file);
-		const tag = openTagStore(before).create({ label: "Work", color: "blue" });
-		if (tag === "label-taken") throw new Error("label taken");
-		openDrawingStore(before).setTags("old", [tag.id]);
-		before.exec("PRAGMA user_version = 3");
-		before.close();
+	it("lets drawings go without a name and keeps their previews and tags", () => {
+		createVersion3Database();
 
 		const db = openDatabase(file);
 		const drawings = openDrawingStore(db);
 		const scratchpad = drawings.create({ name: null });
 
 		expect(userVersion(db)).toBe(4);
-		expect(drawings.get("old")).toMatchObject({ tagIds: [tag.id] });
+		expect(drawings.get("old")).toMatchObject({
+			name: "Old plan",
+			scene: "{}",
+			updatedAt: "2026-01-02",
+			previewUpdatedAt: "2026-01-03",
+			tagIds: ["work"],
+		});
+		expect(drawings.getPreview("old")).toEqual(new Uint8Array([137, 80]));
 		expect(scratchpad).toMatchObject({ name: null });
 		expect(drawings.list().map(({ name }) => name)).toEqual([null, "Old plan"]);
 		db.close();
