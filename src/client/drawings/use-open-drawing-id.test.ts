@@ -159,6 +159,20 @@ describe("useOpenDrawingId", () => {
 			expect(result.current.isNew).toBe(false);
 		});
 
+		it("leaves the path of the next new scratchpad alone when the last one is stored late", () => {
+			const { result } = renderHook(() => useOpenDrawingId());
+			act(() => result.current.openDrawing(NEW_SCRATCHPAD));
+			// What the closed editor holds on to until its first save answers.
+			const markEarlier = result.current.markStored;
+			const earlier = result.current.openId ?? "";
+			act(() => result.current.openDrawing(null));
+			act(() => result.current.openDrawing(NEW_SCRATCHPAD));
+
+			act(() => markEarlier(earlier));
+
+			expect(window.location.pathname).toBe("/drawings/new");
+		});
+
 		it("leaves the path alone once the user has left the scratchpad", () => {
 			const { result } = renderHook(() => useOpenDrawingId());
 			act(() => result.current.openDrawing(NEW_SCRATCHPAD));
