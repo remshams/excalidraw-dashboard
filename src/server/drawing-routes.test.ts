@@ -362,6 +362,21 @@ describe("drawing tags API", () => {
 		expect(summary.tagIds).toEqual([tag.id]);
 	});
 
+	it("refuses tags on a scratchpad with 400 and takes an empty set", async () => {
+		const { id } = await (await send("POST", "/drawings", {})).json();
+		const tag = await createTag("Work");
+
+		const refused = await putTags(id, [tag.id]);
+		const emptied = await putTags(id, []);
+
+		expect(refused.status).toBe(400);
+		expect(await refused.text()).toBe(
+			"A scratchpad takes no tags; save it as a drawing first",
+		);
+		expect(emptied.status).toBe(200);
+		expect(await tagIdsOf(id)).toEqual([]);
+	});
+
 	it("rejects an unknown tag ID with 400 and keeps the tags", async () => {
 		const { id } = await create("Plan");
 		const tag = await createTag("Work");
