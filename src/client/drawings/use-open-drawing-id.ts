@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { newScratchpadId } from "./scratchpad.ts";
 
 const PREFIX = "/drawings/";
@@ -43,6 +43,9 @@ const opened = (id: string | null): Opened =>
  */
 export function useOpenDrawingId() {
 	const [open, setOpen] = useState(() => opened(readId()));
+	// The open drawing now, for a save that answers after the user moved on.
+	const current = useRef(open);
+	current.current = open;
 
 	useEffect(() => {
 		const onPopState = () => setOpen(opened(readId()));
@@ -64,7 +67,7 @@ export function useOpenDrawingId() {
 	 */
 	const markStored = (id: string) => {
 		const newPath = drawingPath(NEW_SCRATCHPAD);
-		if (open.id === id && window.location.pathname === newPath) {
+		if (current.current.id === id && window.location.pathname === newPath) {
 			window.history.replaceState(null, "", drawingPath(id));
 		}
 	};
