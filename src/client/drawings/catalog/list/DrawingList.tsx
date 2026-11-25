@@ -63,12 +63,12 @@ export function DrawingList({
 	const questions = useOpenTask();
 	const { task, returnTo, ask, close, closeToButton } = questions;
 	const [taggingId, setTaggingId] = useState<string | null>(null);
-	const tagging = drawings.find(({ id }) => id === taggingId);
+	const saved = drawings.filter(isSaved);
+	const tagging = saved.find(({ id }) => id === taggingId);
 	const searchField = useRef<HTMLInputElement>(null);
 	const { page, refocus } = useTagRefocus();
 	const tagsButton = useRef<HTMLButtonElement>(null);
 	useFocusAfterDialog(tagging !== undefined, tagsButton);
-	const saved = drawings.filter(isSaved);
 	const shown = filterDrawings(saved, filter.selectedTagIds, filter.query);
 	const asked = filter.query.trim() !== "" || filter.selectedTagIds.length > 0;
 
@@ -394,7 +394,7 @@ function Sheet({
 }
 
 type CardTagsProps = {
-	drawing: DrawingSummary;
+	drawing: SavedDrawingSummary;
 	/** The drawing's tags, sorted by label. */
 	tags: Tag[];
 	selectedTagIds: string[];
