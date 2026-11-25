@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
  * the bar doesn't fall back to the old one until the list has the new one.
  */
 export function useDrawingTitle(
-	name: string,
+	name: string | null,
 	onRename: (name: string) => Promise<void>,
 ) {
 	const [editing, setEditing] = useState(false);

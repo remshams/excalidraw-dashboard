@@ -32,6 +32,22 @@
 	cursor: pointer;
 }
 
+/* "Scratchpad" sits where a name would, in the name's type and box. */
+.scratchpad {
+	padding: var(--space-xs);
+	border: var(--stroke-sm) solid transparent;
+	color: var(--graphite);
+	font-family: var(--hand);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-md);
+	white-space: nowrap;
+}
+
+/* Under .title, to outrank the rule that gives every heading here the bar's size. */
+.title .scratchpad {
+	font-size: var(--text-lg);
+}
+
 .name {
 	overflow: hidden;
 	text-overflow: ellipsis;
