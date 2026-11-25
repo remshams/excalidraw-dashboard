@@ -17,7 +17,7 @@ const drawing: Drawing = {
 };
 const savedSummary = { ...drawing, updatedAt: "2026-01-02T00:00:00.000Z" };
 
-const render = (isNew = false, opened = drawing) => {
+const render = (isNew = false, opened: Drawing = drawing) => {
 	const onSaved = vi.fn();
 	const onError = vi.fn();
 	const hook = renderHook(() =>
