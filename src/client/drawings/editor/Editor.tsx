@@ -7,6 +7,8 @@ import { usePreview } from "./use-preview.ts";
 
 type EditorProps = {
 	drawing: Drawing;
+	/** Whether the drawing is a new scratchpad the server doesn't have yet. */
+	isNew?: boolean;
 	/** Display only: Excalidraw leaves the theme out of the stored scene. */
 	theme?: "light" | "dark";
 	onSaved: (summary: DrawingSummary) => void;
@@ -14,11 +16,20 @@ type EditorProps = {
 };
 
 /** Edits one drawing. Render it with `key={drawing.id}` so switching drawings remounts it. */
-export function Editor({ drawing, theme, onSaved, onError }: EditorProps) {
+export function Editor({
+	drawing,
+	isNew = false,
+	theme,
+	onSaved,
+	onError,
+}: EditorProps) {
 	const [initialData] = useState(() =>
 		drawing.scene ? JSON.parse(drawing.scene) : null,
 	);
-	const { schedule, settle } = useAutosave(drawing, { onSaved, onError });
+	const { schedule, settle } = useAutosave(drawing, isNew, {
+		onSaved,
+		onError,
+	});
 	usePreview(drawing, settle, onSaved);
 
 	return (
@@ -28,7 +39,10 @@ export function Editor({ drawing, theme, onSaved, onError }: EditorProps) {
 			// The app follows the system's theme, so Excalidraw's own toggle stays hidden.
 			UIOptions={{ canvasActions: { toggleTheme: false } }}
 			onChange={(elements, appState, files) =>
-				schedule(serializeAsJSON(elements, appState, files, "local"))
+				schedule(
+					serializeAsJSON(elements, appState, files, "local"),
+					elements.some((element) => !element.isDeleted),
+				)
 			}
 		/>
 	);
