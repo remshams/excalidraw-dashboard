@@ -1,9 +1,9 @@
 import { type KeyboardEvent, useId } from "react";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import { PlusIcon } from "../../icons.tsx";
+import type { SavedDrawing } from "../../scratchpad.ts";
 import frame from "../dialog/CentredDialog.module.css";
 import { SearchLine } from "../dialog/SearchLine.tsx";
 import { closeOnBackdropPress } from "../dialog/use-modal-dialog.ts";
-import { PlusIcon } from "../../icons.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
 import styles from "./QuickSwitcher.module.css";
 import {
@@ -13,7 +13,8 @@ import {
 } from "./use-quick-switcher.ts";
 
 type QuickSwitcherProps = {
-	drawings: DrawingSummary[];
+	/** The named drawings; scratchpads have no name to find them by. */
+	drawings: SavedDrawing[];
 	/** The drawing the editor shows, or null while it loads. */
 	openDrawingId: string | null;
 	onOpen: (id: string) => void;

@@ -1,14 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { SavedDrawing } from "../../scratchpad.ts";
 import { QuickSwitcher } from "./QuickSwitcher.tsx";
 
 const summary = (
 	id: string,
 	name: string,
 	updatedAt: string,
-): DrawingSummary => ({
+): SavedDrawing => ({
 	id,
 	name,
 	createdAt: "2026-01-01T00:00:00.000Z",
@@ -29,7 +29,7 @@ function setup(openDrawingId: string | null = "3") {
 		onCreate: vi.fn(),
 		onClose: vi.fn(),
 	};
-	const switcher = (list: DrawingSummary[]) => (
+	const switcher = (list: SavedDrawing[]) => (
 		<QuickSwitcher
 			drawings={list}
 			openDrawingId={openDrawingId}
@@ -40,7 +40,7 @@ function setup(openDrawingId: string | null = "3") {
 	return {
 		...handlers,
 		user: userEvent.setup(),
-		showDrawings: (list: DrawingSummary[]) => rerender(switcher(list)),
+		showDrawings: (list: SavedDrawing[]) => rerender(switcher(list)),
 	};
 }
 
