@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { DrawingSummary, ScratchpadSummary } from "#shared/drawings.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { CheckIcon, TrashIcon } from "../../icons.tsx";
 import { NameField } from "../../NameField.tsx";
@@ -103,7 +103,7 @@ export function Scratchpads({
 }
 
 type ScratchpadCardProps = {
-	scratchpad: DrawingSummary;
+	scratchpad: ScratchpadSummary;
 	/** What the card and its actions are called. */
 	name: string;
 	task: ScratchpadTask | null;
