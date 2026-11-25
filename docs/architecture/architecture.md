@@ -264,8 +264,9 @@ the field is open.
 For a scratchpad, `DrawingTitle` shows "Scratchpad" and, once `use-drawings`
 lists it, a **Save as drawing** button that opens `NameField` empty. Saving
 renames it, which makes it a drawing. `DiscardScratchpad` next to it asks
-before `App` leaves the scratchpad and deletes it; leaving first flushes the
-pending save, which the delete then removes. A scratchpad shows no tags.
+before `App` deletes the scratchpad and leaves it. The editor flushes its last
+edit as it closes, after the delete, so that save fails with 404, which `App`
+ignores as for any drawing this tab deleted. A scratchpad shows no tags.
 
 After the name, `App` renders `DrawingTagsButton` from `catalog/tags/` with the
 drawing as `use-drawings` has it and the tags from `use-tags`, so the bar shows
