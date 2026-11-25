@@ -64,24 +64,28 @@ export function useDrawings(onError: (error: unknown) => void) {
 		return created;
 	};
 
-	const setName = (id: string, name: string | null) => {
+	/** Gives the listed drawing the name `to` while it still has the name `from`. */
+	const swapName = (id: string, from: string | null, to: string | null) => {
 		setDrawings((list) =>
-			list.map((d) => (d.id === id ? { ...d, name } : d)).sort(byName),
+			list
+				.map((d) => (d.id === id && d.name === from ? { ...d, name: to } : d))
+				.sort(byName),
 		);
 	};
 
 	/**
 	 * Shows the new name before the server answers, so a scratchpad being saved
 	 * leaves the Scratchpads row, and Discard can't reach it, at once. A refused
-	 * rename brings the old name back and rejects.
+	 * rename brings the old name back, unless something changed it since, and
+	 * rejects.
 	 */
 	const rename = async (id: string, name: string) => {
-		const before = drawings.find((d) => d.id === id)?.name ?? null;
-		setName(id, name);
+		const listed = drawings.find((d) => d.id === id);
+		if (listed) swapName(id, listed.name, name);
 		try {
 			replace(await updateDrawing(id, { name }));
 		} catch (error) {
-			setName(id, before);
+			if (listed) swapName(id, name, listed.name);
 			throw error;
 		}
 	};

@@ -130,6 +130,34 @@ describe("useDrawings", () => {
 		expect(result.current.drawings[0].name).toBeNull();
 	});
 
+	it("leaves a name the list got later alone when a rename of an unlisted drawing is refused", async () => {
+		let answer = (_: DrawingSummary[]) => {};
+		vi.mocked(api.listDrawings).mockReturnValue(
+			new Promise((resolve) => {
+				answer = resolve;
+			}),
+		);
+		let refuse = (_: Error) => {};
+		vi.mocked(api.updateDrawing).mockReturnValue(
+			new Promise((_, reject) => {
+				refuse = reject;
+			}),
+		);
+		// Stable, because the hook loads the list again when onError changes.
+		const onError = vi.fn();
+		const { result } = renderHook(() => useDrawings(onError));
+		let renaming: Promise<void> = Promise.resolve();
+		act(() => {
+			renaming = result.current.rename("a", "Plan");
+		});
+
+		await act(async () => answer([drawing("a", [])]));
+		refuse(new Error("refused"));
+		await act(() => expect(renaming).rejects.toThrow("refused"));
+
+		expect(result.current.drawings[0].name).toBe("a");
+	});
+
 	it("keeps a scratchpad's first save that lands while the list loads", async () => {
 		let answer = (_: DrawingSummary[]) => {};
 		vi.mocked(api.listDrawings).mockReturnValue(
