@@ -130,6 +130,32 @@ describe("useDrawings", () => {
 		expect(result.current.drawings[0].name).toBeNull();
 	});
 
+	it("keeps a later rename's name when an earlier one is refused", async () => {
+		let refuse = (_: Error) => {};
+		vi.mocked(api.listDrawings).mockResolvedValue([drawing("a", [])]);
+		vi.mocked(api.updateDrawing)
+			.mockReturnValueOnce(
+				new Promise((_, reject) => {
+					refuse = reject;
+				}),
+			)
+			.mockReturnValueOnce(new Promise(() => {}));
+		// Stable, because the hook loads the list again when onError changes.
+		const onError = vi.fn();
+		const { result } = renderHook(() => useDrawings(onError));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+		let first: Promise<void> = Promise.resolve();
+		act(() => {
+			first = result.current.rename("a", "X");
+		});
+		act(() => void result.current.rename("a", "Y"));
+
+		refuse(new Error("refused"));
+		await act(() => expect(first).rejects.toThrow("refused"));
+
+		expect(result.current.drawings[0].name).toBe("Y");
+	});
+
 	it("leaves a name the list got later alone when a rename of an unlisted drawing is refused", async () => {
 		let answer = (_: DrawingSummary[]) => {};
 		vi.mocked(api.listDrawings).mockReturnValue(
