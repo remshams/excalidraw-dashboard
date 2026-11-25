@@ -3,7 +3,7 @@ import { type APIRequestContext, expect } from "@playwright/test";
 // The drawings HTTP API, which tests use to set up drawings and to read what
 // the server stored. The types cover only the fields the tests read.
 
-type StoredDrawing = { id: string; name: string; scene: string | null };
+type StoredDrawing = { id: string; name: string | null; scene: string | null };
 
 type SceneElement = { type: string; isDeleted?: boolean };
 
@@ -16,6 +16,39 @@ export async function createDrawingThroughApi(
 	expect(response.status()).toBe(201);
 	const drawing: StoredDrawing = await response.json();
 	return drawing.id;
+}
+
+/** Creates a scratchpad, a drawing without a name, and returns its ID. */
+export async function createScratchpadThroughApi(
+	request: APIRequestContext,
+): Promise<string> {
+	const response = await request.post("/api/drawings", { data: {} });
+	expect(response.status()).toBe(201);
+	const drawing: StoredDrawing = await response.json();
+	return drawing.id;
+}
+
+/**
+ * A stored drawing's name, null for a scratchpad, or undefined if the server
+ * has no drawing with the ID.
+ */
+export async function storedName(
+	request: APIRequestContext,
+	id: string,
+): Promise<string | null | undefined> {
+	const response = await request.get(`/api/drawings/${id}`);
+	if (response.status() === 404) return undefined;
+	const drawing: StoredDrawing = await response.json();
+	return drawing.name;
+}
+
+/** How many scratchpads the server has. */
+export async function storedScratchpadCount(
+	request: APIRequestContext,
+): Promise<number> {
+	const response = await request.get("/api/drawings");
+	const drawings: StoredDrawing[] = await response.json();
+	return drawings.filter((drawing) => drawing.name === null).length;
 }
 
 /** Deletes a drawing with `DELETE /api/drawings/:id`, as another tab would. */
