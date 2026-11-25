@@ -348,11 +348,12 @@ dialog from the editor bar, and `form/` holds `TagForm` and
 
 `App` renders `DrawingList` with the list from `use-drawings`, the tags from
 `use-tags` and the filter from `use-tag-filter`. Above the drawings, `Scratchpads`
-shows the scratchpads, most recently edited first, each called after when it
-was last edited. A scratchpad's card saves it under a name through `NameField`
+shows the scratchpads, most recently edited first, each called after its place
+in the row and when it was last edited. A scratchpad's card saves it under a name through `NameField`
 or discards it after `DeleteConfirmation`, and **Discard all** deletes every
 scratchpad after one question. While a search or a tag filter is set, the row is
-hidden. `open-task` keeps the page to one open question across both rows. The
+hidden. `use-open-task` keeps the page to one open question across both rows,
+and gives the focus back to the button whose question was cancelled. The
 first card of the drawings is a blank sheet, a link to `/drawings/new` that
 opens a new scratchpad. Every other card shows the drawing's preview on a sheet, with an `<img>` whose URL from
 `api.ts` carries `previewUpdatedAt` as a version. A drawing without a preview,
