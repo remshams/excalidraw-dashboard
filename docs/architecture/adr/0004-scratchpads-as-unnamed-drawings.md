@@ -8,7 +8,10 @@ Accepted
 
 A new drawing needed a name before the editor opened. The user wants to start
 drawing at once and decide later whether to keep the drawing, or throw it away.
-Nothing drawn may be lost when the tab closes.
+A scratchpad must be as safe as any drawing: autosaved after each pause, and
+flushed when the editor closes or the page is hidden. That flush is a normal
+request, so a browser that cancels it while the tab closes loses the last
+second of edits, for a scratchpad's first stroke as for any drawing's edit.
 
 ## Decision
 
