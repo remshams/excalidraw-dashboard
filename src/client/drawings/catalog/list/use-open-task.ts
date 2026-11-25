@@ -32,30 +32,31 @@ export const scratchpadTaskOf = (
 		: null;
 
 /**
- * The landing page's one question. Cancelling it gives the focus back to the
- * button that asked it, unless the user already moved the focus elsewhere.
+ * The landing page's one question. `close` closes it, and `closeToButton` also
+ * gives the focus back to the button that asked it, for a question that leaves
+ * that button in place, unless the user already moved the focus elsewhere.
  */
 export function useOpenTask() {
 	const [task, setTask] = useState<OpenTask>(null);
-	// The question just cancelled; its button takes the focus when it returns.
-	const [cancelled, setCancelled] = useState<OpenTask>(null);
+	// The question just closed; its button takes the focus when it returns.
+	const [returnTo, setReturnTo] = useState<OpenTask>(null);
 
 	const ask = (next: OpenTask) => {
-		setCancelled(null);
+		setReturnTo(null);
 		setTask(next);
 	};
 
-	const cancel = () => {
-		// Escape and Keep leave the focus in the question; a click elsewhere has
-		// moved it, and starts its own question if it asks one.
+	const closeToButton = () => {
+		// Escape, Enter and Keep leave the focus in the question; a click elsewhere
+		// or Tab has moved it, and a click starts its own question if it asks one.
 		const active = document.activeElement;
 		const inQuestion =
 			active instanceof HTMLInputElement || active instanceof HTMLButtonElement;
-		setCancelled(inQuestion ? task : null);
+		setReturnTo(inQuestion ? task : null);
 		setTask(null);
 	};
 
-	return { task, cancelled, ask, close: () => ask(null), cancel };
+	return { task, returnTo, ask, close: () => ask(null), closeToButton };
 }
 
 export type OpenTaskState = ReturnType<typeof useOpenTask>;
