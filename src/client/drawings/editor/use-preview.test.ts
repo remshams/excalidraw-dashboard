@@ -131,8 +131,9 @@ describe("usePreview", () => {
 	it("reports nothing when no preview was stored", async () => {
 		const warn = vi.spyOn(console, "warn");
 		vi.mocked(storePreview).mockResolvedValue(null);
-		const opened = { ...drawing, previewUpdatedAt: null, scene: null };
-		const settle = async () => ({ scene: null, summary: opened });
+		// A scene with nothing visible and no preview to remove.
+		const opened = { ...drawing, previewUpdatedAt: null, scene: "empty" };
+		const settle = async () => ({ scene: "empty", summary: opened });
 
 		const { onStored } = render(opened, settle);
 
@@ -140,6 +141,28 @@ describe("usePreview", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		expect(onStored).not.toHaveBeenCalled();
 		expect(warn).not.toHaveBeenCalled();
+	});
+
+	it("renders a new scratchpad's first scene on leave, whatever its made-up times say", async () => {
+		// The client made the scratchpad with its own clock, which can be ahead of
+		// the server's.
+		const scratchpad: Drawing = {
+			...drawing,
+			name: null,
+			scene: null,
+			previewUpdatedAt: null,
+			updatedAt: "2026-02-01T00:00:00.000Z",
+		};
+		let saved: SavedScene = { scene: null, summary: scratchpad };
+		const settle = vi.fn(async () => saved);
+		const { unmount, onStored } = render(scratchpad, settle);
+		await vi.waitFor(() => expect(settle).toHaveBeenCalledOnce());
+
+		saved = edited;
+		unmount();
+
+		await vi.waitFor(() => expect(onStored).toHaveBeenCalledOnce());
+		expect(storePreview).toHaveBeenCalledExactlyOnceWith("1", "edited", false);
 	});
 
 	it("stops listening for the page being hidden once the editor closes", async () => {
