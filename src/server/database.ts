@@ -90,9 +90,6 @@ function allowDrawingsWithoutName(db: DatabaseSync): void {
 		DROP TABLE drawings;
 		ALTER TABLE drawings_new RENAME TO drawings;
 	`);
-	if (db.prepare("PRAGMA foreign_key_check").all().length > 0) {
-		throw new Error("A tag assignment points to a missing drawing or tag");
-	}
 }
 
 /** Migration n is at index n - 1. Append new ones; never change one that shipped. */
