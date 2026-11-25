@@ -15,7 +15,10 @@ type DrawingSummaryFields = {
 /** A drawing the user has named. */
 export type SavedDrawingSummary = DrawingSummaryFields & { name: string };
 
-/** A scratchpad: a drawing nobody has named yet. It takes no tags. */
+/**
+ * A scratchpad: a drawing nobody has named yet. The server refuses tags for it,
+ * so its `tagIds` stay empty; the type doesn't enforce that.
+ */
 export type ScratchpadSummary = DrawingSummaryFields & { name: null };
 
 /** A drawing without its scene. `name` tells a saved drawing from a scratchpad. */
