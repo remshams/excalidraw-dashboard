@@ -37,5 +37,9 @@ now run with foreign keys off, so dropping the old table keeps `drawing_tags`.
   switcher take only saved drawings, and scratchpads take no tags.
 - Old scratchpads stay until the user discards them, one by one or with
   **Discard all**. Deleting them after some days is left for later.
+- Leaving a new scratchpad within the save delay stores it after the user has
+  left, when `/drawings/new` is no longer the current history entry, so it
+  can't be replaced. Going back to it starts a new scratchpad; the stored one
+  waits in the row.
 - A `PUT` to a deleted drawing still answers 404 and creates nothing, so a late
   save can't bring a discarded scratchpad back.
