@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 /** The question a drawing's card asks: a new name, or a delete confirmation. */
 export type CardTask = "rename" | "delete";
 
@@ -28,3 +30,32 @@ export const scratchpadTaskOf = (
 	(task?.kind === "save" || task?.kind === "discard") && task.id === id
 		? task.kind
 		: null;
+
+/**
+ * The landing page's one question. Cancelling it gives the focus back to the
+ * button that asked it, unless the user already moved the focus elsewhere.
+ */
+export function useOpenTask() {
+	const [task, setTask] = useState<OpenTask>(null);
+	// The question just cancelled; its button takes the focus when it returns.
+	const [cancelled, setCancelled] = useState<OpenTask>(null);
+
+	const ask = (next: OpenTask) => {
+		setCancelled(null);
+		setTask(next);
+	};
+
+	const cancel = () => {
+		// Escape and Keep leave the focus in the question; a click elsewhere has
+		// moved it, and starts its own question if it asks one.
+		const active = document.activeElement;
+		const inQuestion =
+			active instanceof HTMLInputElement || active instanceof HTMLButtonElement;
+		setCancelled(inQuestion ? task : null);
+		setTask(null);
+	};
+
+	return { task, cancelled, ask, close: () => ask(null), cancel };
+}
+
+export type OpenTaskState = ReturnType<typeof useOpenTask>;
