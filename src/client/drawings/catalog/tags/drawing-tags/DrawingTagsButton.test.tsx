@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import type { Tag, TagColor } from "#shared/tags.ts";
 import { DrawingTagsButton } from "./DrawingTagsButton.tsx";
 
@@ -25,7 +25,7 @@ const changes = { create: vi.fn(), update: vi.fn(), remove: vi.fn() };
 const onToggle = vi.fn();
 
 /** The drawing Plan with the given tags. */
-const plan = (tagIds: string[]): DrawingSummary => ({
+const plan = (tagIds: string[]): SavedDrawingSummary => ({
 	id: "1",
 	name: "Plan",
 	createdAt: "",

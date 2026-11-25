@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { TagIcon } from "../../../icons.tsx";
 import { TagInkFilter, TagMark } from "../TagMark.tsx";
@@ -12,7 +12,7 @@ const SHOWN_TAGS = 3;
 
 type DrawingTagsButtonProps = {
 	/** The open drawing as the list has it, with its current name and tags. */
-	drawing: DrawingSummary;
+	drawing: SavedDrawingSummary;
 	/** Every tag, sorted by label. */
 	tags: Tag[];
 	changes: TagChanges;
