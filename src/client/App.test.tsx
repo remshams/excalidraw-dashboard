@@ -439,7 +439,7 @@ describe("App", () => {
 			await user.click(screen.getByRole("button", { name: "Keep" }));
 
 			expect(api.deleteDrawing).not.toHaveBeenCalled();
-			expect(screen.getByRole("button", { name: "Discard" })).toBeVisible();
+			expect(screen.getByRole("button", { name: "Discard" })).toHaveFocus();
 		});
 
 		it("keeps a scratchpad the user leaves without deciding", async () => {
