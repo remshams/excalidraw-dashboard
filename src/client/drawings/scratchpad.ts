@@ -19,9 +19,14 @@ export const editedAt = ({ updatedAt }: DrawingSummary): string =>
 		timeStyle: "short",
 	});
 
-/** What a scratchpad's card and actions are called, as it has no name. */
-export const scratchpadName = (scratchpad: DrawingSummary): string =>
-	`Scratchpad edited ${editedAt(scratchpad)}`;
+/**
+ * What a scratchpad's card and actions are called, as it has no name. The
+ * position in the row tells apart scratchpads edited in the same minute.
+ */
+export const scratchpadName = (
+	scratchpad: DrawingSummary,
+	position: number,
+): string => `Scratchpad ${position}, edited ${editedAt(scratchpad)}`;
 
 /**
  * A scratchpad that the server doesn't have yet. The editor stores it, with this
