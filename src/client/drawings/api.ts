@@ -1,4 +1,5 @@
 import type {
+	CreateDrawingRequest,
 	Drawing,
 	DrawingSummary,
 	UpdateDrawingRequest,
@@ -36,10 +37,10 @@ export const listDrawings = () => request<DrawingSummary[]>("/drawings");
 
 export const getDrawing = (id: string) => request<Drawing>(`/drawings/${id}`);
 
-export const createDrawing = (name: string) =>
+export const createDrawing = (drawing: CreateDrawingRequest) =>
 	request<Drawing>("/drawings", {
 		method: "POST",
-		body: JSON.stringify({ name }),
+		body: JSON.stringify(drawing),
 	});
 
 export const updateDrawing = (id: string, changes: UpdateDrawingRequest) =>
