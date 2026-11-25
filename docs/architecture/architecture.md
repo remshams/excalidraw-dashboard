@@ -1,13 +1,15 @@
 # excalidraw-dashboard architecture
 
 excalidraw-dashboard is a self-hosted Excalidraw for one user, with a list of
-named drawings. A React client embeds `@excalidraw/excalidraw` and autosaves
+named drawings and scratchpads. A React client embeds `@excalidraw/excalidraw` and autosaves
 each drawing to a small Hono server, which stores it in SQLite through
 `node:sqlite`. Node 24 runs the server's TypeScript directly; only the client
 has a build step. Each drawing can have a preview image, whose URL carries a
 version ([ADR 0001](adr/0001-version-preview-urls.md)), and any number of tags.
 Numbered migrations keep the database schema up to date
-([ADR 0002](adr/0002-number-schema-migrations.md)).
+([ADR 0002](adr/0002-number-schema-migrations.md)). A new drawing starts as a
+scratchpad the server stores on its first stroke
+([ADR 0004](adr/0004-scratchpads-as-unnamed-drawings.md)).
 
 ## Domain language
 
@@ -15,6 +17,10 @@ Numbered migrations keep the database schema up to date
   IDs. It is the aggregate root: its name, scene, preview and tags change only
   through the drawing. Assigning tags isn't an edit, so it leaves `updatedAt`
   alone.
+- **Scratchpad**: a drawing without a name, which the user hasn't decided to
+  keep yet. It is the same entity: giving it a name saves it as a drawing, for
+  good, and discarding it deletes it. It has no tags, and the search and the
+  tag filter, which match names and tags, never find it.
 - **Scene**: a value object, the Excalidraw scene serialized with
   `serializeAsJSON(..., "local")`. It matches an exported `.excalidraw` file. A
   new drawing has no scene yet.
@@ -45,7 +51,7 @@ flowchart TD
     dashboard["excalidraw-dashboard<br>Lists, edits and autosaves drawings"]:::system
     db[("Drawing database<br>SQLite file drawings.db")]:::store
     cdn["esm.sh<br>CDN for Excalidraw's canvas fonts"]:::external
-    user -->|creates, renames, deletes and draws| dashboard
+    user -->|draws, saves, renames and deletes| dashboard
     dashboard -->|reads and writes drawings and tags| db
     dashboard -->|loads canvas fonts over HTTPS| cdn
 ```
@@ -147,7 +153,10 @@ Its foreign keys delete a drawing's rows when the drawing or the tag goes.
 lower case under a `UNIQUE` constraint, and a `created_at` column with the
 creation time. Migration 3 added the column; it gave existing tags times that
 follow their insertion order. `GET`, `POST` and `PUT` return `createdAt`, and the
-list stays sorted by label.
+list stays sorted by label. Migration 4 let `name` be `NULL`, for scratchpads.
+SQLite can't drop `NOT NULL`, so it copies the table; `database` runs the
+migrations with foreign keys off, so dropping the old table doesn't cascade to
+`drawing_tags`, and turns them on afterwards.
 
 Each aggregate has one route module. `drawing-routes` serves the drawing, its
 preview and its set of tag IDs, and checks the tag IDs and the preview's type and
@@ -190,7 +199,9 @@ preview saved. They don't import each other; both use `api.ts` at the root.
 at the root too, with `NameField`, which renames a drawing on its card and in
 the editor bar, and `icons`, the line icons of both modules and `App`. So does
 `use-open-drawing-id.ts`, and `App` uses it to track the open drawing:
-`/drawings/<id>` opens a drawing, and `/` opens none. `App` shows the landing
+`/drawings/<id>` opens a drawing, `/drawings/new` starts a scratchpad, and `/`
+opens none. `scratchpad.ts` holds what tells a scratchpad from a saved drawing,
+the scratchpads' order and label, and the random ID a new scratchpad gets. `App` shows the landing
 page at `/` and the editor view otherwise: the editor below a bar with an "All
 drawings" link, the drawing's name, which renames the drawing, and its tags,
 which open a dialog to change them. Cards and "All drawings" are `DrawingLink`s:
@@ -223,7 +234,15 @@ flowchart TD
 ```
 
 `App` loads the open drawing with `use-drawing` and renders `Editor` with it.
-`Editor` only renders Excalidraw; the two hooks hold its behavior. `use-preview`
+For a new scratchpad, `App` makes the drawing itself with `newScratchpad` and
+loads nothing. `use-open-drawing-id` gives the scratchpad a random UUID when it
+opens; `crypto.randomUUID` would need a secure context, which a plain HTTP
+address on the local network isn't. `Editor` gets `isNew`, and `use-autosave`
+creates the drawing with `POST /api/drawings` on its first save, which happens
+only once the scene shows something. Later saves use `PUT`. The editor keeps
+its key, since the ID doesn't change, and `use-open-drawing-id` replaces
+`/drawings/new` with the scratchpad's path in the history, so a reload reopens
+it. `Editor` only renders Excalidraw; the two hooks hold its behavior. `use-preview`
 gets the saved scene from `use-autosave` through `settle`, which `Editor` passes
 in, so it doesn't import `use-autosave` beyond a type. A preview is out of date
 when the drawing has none or when it's older than the last scene save, and only
@@ -242,6 +261,12 @@ Escape the focus goes back to the name; a click elsewhere leaves the focus where
 the user clicked. Renaming doesn't touch the scene, so autosave goes on while
 the field is open.
 
+For a scratchpad, `DrawingTitle` shows "Scratchpad" and, once `use-drawings`
+lists it, a **Save as drawing** button that opens `NameField` empty. Saving
+renames it, which makes it a drawing. `DiscardScratchpad` next to it asks
+before `App` leaves the scratchpad and deletes it; leaving first flushes the
+pending save, which the delete then removes. A scratchpad shows no tags.
+
 After the name, `App` renders `DrawingTagsButton` from `catalog/tags/` with the
 drawing as `use-drawings` has it and the tags from `use-tags`, so the bar shows
 a tag change at once, like the card. It shows the first three tags by label with
@@ -258,13 +283,13 @@ the tags failed to load, the bar shows no tags.
 title: Modules of the catalog
 ---
 flowchart TD
-    list["DrawingList<br>src/client/drawings/catalog/list/DrawingList.tsx<br>The landing page's cards with their previews and tags"]:::module
+    list["list/<br>The landing page: DrawingList with the drawings' cards and Scratchpads with the scratchpads' row"]:::group
     filter["filter/<br>The tag filter and the search, the Filter by row and the tag toggles"]:::group
     switcher["switcher/<br>Modal search that opens or creates a drawing"]:::group
     tags["tags/<br>Loads, finds, creates, changes and deletes the tags; changes a drawing's tags"]:::group
     previewImage["PreviewImage<br>src/client/drawings/catalog/PreviewImage.tsx<br>A drawing's preview, filtered in dark mode"]:::module
     name["NameField<br>src/client/drawings/NameField.tsx<br>Edits a drawing name inline"]:::module
-    confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted"]:::module
+    confirm["DeleteConfirmation<br>src/client/drawings/catalog/DeleteConfirmation.tsx<br>Asks before a drawing is deleted or discarded"]:::module
     drawings["use-drawings<br>src/client/drawings/catalog/use-drawings.ts<br>Loads the list, applies changes, gives or takes off a tag, remembers deletes, forgets deleted tags"]:::module
     dialog["dialog/<br>What the modal dialogs share: the modal behaviour, the centred frame and the search line"]:::group
     link["DrawingLink<br>src/client/drawings/DrawingLink.tsx<br>Links to a drawing; a plain click opens it in place"]:::module
@@ -309,8 +334,8 @@ switcher, `tags/` the tags and `dialog/` what the modal dialogs share: `use-moda
 `CentredDialog.module.css`, the frame of the quick switcher and the dialog for a
 drawing's tags: a sheet in the middle of the window over the dimmed page. Directly in `catalog/`
 stay `PreviewImage`, which the landing page and the quick switcher use,
-`use-drawings` for `App`, and `DeleteConfirmation`, which only `DrawingList` uses
-today but which doesn't depend on it. The diagrams leave out `icons`, the line
+`use-drawings` for `App`, and `DeleteConfirmation`, which the landing page and
+the editor bar use to ask before deleting or discarding. The diagrams leave out `icons`, the line
 icons at the root of `drawings/` that `list/`, `switcher/`, `tags/`, `dialog/`,
 `DrawingTitle` and `App` take, since it depends on nothing.
 
@@ -322,16 +347,23 @@ dialog from the editor bar, and `form/` holds `TagForm` and
 `TagMark`, `NewTagButton`, `find-tags`, `grid-keys` and `tag-color-name`.
 
 `App` renders `DrawingList` with the list from `use-drawings`, the tags from
-`use-tags` and the filter from `use-tag-filter`. The first card
-is a blank sheet that asks for a name and opens the new drawing. Every other
-card shows the drawing's preview on a sheet, with an `<img>` whose URL from
+`use-tags` and the filter from `use-tag-filter`. Above the drawings, `Scratchpads`
+shows the scratchpads, most recently edited first, each called after when it
+was last edited. A scratchpad's card saves it under a name through `NameField`
+or discards it after `DeleteConfirmation`, and **Discard all** deletes every
+scratchpad after one question. While a search or a tag filter is set, the row is
+hidden. `open-task` keeps the page to one open question across both rows. The
+first card of the drawings is a blank sheet, a link to `/drawings/new` that
+opens a new scratchpad. Every other card shows the drawing's preview on a sheet, with an `<img>` whose URL from
 `api.ts` carries `previewUpdatedAt` as a version. A drawing without a preview,
 or one whose preview fails to load, shows a blank sheet. Leaving a drawing
 sends its new preview's summary to `use-drawings`, so the card changes its URL
 and the browser loads the new image. A card renames its drawing through
 `NameField` and deletes it only after `DeleteConfirmation`. `use-drawings`
 remembers which drawings it deleted, so `App` can ignore a last save that was
-still in flight and fails once the drawing is gone.
+still in flight and fails once the drawing is gone, and doesn't add one back
+when such a save answers. A save of a drawing the list doesn't have yet, a new
+scratchpad's first, adds it.
 
 `tags/` holds the tag aggregate's part of the catalog. `use-tags` loads the tags
 once when `App` mounts and sorts them with `localeCompare`, as `use-drawings` sorts
@@ -406,7 +438,8 @@ behind it inert and returns the focus when it closes. It stops key events at the
 dialog, and it sits outside Excalidraw's container, so they don't reach
 Excalidraw's shortcuts. It lists the
 matches from `search.ts` by `updatedAt`, newest first, and last offers to create
-the query as a new drawing unless a drawing has that name. Choosing a row calls
+the query as a new drawing unless a drawing has that name. It lists only saved
+drawings; scratchpads have no name to find. Choosing a row calls
 `App`, which opens or creates the drawing as the landing page does. The editor
 remounts on `key={drawing.id}`, so its pending save is flushed as when leaving
 through "All drawings".
@@ -513,6 +546,32 @@ sequenceDiagram
     Editor->>App: onSaved updates the list
 ```
 
+```mermaid
+---
+title: Drawing in a new scratchpad and saving it
+---
+sequenceDiagram
+    actor User
+    participant App as App, DrawingTitle and hooks
+    participant Editor as Editor and use-autosave
+    participant Server as drawing-routes and drawing-store
+    User->>App: opens the blank sheet, /drawings/new
+    App->>Editor: mount with a new scratchpad and a random UUID
+    Note over Editor: an empty scene stores nothing
+    User->>Editor: draws
+    Editor->>Server: POST /api/drawings with the ID and the scene
+    Server-->>Editor: drawing without a name
+    Editor->>App: onSaved adds it to the list
+    Note over App: replaces /drawings/new with /drawings/:id
+    User->>App: Save as drawing, enters a name
+    App->>Server: PUT /api/drawings/:id with the name
+    Server-->>App: drawing summary with the name
+```
+
+Both lanes call the server through `api`, which this diagram leaves out. If the
+user leaves without saving, the scratchpad stays in the Scratchpads row; if they
+leave before drawing, nothing was stored.
+
 `App, DrawingList and hooks` folds `App`, `DrawingList`, `use-drawing` and
 `use-drawings` into one lane.
 `save-scheduler` imports nothing; `use-autosave` gives it the function that
@@ -549,47 +608,30 @@ previews existed a preview and repairs one a closed tab left out of date. The
 browser seldom finishes an export during `pagehide`, so that path is best
 effort. Both lanes call the server through `api`, which this diagram leaves out.
 
-```mermaid
----
-title: Deleting a drawing right after leaving it
----
-sequenceDiagram
-    actor User
-    participant App as App, DrawingList and use-drawings
-    participant Editor as Editor and save-scheduler
-    participant Server as drawing-routes and drawing-store
-    User->>App: goes back to all drawings
-    App->>Editor: unmount
-    Editor->>Server: flushes the pending save, PUT /api/drawings/:id
-    User->>App: deletes the drawing and confirms
-    App->>Server: DELETE /api/drawings/:id
-    Server-->>App: 204
-    Server--xEditor: 404, if the delete landed first
-    Editor->>App: save error
-    Note over App: drawing was deleted in this tab, so no error is shown
-```
-
-Both lanes call the server through `api`, which this diagram leaves out. A save
-that fails because another tab deleted the drawing still shows an error, because
-the edit is lost.
+Deleting a drawing right after leaving it races the save that leaving
+flushed. If the delete lands first, the save answers 404. `use-drawings`
+remembers that this tab deleted the drawing, so `App` shows no error and doesn't
+add the drawing back. Discarding the open scratchpad takes the same path. A save
+that fails because another tab deleted the drawing still shows an error,
+because the edit is lost.
 
 ## HTTP API
 
-| Route                       | Method | Purpose                                         |
-| --------------------------- | ------ | ----------------------------------------------- |
-| `/api/drawings`             | GET    | List drawing summaries, sorted by name          |
-| `/api/drawings`             | POST   | Create a drawing; a blank name becomes Untitled |
-| `/api/drawings/:id`         | GET    | Get a drawing with its scene                    |
-| `/api/drawings/:id`         | PUT    | Change the name, the scene or both              |
-| `/api/drawings/:id`         | DELETE | Delete a drawing                                |
-| `/api/drawings/:id/preview` | GET    | The PNG preview, cached as immutable            |
-| `/api/drawings/:id/preview` | PUT    | Store an `image/png` body of at most 2 MB       |
-| `/api/drawings/:id/preview` | DELETE | Remove the preview                              |
-| `/api/drawings/:id/tags`    | PUT    | Replace the drawing's tags with `{ tagIds }`    |
-| `/api/tags`                 | GET    | List tags, sorted by label with case ignored    |
-| `/api/tags`                 | POST   | Create a tag from `{ label, color }`            |
-| `/api/tags/:id`             | PUT    | Change a tag's label and colour; both required  |
-| `/api/tags/:id`             | DELETE | Delete a tag and remove it from every drawing   |
+| Route                       | Method | Purpose                                        |
+| --------------------------- | ------ | ---------------------------------------------- |
+| `/api/drawings`             | GET    | List drawing summaries, sorted by name         |
+| `/api/drawings`             | POST   | Create a drawing; no name makes a scratchpad   |
+| `/api/drawings/:id`         | GET    | Get a drawing with its scene                   |
+| `/api/drawings/:id`         | PUT    | Change the name, the scene or both             |
+| `/api/drawings/:id`         | DELETE | Delete a drawing                               |
+| `/api/drawings/:id/preview` | GET    | The PNG preview, cached as immutable           |
+| `/api/drawings/:id/preview` | PUT    | Store an `image/png` body of at most 2 MB      |
+| `/api/drawings/:id/preview` | DELETE | Remove the preview                             |
+| `/api/drawings/:id/tags`    | PUT    | Replace the drawing's tags with `{ tagIds }`   |
+| `/api/tags`                 | GET    | List tags, sorted by label with case ignored   |
+| `/api/tags`                 | POST   | Create a tag from `{ label, color }`           |
+| `/api/tags/:id`             | PUT    | Change a tag's label and colour; both required |
+| `/api/tags/:id`             | DELETE | Delete a tag and remove it from every drawing  |
 
 Unknown drawings, and a drawing without a preview, answer 404. Preview uploads
 answer 415 for another content type and 413 above 2 MB. The `PUT` and `DELETE`
@@ -597,6 +639,11 @@ on a preview return the drawing summary; they change `previewUpdatedAt`, not
 `updatedAt`. Clients are to add `?v=<previewUpdatedAt>` to the preview URL ([ADR
 0001](adr/0001-version-preview-urls.md)). Scenes have no body limit, because
 scenes with embedded images can be large.
+
+`POST /api/drawings` takes an optional `id`, `name` and `scene`. A client that
+sends the `id` must send a UUID; an ID another drawing has answers 409. A blank
+or absent name makes a scratchpad, whose `name` is `null`. A blank name in `PUT`
+is ignored, so a drawing never goes back to being a scratchpad.
 
 A drawing body that isn't a JSON object, or whose name or scene isn't text,
 answers 400 and changes nothing.
@@ -629,7 +676,7 @@ Vitest runs three projects from [`vite.config.ts`](../../vite.config.ts):
   the client build. `test-api.ts` gives each test a fresh database and holds the
   request helpers. `database.test.ts` opens database files from before numbered
   migrations, with and without previews, in a temporary folder, to test the
-  upgrade.
+  upgrade, and checks that migration 4 keeps the tag assignments.
 - `shared` tests the tag label and colour rules and their messages.
 - `client` tests in jsdom with Testing Library. Component tests mock `api.ts`
   and replace `Editor.tsx`, since Excalidraw does not render in jsdom. The
@@ -665,6 +712,13 @@ Chromium.
   would, then dismisses the error message above the editor. The preview-on-open
   test copies a drawn scene into a drawing created through the API, so that
   drawing has no preview yet.
+- [`scratchpads.spec.ts`](../../e2e/scratchpads.spec.ts) covers scratchpads:
+  drawing in a new one and saving it as a drawing, discarding one from the
+  editor, one left without a decision staying in the Scratchpads row after a
+  reload, leaving one before drawing storing nothing, saving and discarding from
+  the cards, and **Discard all**. `createDrawing` in `drawings-ui.ts` creates a
+  drawing the way a user does: a rectangle in a new scratchpad, then **Save as
+  drawing**.
 - [`tags-api.spec.ts`](../../e2e/tags-api.spec.ts) covers tags through the
   HTTP API: creating, renaming and deleting a tag, assigning tags to a drawing
   without changing its `updatedAt`, and that deleting a tag removes it from the
