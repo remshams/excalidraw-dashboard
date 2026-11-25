@@ -20,8 +20,8 @@ import type { TagChanges } from "../tags/use-tags.ts";
 import { shownCardTags } from "./card-tags.ts";
 import styles from "./DrawingList.module.css";
 import { noMatchMessage } from "./no-match-message.ts";
-import { type CardTask, cardTaskOf, type OpenTask } from "./open-task.ts";
 import { Scratchpads } from "./Scratchpads.tsx";
+import { type CardTask, cardTaskOf, useOpenTask } from "./use-open-task.ts";
 import { useFocusAfterDialog, useTagRefocus } from "./use-tag-refocus.ts";
 
 type DrawingListProps = {
@@ -60,14 +60,14 @@ export function DrawingList({
 	onDiscardAll,
 	onToggleTag,
 }: DrawingListProps) {
-	const [task, setTask] = useState<OpenTask>(null);
+	const questions = useOpenTask();
+	const { task, cancelled, ask, close, cancel } = questions;
 	const [taggingId, setTaggingId] = useState<string | null>(null);
 	const tagging = drawings.find(({ id }) => id === taggingId);
 	const searchField = useRef<HTMLInputElement>(null);
 	const { page, refocus } = useTagRefocus();
 	const tagsButton = useRef<HTMLButtonElement>(null);
 	useFocusAfterDialog(tagging !== undefined, tagsButton);
-	const close = () => setTask(null);
 	const saved = drawings.filter(isSaved);
 	const shown = filterDrawings(saved, filter.selectedTagIds, filter.query);
 	const asked = filter.query.trim() !== "" || filter.selectedTagIds.length > 0;
@@ -122,8 +122,7 @@ export function DrawingList({
 			{!asked && (
 				<Scratchpads
 					drawings={drawings}
-					task={task}
-					onTask={setTask}
+					questions={questions}
 					onOpen={onOpen}
 					onSave={onRename}
 					onDiscard={onDelete}
@@ -139,8 +138,9 @@ export function DrawingList({
 						tags={(tags ?? []).filter(({ id }) => drawing.tagIds.includes(id))}
 						selectedTagIds={filter.selectedTagIds}
 						task={cardTaskOf(task, drawing.id)}
+						refocus={cardTaskOf(cancelled, drawing.id)}
 						onOpen={onOpen}
-						onStart={(kind) => setTask({ kind, id: drawing.id })}
+						onStart={(kind) => ask({ kind, id: drawing.id })}
 						onEditTags={() => setTaggingId(drawing.id)}
 						onToggleTag={(tagId) => {
 							refocus(tagId, drawing.id);
@@ -154,7 +154,7 @@ export function DrawingList({
 							close();
 							onDelete(drawing.id);
 						}}
-						onCancel={close}
+						onCancel={cancel}
 					/>
 				))}
 			</ul>
@@ -258,6 +258,8 @@ type DrawingCardProps = {
 	selectedTagIds: string[];
 	/** The question the card asks below its sheet, if any. */
 	task: CardTask | null;
+	/** The question just cancelled, whose button takes the focus back. */
+	refocus: CardTask | null;
 	onOpen: (id: string | null) => void;
 	onStart: (task: CardTask) => void;
 	onEditTags: () => void;
@@ -277,6 +279,7 @@ function DrawingCard({
 	tags,
 	selectedTagIds,
 	task,
+	refocus,
 	onOpen,
 	onStart,
 	onEditTags,
@@ -353,6 +356,8 @@ function DrawingCard({
 					type="button"
 					className={styles.icon}
 					aria-label={`Rename ${name}`}
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					autoFocus={refocus === "rename"}
 					onClick={() => onStart("rename")}
 				>
 					<PencilIcon />
@@ -361,6 +366,8 @@ function DrawingCard({
 					type="button"
 					className={styles.icon}
 					aria-label={`Delete ${name}`}
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					autoFocus={refocus === "delete"}
 					onClick={() => onStart("delete")}
 				>
 					<TrashIcon />
