@@ -135,6 +135,12 @@ export function drawingRoutes(store: DrawingStore) {
 			if (drawing === "unknown-tag") {
 				return c.text("A tag ID names no tag", 400);
 			}
+			if (drawing === "scratchpad") {
+				return c.text(
+					"A scratchpad takes no tags; save it as a drawing first",
+					400,
+				);
+			}
 			return drawing ? c.json(drawing) : c.notFound();
 		});
 }
