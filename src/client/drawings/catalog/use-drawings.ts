@@ -20,20 +20,40 @@ export function useDrawings(onError: (error: unknown) => void) {
 	const deletedIds = useRef(new Set<string>());
 
 	useEffect(() => {
-		listDrawings().then(setDrawings, onError);
+		// A new scratchpad's first save can land while the list loads; the list
+		// already has it then, and it is newer than the loaded copy.
+		listDrawings().then(
+			(loaded) =>
+				setDrawings((current) => {
+					const known = new Set(current.map(({ id }) => id));
+					const fresh = loaded.filter(
+						({ id }) => !known.has(id) && !deletedIds.current.has(id),
+					);
+					return [...fresh, ...current].sort(byName);
+				}),
+			onError,
+		);
 	}, [onError]);
 
 	/**
 	 * Takes in the summary a save or a rename answered with, and adds a new
 	 * scratchpad's first save to the list. The drawing keeps the tags the list
 	 * has: only `toggleTag` and `forgetTag` change them, and a save that started
-	 * before a tag change answers with the old ones.
+	 * before a tag change answers with the old ones. It also keeps a name the list
+	 * has over no name: a drawing never loses its name, so an answer without one
+	 * started before the rename.
 	 */
 	const replace = (summary: DrawingSummary) => {
 		if (deletedIds.current.has(summary.id)) return;
 		setDrawings((list) => {
 			const listed = list.find((d) => d.id === summary.id);
-			const next = listed ? { ...summary, tagIds: listed.tagIds } : summary;
+			const next = listed
+				? {
+						...summary,
+						name: summary.name ?? listed.name,
+						tagIds: listed.tagIds,
+					}
+				: summary;
 			return [...list.filter((d) => d !== listed), next].sort(byName);
 		});
 	};
@@ -44,8 +64,26 @@ export function useDrawings(onError: (error: unknown) => void) {
 		return created;
 	};
 
+	const setName = (id: string, name: string | null) => {
+		setDrawings((list) =>
+			list.map((d) => (d.id === id ? { ...d, name } : d)).sort(byName),
+		);
+	};
+
+	/**
+	 * Shows the new name before the server answers, so a scratchpad being saved
+	 * leaves the Scratchpads row, and Discard can't reach it, at once. A refused
+	 * rename brings the old name back and rejects.
+	 */
 	const rename = async (id: string, name: string) => {
-		replace(await updateDrawing(id, { name }));
+		const before = drawings.find((d) => d.id === id)?.name ?? null;
+		setName(id, name);
+		try {
+			replace(await updateDrawing(id, { name }));
+		} catch (error) {
+			setName(id, before);
+			throw error;
+		}
 	};
 
 	const remove = async (id: string) => {

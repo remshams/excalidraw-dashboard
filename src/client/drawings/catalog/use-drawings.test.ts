@@ -80,6 +80,73 @@ describe("useDrawings", () => {
 		expect(result.current.drawings).toEqual([]);
 	});
 
+	it("keeps a name the list has when a save answers without one", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([drawing("a", [])]);
+		const { result } = renderHook(() => useDrawings(vi.fn()));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+
+		act(() =>
+			result.current.replace({
+				...drawing("a", []),
+				name: null,
+				updatedAt: "2026-11-25T17:00:00.000Z",
+			}),
+		);
+
+		expect(result.current.drawings[0]).toMatchObject({
+			name: "a",
+			updatedAt: "2026-11-25T17:00:00.000Z",
+		});
+	});
+
+	it("shows a new name before the server answers", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([
+			{ ...drawing("s", []), name: null },
+		]);
+		vi.mocked(api.updateDrawing).mockReturnValue(new Promise(() => {}));
+		const { result } = renderHook(() => useDrawings(vi.fn()));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+
+		act(() => void result.current.rename("s", "Plan"));
+
+		expect(result.current.drawings[0].name).toBe("Plan");
+	});
+
+	it("brings the old name back and rejects when the rename is refused", async () => {
+		const refusal = new Error("refused");
+		vi.mocked(api.listDrawings).mockResolvedValue([
+			{ ...drawing("s", []), name: null },
+		]);
+		vi.mocked(api.updateDrawing).mockRejectedValue(refusal);
+		// Stable, because the hook loads the list again when onError changes.
+		const onError = vi.fn();
+		const { result } = renderHook(() => useDrawings(onError));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+
+		await act(() =>
+			expect(result.current.rename("s", "Plan")).rejects.toBe(refusal),
+		);
+
+		expect(result.current.drawings[0].name).toBeNull();
+	});
+
+	it("keeps a scratchpad's first save that lands while the list loads", async () => {
+		let answer = (_: DrawingSummary[]) => {};
+		vi.mocked(api.listDrawings).mockReturnValue(
+			new Promise((resolve) => {
+				answer = resolve;
+			}),
+		);
+		// Stable, because the hook loads the list again when onError changes.
+		const onError = vi.fn();
+		const { result } = renderHook(() => useDrawings(onError));
+
+		act(() => result.current.replace({ ...drawing("s", []), name: null }));
+		await act(async () => answer([drawing("b", [])]));
+
+		expect(result.current.drawings.map(({ id }) => id)).toEqual(["s", "b"]);
+	});
+
 	it("deletes every given drawing", async () => {
 		vi.mocked(api.listDrawings).mockResolvedValue([
 			drawing("a", []),
