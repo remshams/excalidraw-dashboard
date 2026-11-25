@@ -1,7 +1,6 @@
-export type DrawingSummary = {
+/** What every drawing summary has, whether the drawing has a name or not. */
+type DrawingSummaryFields = {
 	id: string;
-	/** The drawing's name, or null for a scratchpad: a drawing nobody has named yet. */
-	name: string | null;
 	createdAt: string;
 	updatedAt: string;
 	/**
@@ -12,6 +11,15 @@ export type DrawingSummary = {
 	/** The IDs of the drawing's tags, sorted by ID. Clients sort them for display. */
 	tagIds: string[];
 };
+
+/** A drawing the user has named. */
+export type SavedDrawingSummary = DrawingSummaryFields & { name: string };
+
+/** A scratchpad: a drawing nobody has named yet. It takes no tags. */
+export type ScratchpadSummary = DrawingSummaryFields & { name: null };
+
+/** A drawing without its scene. `name` tells a saved drawing from a scratchpad. */
+export type DrawingSummary = SavedDrawingSummary | ScratchpadSummary;
 
 export type Drawing = DrawingSummary & {
 	/** Serialized Excalidraw scene (output of `serializeAsJSON`), or null for a new drawing. */
