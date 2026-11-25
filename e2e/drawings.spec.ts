@@ -156,16 +156,17 @@ test("reopening a drawing right after leaving it shows its last edits", async ({
 	const name = uniqueName("Return");
 	let id = "";
 
-	await test.step(`draw a rectangle in a new drawing named ${name}`, async () => {
+	await test.step(`draw a second rectangle in a new drawing named ${name}`, async () => {
 		await openApp(page);
 		id = await createDrawing(page, name);
+		await drawRectangle(page);
 	});
 
-	await test.step("go back to all drawings, which saves the rectangle", async () => {
+	await test.step("go back to all drawings right away, which saves the second rectangle", async () => {
 		await goToAllDrawings(page);
 		await expect
 			.poll(() => storedShapeTypes(request, id))
-			.toEqual(["rectangle"]);
+			.toEqual(["rectangle", "rectangle"]);
 	});
 
 	await test.step(`open ${name} again from its card`, async () => {
@@ -173,13 +174,13 @@ test("reopening a drawing right after leaving it shows its last edits", async ({
 		await expectDrawingOpen(page, name);
 	});
 
-	await test.step("the rectangle is there, and stays stored", async () => {
+	await test.step("the rectangles are there, and stay stored", async () => {
 		// Excalidraw shows the panel for selected shapes only if the scene has some.
 		await selectAllShapes(page);
 		await expect(selectedShapeActions(page)).toBeVisible();
 		await expect
 			.poll(() => storedShapeTypes(request, id))
-			.toEqual(["rectangle"]);
+			.toEqual(["rectangle", "rectangle"]);
 	});
 });
 
