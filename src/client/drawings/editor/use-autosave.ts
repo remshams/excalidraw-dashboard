@@ -50,8 +50,9 @@ export function useAutosave(
 	const stored = useRef(!isNew);
 	// Whether the first save of a new scratchpad is on its way.
 	const creating = useRef(false);
-	// The last scene that showed nothing, which must never create a scratchpad.
-	const empty = useRef<string | null>(null);
+	// Scenes that showed nothing while the scratchpad wasn't stored, which must
+	// never create it.
+	const empty = useRef(new Set<string>());
 
 	const write = (scene: string) => {
 		if (stored.current) return updateDrawing(drawing.id, { scene });
@@ -65,10 +66,11 @@ export function useAutosave(
 		createSaveScheduler(
 			async (scene) => {
 				// An erase scheduled during a first save that then failed.
-				if (!stored.current && scene === empty.current) return;
+				if (!stored.current && empty.current.has(scene)) return;
 				await write(scene).then(
 					(summary) => {
 						stored.current = true;
+						empty.current.clear();
 						saved.current = { scene, summary };
 						latest.current.onSaved(summary);
 					},
@@ -95,7 +97,7 @@ export function useAutosave(
 	 * first save is on its way, an erased scene is saved after it like any edit.
 	 */
 	const schedule = (scene: string, drawn: boolean) => {
-		if (!drawn) empty.current = scene;
+		if (!drawn && !stored.current) empty.current.add(scene);
 		if (drawn || stored.current || creating.current) scheduler.schedule(scene);
 		else scheduler.cancel();
 	};
