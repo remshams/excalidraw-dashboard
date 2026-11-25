@@ -27,6 +27,9 @@ export function usePreview(
 		const check = async () => {
 			// Waits for the scene save, so the preview is never older than the scene.
 			const { scene, summary } = await latest.current.settle();
+			// No scene, no preview to render. A new scratchpad's made-up updatedAt
+			// mustn't count as rendered, or its first preview could be skipped.
+			if (scene === null) return;
 			const { updatedAt } = summary;
 			if (!isPreviewOutdated({ previewUpdatedAt: renderedAt, updatedAt }))
 				return;
