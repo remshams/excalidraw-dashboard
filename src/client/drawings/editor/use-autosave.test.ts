@@ -199,6 +199,31 @@ describe("useAutosave", () => {
 			});
 		});
 
+		it("saves to the stored scratchpad when the answer to its first save got lost", async () => {
+			// The mocked ApiError's constructor sets nothing, so set the status here.
+			const taken = Object.assign(
+				new api.ApiError("POST /drawings failed with 409", 409, "taken"),
+				{ status: 409 },
+			);
+			vi.mocked(api.createDrawing).mockRejectedValue(taken);
+			const { result, onSaved, onError } = render(true, scratchpad);
+
+			act(() => result.current.schedule("again", true));
+			await result.current.settle();
+			act(() => result.current.schedule("later", true));
+			await result.current.settle();
+
+			expect(onError).not.toHaveBeenCalled();
+			expect(onSaved).toHaveBeenCalledTimes(2);
+			expect(api.createDrawing).toHaveBeenCalledOnce();
+			expect(api.updateDrawing).toHaveBeenNthCalledWith(1, "1", {
+				scene: "again",
+			});
+			expect(api.updateDrawing).toHaveBeenNthCalledWith(2, "1", {
+				scene: "later",
+			});
+		});
+
 		it("tries to store it again after the first save failed", async () => {
 			vi.mocked(api.createDrawing).mockRejectedValueOnce(new Error("offline"));
 			const { result, onError } = render(true, scratchpad);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
-import { createDrawing, updateDrawing } from "../api.ts";
+import { ApiError, createDrawing, updateDrawing } from "../api.ts";
 import { createSaveScheduler } from "./save-scheduler.ts";
 
 const SAVE_DELAY_MS = 1000;
@@ -13,13 +13,24 @@ type Callbacks = {
 	onError: (error: unknown) => void;
 };
 
-/** Stores a new scratchpad with its first scene and answers with its summary. */
+/**
+ * Stores a new scratchpad with its first scene and answers with its summary. A
+ * 409 means an earlier attempt stored it but its answer got lost, so the scene
+ * goes to the stored scratchpad instead.
+ */
 async function createScratchpad(
 	id: string,
 	scene: string,
 ): Promise<DrawingSummary> {
-	const { scene: _stored, ...summary } = await createDrawing({ id, scene });
-	return summary;
+	try {
+		const { scene: _stored, ...summary } = await createDrawing({ id, scene });
+		return summary;
+	} catch (error) {
+		if (error instanceof ApiError && error.status === 409) {
+			return updateDrawing(id, { scene });
+		}
+		throw error;
+	}
 }
 
 /**
