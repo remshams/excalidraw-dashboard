@@ -8,7 +8,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import type { Tag, TagRequest } from "#shared/tags.ts";
 import { ApiError } from "../../../api.ts";
 import { DrawingTagsDialog } from "./DrawingTagsDialog.tsx";
@@ -56,7 +56,7 @@ function Dialog({
 }) {
 	const [ids, setIds] = useState(tagIds);
 	const [stored, setStored] = useState(shownTags);
-	const drawing: DrawingSummary = {
+	const drawing: SavedDrawingSummary = {
 		id: "1",
 		name: "Plan",
 		createdAt: "",
