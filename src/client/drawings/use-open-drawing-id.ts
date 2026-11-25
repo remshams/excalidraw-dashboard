@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
+import { newScratchpadId } from "./scratchpad.ts";
 
 const PREFIX = "/drawings/";
+
+/** The ID to open for a new scratchpad. Its path is `/drawings/new`. */
+export const NEW_SCRATCHPAD = "new";
 
 /** The URL path that opens a drawing, or `/` for none. */
 export const drawingPath = (id: string | null) =>
@@ -22,17 +26,26 @@ const readId = () => {
 };
 
 /**
- * Keeps the open drawing's ID in the URL path, `/drawings/<id>`, so reloads,
- * links and the back button reopen it. `/` means no drawing is open.
+ * The open drawing, or none. A new scratchpad gets its ID here, and `isNew`
+ * stays true while the editor that started it is open, even after its first save.
  */
-export function useOpenDrawingId(): [
-	string | null,
-	(id: string | null) => void,
-] {
-	const [id, setId] = useState(readId);
+type Opened = { id: string | null; isNew: boolean };
+
+const opened = (id: string | null): Opened =>
+	id === NEW_SCRATCHPAD
+		? { id: newScratchpadId(), isNew: true }
+		: { id, isNew: false };
+
+/**
+ * Keeps the open drawing's ID in the URL path, `/drawings/<id>`, so reloads,
+ * links and the back button reopen it. `/` means no drawing is open, and
+ * `/drawings/new` starts a new scratchpad.
+ */
+export function useOpenDrawingId() {
+	const [open, setOpen] = useState(() => opened(readId()));
 
 	useEffect(() => {
-		const onPopState = () => setId(readId());
+		const onPopState = () => setOpen(opened(readId()));
 		window.addEventListener("popstate", onPopState);
 		return () => window.removeEventListener("popstate", onPopState);
 	}, []);
@@ -42,8 +55,19 @@ export function useOpenDrawingId(): [
 		if (path !== window.location.pathname) {
 			window.history.pushState(null, "", path);
 		}
-		setId(next);
+		setOpen(opened(next));
 	};
 
-	return [id, openDrawing];
+	/**
+	 * Puts the stored scratchpad's own path in place of `/drawings/new`, so a
+	 * reload or the back button reopens it instead of starting another.
+	 */
+	const markStored = (id: string) => {
+		const newPath = drawingPath(NEW_SCRATCHPAD);
+		if (open.id === id && window.location.pathname === newPath) {
+			window.history.replaceState(null, "", drawingPath(id));
+		}
+	};
+
+	return { openId: open.id, isNew: open.isNew, openDrawing, markStored };
 }
