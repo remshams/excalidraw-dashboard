@@ -17,10 +17,12 @@ const drawing: Drawing = {
 };
 const savedSummary = { ...drawing, updatedAt: "2026-01-02T00:00:00.000Z" };
 
-const render = () => {
+const render = (isNew = false, opened = drawing) => {
 	const onSaved = vi.fn();
 	const onError = vi.fn();
-	const hook = renderHook(() => useAutosave(drawing, { onSaved, onError }));
+	const hook = renderHook(() =>
+		useAutosave(opened, isNew, { onSaved, onError }),
+	);
 	return { ...hook, onSaved, onError };
 };
 
@@ -48,7 +50,7 @@ describe("useAutosave", () => {
 	it("saves the pending scene on settle and resolves with it", async () => {
 		const { result, onSaved } = render();
 
-		act(() => result.current.schedule("edited"));
+		act(() => result.current.schedule("edited", true));
 		const saved = await result.current.settle();
 
 		expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith("1", {
@@ -64,7 +66,7 @@ describe("useAutosave", () => {
 		vi.mocked(api.updateDrawing).mockRejectedValue(error);
 		const { result, onError } = render();
 
-		act(() => result.current.schedule("edited"));
+		act(() => result.current.schedule("edited", true));
 		const saved = await result.current.settle();
 
 		expect(onError).toHaveBeenCalledExactlyOnceWith(error);
@@ -74,7 +76,7 @@ describe("useAutosave", () => {
 	it("saves the pending scene when the page is hidden", () => {
 		const { result } = render();
 
-		act(() => result.current.schedule("edited"));
+		act(() => result.current.schedule("edited", true));
 		window.dispatchEvent(new Event("pagehide"));
 
 		expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith("1", {
@@ -85,7 +87,7 @@ describe("useAutosave", () => {
 	it("saves the pending scene when the editor closes", () => {
 		const { result, unmount } = render();
 
-		act(() => result.current.schedule("edited"));
+		act(() => result.current.schedule("edited", true));
 		unmount();
 
 		expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith("1", {
@@ -97,7 +99,7 @@ describe("useAutosave", () => {
 		const { result, unmount } = render();
 		unmount();
 
-		act(() => result.current.schedule("edited"));
+		act(() => result.current.schedule("edited", true));
 		window.dispatchEvent(new Event("pagehide"));
 
 		expect(api.updateDrawing).not.toHaveBeenCalled();
@@ -114,7 +116,7 @@ describe("useAutosave", () => {
 		);
 		const { result } = render();
 
-		act(() => result.current.schedule("edited"));
+		act(() => result.current.schedule("edited", true));
 		vi.advanceTimersByTime(1000);
 		expect(api.updateDrawing).toHaveBeenCalledOnce();
 		let settled: string | null | undefined;
@@ -128,5 +130,90 @@ describe("useAutosave", () => {
 		vi.useRealTimers();
 		await vi.waitFor(() => expect(settled).toBe("edited"));
 		expect(api.updateDrawing).toHaveBeenCalledOnce();
+	});
+
+	describe("for a new scratchpad", () => {
+		const scratchpad: Drawing = { ...drawing, name: null, scene: null };
+		const { scene: _scene, ...createdSummary } = {
+			...scratchpad,
+			scene: "first",
+			updatedAt: savedSummary.updatedAt,
+		};
+
+		beforeEach(() => {
+			vi.mocked(api.createDrawing).mockResolvedValue({
+				...createdSummary,
+				scene: "first",
+			});
+		});
+
+		it("stores it with its first scene, then saves later scenes to it", async () => {
+			const { result, onSaved } = render(true, scratchpad);
+
+			act(() => result.current.schedule("first", true));
+			const first = await result.current.settle();
+			act(() => result.current.schedule("second", true));
+			await result.current.settle();
+
+			expect(api.createDrawing).toHaveBeenCalledExactlyOnceWith({
+				id: "1",
+				scene: "first",
+			});
+			expect(first.summary).toEqual(createdSummary);
+			expect(onSaved).toHaveBeenNthCalledWith(1, createdSummary);
+			expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith("1", {
+				scene: "second",
+			});
+		});
+
+		it("stores nothing while the scene shows nothing", async () => {
+			const { result, unmount } = render(true, scratchpad);
+
+			act(() => result.current.schedule("empty", false));
+			await result.current.settle();
+			unmount();
+
+			expect(api.createDrawing).not.toHaveBeenCalled();
+		});
+
+		it("drops a drawn scene that was erased before its first save", async () => {
+			const { result } = render(true, scratchpad);
+
+			act(() => result.current.schedule("drawn", true));
+			act(() => result.current.schedule("erased", false));
+			await result.current.settle();
+
+			expect(api.createDrawing).not.toHaveBeenCalled();
+		});
+
+		it("saves an emptied scene once the scratchpad is stored", async () => {
+			const { result } = render(true, scratchpad);
+
+			act(() => result.current.schedule("first", true));
+			await result.current.settle();
+			act(() => result.current.schedule("erased", false));
+			await result.current.settle();
+
+			expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith("1", {
+				scene: "erased",
+			});
+		});
+
+		it("tries to store it again after the first save failed", async () => {
+			vi.mocked(api.createDrawing).mockRejectedValueOnce(new Error("offline"));
+			const { result, onError } = render(true, scratchpad);
+
+			act(() => result.current.schedule("first", true));
+			await result.current.settle();
+			act(() => result.current.schedule("again", true));
+			await result.current.settle();
+
+			expect(onError).toHaveBeenCalledOnce();
+			expect(api.createDrawing).toHaveBeenLastCalledWith({
+				id: "1",
+				scene: "again",
+			});
+			expect(api.updateDrawing).not.toHaveBeenCalled();
+		});
 	});
 });
