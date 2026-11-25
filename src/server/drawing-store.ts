@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { Drawing, DrawingSummary } from "#shared/drawings.ts";
-import { inTransaction, isForeignKeyError } from "./database.ts";
+import {
+	inTransaction,
+	isForeignKeyError,
+	isPrimaryKeyError,
+} from "./database.ts";
 
 type Row = {
 	id: string;
-	name: string;
+	name: string | null;
 	scene: string | null;
 	created_at: string;
 	updated_at: string;
@@ -41,7 +45,7 @@ export function openDrawingStore(db: DatabaseSync) {
 		`SELECT ${SUMMARY_COLUMNS}, scene FROM drawings WHERE id = ?`,
 	);
 	const insertStmt = db.prepare(
-		"INSERT INTO drawings (id, name, scene, created_at, updated_at) VALUES (?, ?, NULL, ?, ?)",
+		"INSERT INTO drawings (id, name, scene, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 	);
 	const updateStmt = db.prepare(
 		"UPDATE drawings SET name = COALESCE(?, name), scene = COALESCE(?, scene), updated_at = ? WHERE id = ?",
@@ -75,14 +79,30 @@ export function openDrawingStore(db: DatabaseSync) {
 			return row && { ...toSummary(row), scene: row.scene };
 		},
 
-		create(name: string): Drawing {
-			const id = randomUUID();
+		/**
+		 * Stores a new drawing; a null name makes it a scratchpad. Takes the
+		 * client's ID if it sends one, and returns "id-taken" if a drawing has it.
+		 */
+		create({
+			id = randomUUID(),
+			name,
+			scene = null,
+		}: {
+			id?: string;
+			name: string | null;
+			scene?: string | null;
+		}): Drawing | "id-taken" {
 			const now = new Date().toISOString();
-			insertStmt.run(id, name, now, now);
+			try {
+				insertStmt.run(id, name, scene, now, now);
+			} catch (error) {
+				if (isPrimaryKeyError(error)) return "id-taken";
+				throw error;
+			}
 			return {
 				id,
 				name,
-				scene: null,
+				scene,
 				createdAt: now,
 				updatedAt: now,
 				previewUpdatedAt: null,
