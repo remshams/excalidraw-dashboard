@@ -41,8 +41,51 @@ describe("drawings API", () => {
 		expect(await response.json()).toMatchObject({ name: "Plan", scene: null });
 	});
 
-	it("names a drawing Untitled when the name is blank", async () => {
-		expect((await create("  ")).name).toBe("Untitled");
+	it.each([
+		["a blank name", { name: "  " }],
+		["no name", {}],
+	])("creates a scratchpad from %s", async (_, body) => {
+		const response = await send("POST", "/drawings", body);
+
+		expect(response.status).toBe(201);
+		expect(await response.json()).toMatchObject({ name: null, scene: null });
+	});
+
+	it("creates a scratchpad with the client's ID and its first scene", async () => {
+		const id = "0b9c1a52-6f0e-4d39-9a51-0f6d3c2b7e11";
+
+		const response = await send("POST", "/drawings", { id, scene: "{}" });
+
+		expect(response.status).toBe(201);
+		expect(await (await send("GET", `/drawings/${id}`)).json()).toMatchObject({
+			id,
+			name: null,
+			scene: "{}",
+		});
+	});
+
+	it("refuses an ID another drawing has with 409 and keeps that drawing", async () => {
+		const id = "0b9c1a52-6f0e-4d39-9a51-0f6d3c2b7e11";
+		await send("POST", "/drawings", { id, name: "Plan" });
+
+		const response = await send("POST", "/drawings", { id, scene: "{}" });
+
+		expect(response.status).toBe(409);
+		expect(await response.text()).toBe("A drawing with this ID exists");
+		expect(await (await send("GET", `/drawings/${id}`)).json()).toMatchObject({
+			name: "Plan",
+			scene: null,
+		});
+	});
+
+	it("names a scratchpad through a rename", async () => {
+		const { id } = await (await send("POST", "/drawings", {})).json();
+
+		await send("PUT", `/drawings/${id}`, { name: "Plan" });
+
+		expect(await (await send("GET", `/drawings/${id}`)).json()).toMatchObject({
+			name: "Plan",
+		});
 	});
 
 	it("lists drawings by name, ignoring case", async () => {
@@ -109,24 +152,28 @@ describe("drawings API", () => {
 	});
 
 	it.each([
-		["malformed JSON", "{nope"],
-		["a body that isn't an object", "[]"],
-		["a name that isn't text", '{"name":5}'],
-	])("rejects %s when creating a drawing with 400", async (_, body) => {
-		const before = await (await send("GET", "/drawings")).json();
+		["malformed JSON", "{nope", "Send the drawing as a JSON object"],
+		["a body that isn't an object", "[]", "Send the drawing as a JSON object"],
+		["a name that isn't text", '{"name":5}', "The name must be text"],
+		["a scene that isn't text", '{"scene":{}}', "The scene must be text"],
+		["an ID that isn't text", '{"id":5}', "The ID must be a UUID"],
+		["an ID that isn't a UUID", '{"id":"new"}', "The ID must be a UUID"],
+	])(
+		"rejects %s when creating a drawing with 400",
+		async (_, body, message) => {
+			const before = await (await send("GET", "/drawings")).json();
 
-		const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+			const logged = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		const response = await sendRaw("POST", "/drawings", body);
+			const response = await sendRaw("POST", "/drawings", body);
 
-		expect(response.status).toBe(400);
-		expect(logged).not.toHaveBeenCalled();
-		expect(response.headers.get("Content-Type")).toMatch(/^text\/plain/);
-		expect(await response.text()).toBe(
-			"Send the drawing as JSON with a text name",
-		);
-		expect(await (await send("GET", "/drawings")).json()).toEqual(before);
-	});
+			expect(response.status).toBe(400);
+			expect(logged).not.toHaveBeenCalled();
+			expect(response.headers.get("Content-Type")).toMatch(/^text\/plain/);
+			expect(await response.text()).toBe(message);
+			expect(await (await send("GET", "/drawings")).json()).toEqual(before);
+		},
+	);
 
 	it.each([
 		["malformed JSON", "{nope", "Send the changes as a JSON object"],

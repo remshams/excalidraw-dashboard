@@ -24,14 +24,23 @@ function parseDrawingTagsRequest(body: unknown): DrawingTagsRequest | Invalid {
 const isObject = (body: unknown): body is Record<string, unknown> =>
 	typeof body === "object" && body !== null && !Array.isArray(body);
 
-/** The name of a `POST /drawings` body, blank if absent, or why it is invalid. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isOptionalText = (value: unknown): value is string | undefined =>
+	value === undefined || typeof value === "string";
+
+/** The ID, name and scene of a `POST /drawings` body, or why it is invalid. */
 function parseCreateDrawingRequest(
 	body: unknown,
 ): CreateDrawingRequest | Invalid {
-	const invalid = { invalid: "Send the drawing as JSON with a text name" };
-	if (!isObject(body)) return invalid;
-	if (body.name === undefined) return { name: "" };
-	return typeof body.name === "string" ? { name: body.name } : invalid;
+	if (!isObject(body)) return { invalid: "Send the drawing as a JSON object" };
+	const { id, name, scene } = body;
+	if (id !== undefined && (typeof id !== "string" || !UUID.test(id))) {
+		return { invalid: "The ID must be a UUID" };
+	}
+	if (!isOptionalText(name)) return { invalid: "The name must be text" };
+	if (!isOptionalText(scene)) return { invalid: "The scene must be text" };
+	return { id, name, scene };
 }
 
 /** The changes of a `PUT /drawings/:id` body, or why it is invalid. */
@@ -62,7 +71,15 @@ export function drawingRoutes(store: DrawingStore) {
 		.post("/", async (c) => {
 			const request = parseCreateDrawingRequest(await readJson(c));
 			if ("invalid" in request) return c.text(request.invalid, 400);
-			return c.json(store.create(request.name.trim() || "Untitled"), 201);
+			const drawing = store.create({
+				id: request.id,
+				name: request.name?.trim() || null,
+				scene: request.scene,
+			});
+			if (drawing === "id-taken") {
+				return c.text("A drawing with this ID exists", 409);
+			}
+			return c.json(drawing, 201);
 		})
 		.get("/:id", (c) => {
 			const drawing = store.get(c.req.param("id"));
