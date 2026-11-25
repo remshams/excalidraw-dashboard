@@ -205,6 +205,37 @@ describe("DrawingList", () => {
 		expect(screen.getByRole("button", { name: "Rename Plan" })).toHaveFocus();
 	});
 
+	it("gives the focus back to Rename after a rename with Enter", async () => {
+		const { user, onRename } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.keyboard("{End}s{Enter}");
+
+		expect(onRename).toHaveBeenCalledExactlyOnceWith("1", "Plans");
+		expect(screen.getByRole("button", { name: "Rename Plan" })).toHaveFocus();
+	});
+
+	it("gives the focus back to Rename after Enter with the name unchanged", async () => {
+		const { user, onRename } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.keyboard("{Enter}");
+
+		expect(onRename).not.toHaveBeenCalled();
+		expect(screen.getByRole("button", { name: "Rename Plan" })).toHaveFocus();
+	});
+
+	it("leaves the focus where Tab took it out of the name field", async () => {
+		const { user } = setup();
+
+		await user.click(screen.getByRole("button", { name: "Rename Plan" }));
+		await user.tab();
+
+		expect(
+			screen.getByRole("button", { name: "Rename Plan" }),
+		).not.toHaveFocus();
+	});
+
 	it("leaves the focus on another card's action that closed the question", async () => {
 		const { user } = setup();
 

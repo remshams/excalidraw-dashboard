@@ -61,7 +61,7 @@ export function DrawingList({
 	onToggleTag,
 }: DrawingListProps) {
 	const questions = useOpenTask();
-	const { task, cancelled, ask, close, cancel } = questions;
+	const { task, returnTo, ask, close, closeToButton } = questions;
 	const [taggingId, setTaggingId] = useState<string | null>(null);
 	const tagging = drawings.find(({ id }) => id === taggingId);
 	const searchField = useRef<HTMLInputElement>(null);
@@ -138,7 +138,7 @@ export function DrawingList({
 						tags={(tags ?? []).filter(({ id }) => drawing.tagIds.includes(id))}
 						selectedTagIds={filter.selectedTagIds}
 						task={cardTaskOf(task, drawing.id)}
-						refocus={cardTaskOf(cancelled, drawing.id)}
+						refocus={cardTaskOf(returnTo, drawing.id)}
 						onOpen={onOpen}
 						onStart={(kind) => ask({ kind, id: drawing.id })}
 						onEditTags={() => setTaggingId(drawing.id)}
@@ -147,14 +147,14 @@ export function DrawingList({
 							toggleFilter(tagId);
 						}}
 						onRename={(name) => {
-							close();
+							closeToButton();
 							onRename(drawing.id, name);
 						}}
 						onDelete={() => {
 							close();
 							onDelete(drawing.id);
 						}}
-						onCancel={cancel}
+						onCancel={closeToButton}
 					/>
 				))}
 			</ul>
@@ -258,7 +258,7 @@ type DrawingCardProps = {
 	selectedTagIds: string[];
 	/** The question the card asks below its sheet, if any. */
 	task: CardTask | null;
-	/** The question just cancelled, whose button takes the focus back. */
+	/** The question just closed, whose button takes the focus back. */
 	refocus: CardTask | null;
 	onOpen: (id: string | null) => void;
 	onStart: (task: CardTask) => void;
@@ -356,7 +356,7 @@ function DrawingCard({
 					type="button"
 					className={styles.icon}
 					aria-label={`Rename ${name}`}
-					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just closed.
 					autoFocus={refocus === "rename"}
 					onClick={() => onStart("rename")}
 				>
@@ -366,7 +366,7 @@ function DrawingCard({
 					type="button"
 					className={styles.icon}
 					aria-label={`Delete ${name}`}
-					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just closed.
 					autoFocus={refocus === "delete"}
 					onClick={() => onStart("delete")}
 				>
