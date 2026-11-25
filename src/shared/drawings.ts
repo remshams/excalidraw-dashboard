@@ -1,6 +1,7 @@
 export type DrawingSummary = {
 	id: string;
-	name: string;
+	/** The drawing's name, or null for a scratchpad: a drawing nobody has named yet. */
+	name: string | null;
 	createdAt: string;
 	updatedAt: string;
 	/**
@@ -18,7 +19,12 @@ export type Drawing = DrawingSummary & {
 };
 
 export type CreateDrawingRequest = {
-	name: string;
+	/** The ID the client chose, a UUID. The server picks one when it is absent. */
+	id?: string;
+	/** A blank or absent name makes the drawing a scratchpad. */
+	name?: string;
+	/** The first scene, for a scratchpad stored on its first edit. */
+	scene?: string;
 };
 
 export type UpdateDrawingRequest = {
