@@ -203,17 +203,123 @@ export async function expectAtDrawingPath(
 }
 
 /**
- * Creates a drawing from the blank sheet on the landing page, waits until it is
- * open and returns its ID.
+ * Creates a drawing from the blank sheet on the landing page: draws a rectangle
+ * in a new scratchpad and saves it under the name. Waits until it is open and
+ * returns its ID.
  */
 export async function createDrawing(page: Page, name: string): Promise<string> {
-	await drawingList(page).getByRole("button", { name: "New drawing" }).click();
-	await page
-		.getByRole("textbox", { name: "Name of the new drawing" })
-		.fill(name);
-	await page.keyboard.press("Enter");
+	await startScratchpad(page);
+	await drawRectangle(page);
+	await saveOpenScratchpad(page, name);
 	await expectDrawingOpen(page, name);
 	return openDrawingId(page);
+}
+
+/** Opens a new scratchpad from the blank sheet on the landing page. */
+export async function startScratchpad(page: Page): Promise<void> {
+	await drawingList(page).getByRole("link", { name: "New drawing" }).click();
+	await expectScratchpadOpen(page);
+}
+
+/** The editor's bar calls the open drawing a scratchpad, and the editor shows its tools. */
+export async function expectScratchpadOpen(page: Page): Promise<void> {
+	await expect(drawingHeading(page, "Scratchpad")).toBeVisible();
+	await expect(editorTools(page)).toBeVisible();
+}
+
+/** The editor bar's button that names the open scratchpad. It shows once the server has it. */
+export function saveAsDrawingButton(page: Page) {
+	return page.getByRole("banner").getByRole("button", {
+		name: "Save as drawing",
+	});
+}
+
+/** The editor bar's button that discards the open scratchpad. */
+export function discardButton(page: Page) {
+	return page.getByRole("banner").getByRole("button", {
+		name: "Discard",
+		exact: true,
+	});
+}
+
+/** Saves the open scratchpad as a drawing through the editor bar. */
+export async function saveOpenScratchpad(
+	page: Page,
+	name: string,
+): Promise<void> {
+	await saveAsDrawingButton(page).click();
+	await page.getByRole("textbox", { name: "Name of the drawing" }).fill(name);
+	await page.keyboard.press("Enter");
+}
+
+/** Discards the open scratchpad through the editor bar and confirms. */
+export async function discardOpenScratchpad(page: Page): Promise<void> {
+	await discardButton(page).click();
+	await expect(page.getByText("Discard this scratchpad?")).toBeVisible();
+	await discardButton(page).click();
+}
+
+/**
+ * Waits until the open scratchpad's URL is its own path, `/drawings/<id>`,
+ * which it gets once the server has stored it, and returns the ID.
+ */
+export async function storedScratchpadId(page: Page): Promise<string> {
+	await expect
+		.poll(() => new URL(page.url()).pathname)
+		.toMatch(/^\/drawings\/[0-9a-f-]{36}$/);
+	return openDrawingId(page);
+}
+
+/** The row of scratchpads above the drawings on the landing page. */
+export function scratchpadsRow(page: Page) {
+	return page.getByRole("list", { name: "Scratchpads" });
+}
+
+/**
+ * A scratchpad's card. A scratchpad has no name, and its card is called after
+ * when it was last edited, which other scratchpads can share; its link's URL
+ * tells it apart.
+ */
+export function scratchpadCard(page: Page, id: string) {
+	return scratchpadsRow(page)
+		.getByRole("listitem")
+		.filter({ has: page.locator(`a[href="/drawings/${id}"]`) });
+}
+
+/** Saves a scratchpad as a drawing through its card on the landing page. */
+export async function saveScratchpadFromCard(
+	page: Page,
+	id: string,
+	name: string,
+): Promise<void> {
+	const card = scratchpadCard(page, id);
+	await card.hover();
+	await card.getByRole("button", { name: /^Save .* as drawing$/ }).click();
+	await page.getByRole("textbox", { name: "Name of the drawing" }).fill(name);
+	await page.keyboard.press("Enter");
+}
+
+/** Discards a scratchpad through its card on the landing page and confirms. */
+export async function discardScratchpadFromCard(
+	page: Page,
+	id: string,
+): Promise<void> {
+	const card = scratchpadCard(page, id);
+	await card.hover();
+	await card.getByRole("button", { name: /^Discard Scratchpad/ }).click();
+	// The question takes the place of the card's link, which named the card.
+	const row = scratchpadsRow(page);
+	await expect(row.getByText("Discard this scratchpad?")).toBeVisible();
+	await row.getByRole("button", { name: "Discard", exact: true }).click();
+}
+
+/** Discards every scratchpad through the row's Discard all and confirms. */
+export async function discardAllScratchpads(page: Page): Promise<void> {
+	await page.getByRole("button", { name: "Discard all" }).click();
+	await expect(
+		page.getByText(/^Discard (all \d+ scratchpads|the scratchpad)\?$/),
+	).toBeVisible();
+	await page.getByRole("button", { name: "Discard all" }).click();
 }
 
 export async function renameDrawing(

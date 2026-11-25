@@ -49,7 +49,7 @@ import { uniqueName } from "./unique-name.ts";
 test("create a drawing", async ({ page }) => {
 	const name = uniqueName("Plan");
 
-	await test.step(`create a drawing named ${name}`, async () => {
+	await test.step(`draw in a new scratchpad and save it as ${name}`, async () => {
 		await openApp(page);
 		await createDrawing(page, name);
 	});
@@ -99,7 +99,6 @@ test("a drawing survives a reload", async ({ page, request }) => {
 	await test.step(`draw a rectangle in a new drawing named ${name}`, async () => {
 		await openApp(page);
 		id = await createDrawing(page, name);
-		await drawRectangle(page);
 	});
 
 	await test.step("the rectangle is saved", async () => {
@@ -128,7 +127,6 @@ test("leaving a drawing stores its preview", async ({ page, request }) => {
 	await test.step(`draw a rectangle in a new drawing named ${name}`, async () => {
 		await openApp(page);
 		id = await createDrawing(page, name);
-		await drawRectangle(page);
 		await expect
 			.poll(() => storedShapeTypes(request, id))
 			.toEqual(["rectangle"]);
@@ -161,7 +159,6 @@ test("reopening a drawing right after leaving it shows its last edits", async ({
 	await test.step(`draw a rectangle in a new drawing named ${name}`, async () => {
 		await openApp(page);
 		id = await createDrawing(page, name);
-		await drawRectangle(page);
 	});
 
 	await test.step("go back to all drawings, which saves the rectangle", async () => {
@@ -199,7 +196,6 @@ test("opening a drawing without a preview stores one", async ({
 	await test.step(`draw a rectangle in a new drawing named ${source}`, async () => {
 		await openApp(page);
 		const sourceId = await createDrawing(page, source);
-		await drawRectangle(page);
 		await expect
 			.poll(() => storedShapeTypes(request, sourceId))
 			.toEqual(["rectangle"]);
@@ -483,7 +479,7 @@ test("switching drawings with the quick switcher keeps the last edit", async ({
 	const secondId = await createDrawingThroughApi(request, second);
 	let firstId = "";
 
-	await test.step(`create ${first} and draw in it`, async () => {
+	await test.step(`create ${first} and draw a second rectangle in it`, async () => {
 		await openApp(page);
 		firstId = await createDrawing(page, first);
 		await drawRectangle(page);
@@ -502,10 +498,10 @@ test("switching drawings with the quick switcher keeps the last edit", async ({
 		await expect(quickSwitcher(page)).toHaveCount(0);
 	});
 
-	await test.step(`${first} kept the rectangle and shows it on its card`, async () => {
+	await test.step(`${first} kept the second rectangle and shows it on its card`, async () => {
 		await expect
 			.poll(() => storedShapeTypes(request, firstId))
-			.toEqual(["rectangle"]);
+			.toEqual(["rectangle", "rectangle"]);
 		await goToAllDrawings(page);
 		await expectCardShowsPreview(page, request, first);
 	});
@@ -554,7 +550,6 @@ test("the quick switcher closes and keeps keys from Excalidraw", async ({
 	await test.step("open a drawing with a selected shape", async () => {
 		await openApp(page);
 		await createDrawing(page, uniqueName("Switch keys"));
-		await drawRectangle(page);
 		await selectAllShapes(page);
 	});
 
