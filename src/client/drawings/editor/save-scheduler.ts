@@ -44,6 +44,12 @@ export function createSaveScheduler(
 			clearTimeout(timer);
 			timer = setTimeout(flush, delayMs);
 		},
+		/** Drops the pending scene. Saves already started go on. */
+		cancel() {
+			clearTimeout(timer);
+			timer = undefined;
+			pending = null;
+		},
 		flush,
 	};
 }

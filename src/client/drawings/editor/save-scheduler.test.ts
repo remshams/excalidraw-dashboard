@@ -19,6 +19,18 @@ describe("createSaveScheduler", () => {
 		expect(save).toHaveBeenCalledExactlyOnceWith("b");
 	});
 
+	it("drops the pending scene on cancel", async () => {
+		const save = vi.fn(async () => {});
+		const scheduler = createSaveScheduler(save, 1000, null);
+
+		scheduler.schedule("a");
+		scheduler.cancel();
+		vi.advanceTimersByTime(1000);
+		await scheduler.flush();
+
+		expect(save).not.toHaveBeenCalled();
+	});
+
 	it("skips a scene equal to the stored one", () => {
 		const save = vi.fn(async () => {});
 		const scheduler = createSaveScheduler(save, 1000, "stored");
