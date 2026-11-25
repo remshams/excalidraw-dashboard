@@ -56,6 +56,49 @@ describe("useDrawings", () => {
 		});
 	});
 
+	it("adds a new scratchpad's first save to the list", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([drawing("b", [])]);
+		const { result } = renderHook(() => useDrawings(vi.fn()));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+
+		act(() => result.current.replace({ ...drawing("s", []), name: null }));
+
+		expect(result.current.drawings.map(({ id }) => id)).toEqual(["s", "b"]);
+	});
+
+	it("doesn't add back a drawing it deleted when a late save answers", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([drawing("a", [])]);
+		vi.mocked(api.deleteDrawing).mockResolvedValue();
+		// Stable, because the hook loads the list again when onError changes.
+		const onError = vi.fn();
+		const { result } = renderHook(() => useDrawings(onError));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(1));
+
+		await act(() => result.current.remove("a"));
+		act(() => result.current.replace(drawing("a", [])));
+
+		expect(result.current.drawings).toEqual([]);
+	});
+
+	it("deletes every given drawing", async () => {
+		vi.mocked(api.listDrawings).mockResolvedValue([
+			drawing("a", []),
+			drawing("b", []),
+			drawing("c", []),
+		]);
+		vi.mocked(api.deleteDrawing).mockResolvedValue();
+		// Stable, because the hook loads the list again when onError changes.
+		const onError = vi.fn();
+		const { result } = renderHook(() => useDrawings(onError));
+		await waitFor(() => expect(result.current.drawings).toHaveLength(3));
+
+		await act(() => result.current.removeAll(["a", "c"]));
+
+		expect(api.deleteDrawing).toHaveBeenCalledTimes(2);
+		expect(result.current.drawings.map(({ id }) => id)).toEqual(["b"]);
+		expect(result.current.wasDeleted("c")).toBe(true);
+	});
+
 	describe("toggleTag", () => {
 		async function setup(tagIds: string[]) {
 			vi.mocked(api.listDrawings).mockResolvedValue([

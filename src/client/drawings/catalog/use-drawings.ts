@@ -8,8 +8,11 @@ import {
 	updateDrawing,
 } from "../api.ts";
 
+// Scratchpads have no name and sort first; the landing page sorts them itself.
 const byName = (a: DrawingSummary, b: DrawingSummary) =>
-	a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+	(a.name ?? "").localeCompare(b.name ?? "", undefined, {
+		sensitivity: "base",
+	});
 
 /** Loads the drawing list and keeps it sorted by name across changes. */
 export function useDrawings(onError: (error: unknown) => void) {
@@ -21,22 +24,22 @@ export function useDrawings(onError: (error: unknown) => void) {
 	}, [onError]);
 
 	/**
-	 * Takes in the summary a save or a rename answered with. The drawing keeps the
-	 * tags the list has: only `toggleTag` and `forgetTag` change them, and a save
-	 * that started before a tag change answers with the old ones.
+	 * Takes in the summary a save or a rename answered with, and adds a new
+	 * scratchpad's first save to the list. The drawing keeps the tags the list
+	 * has: only `toggleTag` and `forgetTag` change them, and a save that started
+	 * before a tag change answers with the old ones.
 	 */
 	const replace = (summary: DrawingSummary) => {
-		setDrawings((list) =>
-			list
-				.map((d) =>
-					d.id === summary.id ? { ...summary, tagIds: d.tagIds } : d,
-				)
-				.sort(byName),
-		);
+		if (deletedIds.current.has(summary.id)) return;
+		setDrawings((list) => {
+			const listed = list.find((d) => d.id === summary.id);
+			const next = listed ? { ...summary, tagIds: listed.tagIds } : summary;
+			return [...list.filter((d) => d !== listed), next].sort(byName);
+		});
 	};
 
 	const create = async (name: string) => {
-		const created = await createDrawing(name);
+		const created = await createDrawing({ name });
 		setDrawings((list) => [...list, created].sort(byName));
 		return created;
 	};
@@ -88,12 +91,16 @@ export function useDrawings(onError: (error: unknown) => void) {
 	/** Whether this app deleted the drawing, so later errors about it don't matter. */
 	const wasDeleted = (id: string) => deletedIds.current.has(id);
 
+	/** Deletes the drawings, one request each. Rejects if any of them fails. */
+	const removeAll = (ids: string[]) => Promise.all(ids.map(remove));
+
 	return {
 		drawings,
 		replace,
 		create,
 		rename,
 		remove,
+		removeAll,
 		toggleTag,
 		forgetTag,
 		wasDeleted,
