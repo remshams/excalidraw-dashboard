@@ -207,6 +207,27 @@ describe("useAutosave", () => {
 			});
 		});
 
+		it("doesn't store an erased scene when the first save failed", async () => {
+			let fail = () => {};
+			vi.mocked(api.createDrawing).mockReturnValueOnce(
+				new Promise((_, reject) => {
+					fail = () => reject(new Error("offline"));
+				}),
+			);
+			const { result, onSaved } = render(true, scratchpad);
+			act(() => result.current.schedule("first", true));
+			const first = result.current.settle();
+
+			act(() => result.current.schedule("erased", false));
+			fail();
+			await first;
+			await result.current.settle();
+
+			expect(api.createDrawing).toHaveBeenCalledOnce();
+			expect(api.updateDrawing).not.toHaveBeenCalled();
+			expect(onSaved).not.toHaveBeenCalled();
+		});
+
 		it("saves an emptied scene once the scratchpad is stored", async () => {
 			const { result } = render(true, scratchpad);
 
