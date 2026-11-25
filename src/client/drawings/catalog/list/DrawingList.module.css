@@ -51,7 +51,8 @@
 	margin-top: var(--space-lg);
 }
 
-.clearFilter {
+.clearFilter,
+.discardAll {
 	padding: var(--space-xs) var(--space-sm);
 	border: var(--stroke-sm) solid var(--graphite);
 	border-radius: var(--radius-md);
@@ -59,8 +60,34 @@
 	cursor: pointer;
 }
 
-.clearFilter:hover {
+.clearFilter:hover,
+.discardAll:hover {
 	background: var(--hover);
+}
+
+/* The scratchpads' row above the drawings, with a rule below it. */
+.scratchpads {
+	margin-block: var(--space-md) var(--space-xl);
+	padding-bottom: var(--space-xl);
+	border-bottom: var(--stroke-sm) solid var(--rule);
+}
+
+/* The heading with Discard all, or its question, at the end of its line. */
+.sectionHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-md);
+	min-height: 2rem;
+	margin-bottom: var(--space-md);
+}
+
+.sectionHeader h2 {
+	margin: 0;
+	font-family: var(--hand);
+	font-size: var(--text-lg);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-sm);
 }
 
 /* Cards keep their own height, so a card's actions stay on its name row while a
