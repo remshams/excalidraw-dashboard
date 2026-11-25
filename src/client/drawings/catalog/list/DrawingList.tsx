@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import type { DrawingSummary } from "#shared/drawings.ts";
+import type { DrawingSummary, SavedDrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
 import { DrawingLink } from "../../DrawingLink.tsx";
 import { PencilIcon, PlusIcon, TagIcon, TrashIcon } from "../../icons.tsx";
 import { NameField } from "../../NameField.tsx";
-import { isSaved, type SavedDrawing } from "../../scratchpad.ts";
+import { isSaved } from "../../scratchpad.ts";
 import { searchByName } from "../../search.ts";
 import { NEW_SCRATCHPAD } from "../../use-open-drawing-id.ts";
 import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
@@ -203,8 +203,8 @@ function NewDrawingCard({ onOpen }: { onOpen: (id: string | null) => void }) {
 }
 
 type NoMatchProps = {
-	drawings: SavedDrawing[];
-	shown: SavedDrawing[];
+	drawings: SavedDrawingSummary[];
+	shown: SavedDrawingSummary[];
 	filter: TagFilter;
 	/** Whether a search or a tag filter is set. */
 	asked: boolean;
@@ -252,7 +252,7 @@ function NoMatch({
 }
 
 type DrawingCardProps = {
-	drawing: SavedDrawing;
+	drawing: SavedDrawingSummary;
 	/** The drawing's tags, sorted by label. */
 	tags: Tag[];
 	selectedTagIds: string[];
