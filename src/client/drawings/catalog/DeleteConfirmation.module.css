@@ -22,6 +22,22 @@
 	cursor: pointer;
 }
 
+/* One line, so a bar keeps its height while it asks. Two classes, to outrank
+   the rules above. */
+.confirm.inline {
+	flex-wrap: nowrap;
+	min-width: 0;
+	padding-inline: 0;
+}
+
+.confirm.inline p {
+	flex-basis: auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* Under .confirm, so it outranks the rule for every button above. */
 .confirm .danger {
 	border-color: var(--signal);
