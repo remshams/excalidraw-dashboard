@@ -160,4 +160,60 @@ describe("DrawingTitle", () => {
 
 		expect(heading("Plan B")).toBeVisible();
 	});
+
+	describe("for a scratchpad", () => {
+		function setupScratchpad(
+			canSave: boolean,
+			onRename = vi.fn(() => Promise.resolve()),
+		) {
+			render(
+				<DrawingTitle name={null} canSave={canSave} onRename={onRename} />,
+			);
+			return { onRename, user: userEvent.setup() };
+		}
+		const saveButton = () =>
+			screen.getByRole("button", { name: "Save as drawing" });
+
+		it("shows Scratchpad as the heading and nothing to save before it is stored", () => {
+			setupScratchpad(false);
+
+			expect(heading("Scratchpad")).toBeVisible();
+			expect(screen.queryByRole("button")).toBeNull();
+		});
+
+		it("names the scratchpad through Save as drawing and shows the name while it saves", async () => {
+			const { onRename, user } = setupScratchpad(true, slowRename().onRename);
+
+			await user.click(saveButton());
+			const field = screen.getByRole("textbox", {
+				name: "Name of the drawing",
+			});
+			expect(field).toHaveValue("");
+			await user.type(field, "Ideas{Enter}");
+
+			expect(onRename).toHaveBeenCalledExactlyOnceWith("Ideas");
+			expect(heading("Ideas")).toBeVisible();
+		});
+
+		it("stays a scratchpad on Escape and focuses Save as drawing again", async () => {
+			const { onRename, user } = setupScratchpad(true);
+
+			await user.click(saveButton());
+			await user.keyboard("Ideas{Escape}");
+
+			expect(onRename).not.toHaveBeenCalled();
+			expect(heading("Scratchpad")).toBeVisible();
+			expect(saveButton()).toHaveFocus();
+		});
+
+		it("doesn't save a blank name", async () => {
+			const { onRename, user } = setupScratchpad(true);
+
+			await user.click(saveButton());
+			await user.keyboard("   {Enter}");
+
+			expect(onRename).not.toHaveBeenCalled();
+			expect(heading("Scratchpad")).toBeVisible();
+		});
+	});
 });
