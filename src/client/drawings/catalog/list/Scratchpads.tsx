@@ -8,17 +8,16 @@ import { DeleteConfirmation } from "../DeleteConfirmation.tsx";
 import { PreviewImage } from "../PreviewImage.tsx";
 import styles from "./DrawingList.module.css";
 import {
-	type OpenTask,
+	type OpenTaskState,
 	type ScratchpadTask,
 	scratchpadTaskOf,
-} from "./open-task.ts";
+} from "./use-open-task.ts";
 
 type ScratchpadsProps = {
 	/** Every drawing; the row shows the scratchpads among them. */
 	drawings: DrawingSummary[];
-	/** The landing page's one question, which the row may ask or change. */
-	task: OpenTask;
-	onTask: (task: OpenTask) => void;
+	/** The landing page's one question, which the row may ask or close. */
+	questions: OpenTaskState;
 	onOpen: (id: string | null) => void;
 	/** Names the scratchpad, which makes it a drawing. */
 	onSave: (id: string, name: string) => void;
@@ -34,8 +33,7 @@ type ScratchpadsProps = {
  */
 export function Scratchpads({
 	drawings,
-	task,
-	onTask,
+	questions: { task, cancelled, ask, close, cancel },
 	onOpen,
 	onSave,
 	onDiscard,
@@ -44,7 +42,6 @@ export function Scratchpads({
 	const heading = useId();
 	const scratchpads = scratchpadsOf(drawings);
 	const count = scratchpads.length;
-	const close = () => onTask(null);
 
 	if (count === 0) return null;
 
@@ -65,26 +62,30 @@ export function Scratchpads({
 							close();
 							onDiscardAll(scratchpads.map(({ id }) => id));
 						}}
-						onCancel={close}
+						onCancel={cancel}
 					/>
 				) : (
 					<button
 						type="button"
 						className={styles.discardAll}
-						onClick={() => onTask({ kind: "discard-all" })}
+						// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+						autoFocus={cancelled?.kind === "discard-all"}
+						onClick={() => ask({ kind: "discard-all" })}
 					>
 						Discard all
 					</button>
 				)}
 			</div>
 			<ul className={styles.cards} aria-label="Scratchpads">
-				{scratchpads.map((scratchpad) => (
+				{scratchpads.map((scratchpad, index) => (
 					<ScratchpadCard
 						key={scratchpad.id}
 						scratchpad={scratchpad}
+						name={scratchpadName(scratchpad, index + 1)}
 						task={scratchpadTaskOf(task, scratchpad.id)}
+						refocus={scratchpadTaskOf(cancelled, scratchpad.id)}
 						onOpen={onOpen}
-						onStart={(kind) => onTask({ kind, id: scratchpad.id })}
+						onStart={(kind) => ask({ kind, id: scratchpad.id })}
 						onSave={(name) => {
 							close();
 							onSave(scratchpad.id, name);
@@ -93,7 +94,7 @@ export function Scratchpads({
 							close();
 							onDiscard(scratchpad.id);
 						}}
-						onCancel={close}
+						onCancel={cancel}
 					/>
 				))}
 			</ul>
@@ -103,7 +104,11 @@ export function Scratchpads({
 
 type ScratchpadCardProps = {
 	scratchpad: DrawingSummary;
+	/** What the card and its actions are called. */
+	name: string;
 	task: ScratchpadTask | null;
+	/** The question just cancelled, whose button takes the focus back. */
+	refocus: ScratchpadTask | null;
 	onOpen: (id: string | null) => void;
 	onStart: (task: ScratchpadTask) => void;
 	onSave: (name: string) => void;
@@ -118,14 +123,15 @@ type ScratchpadCardProps = {
  */
 function ScratchpadCard({
 	scratchpad,
+	name,
 	task,
+	refocus,
 	onOpen,
 	onStart,
 	onSave,
 	onDiscard,
 	onCancel,
 }: ScratchpadCardProps) {
-	const name = scratchpadName(scratchpad);
 	const sheet = (
 		<span className={styles.sheet}>
 			<PreviewImage drawing={scratchpad} />
@@ -176,6 +182,8 @@ function ScratchpadCard({
 					className={styles.icon}
 					aria-label={`Save ${name} as drawing`}
 					title="Save as drawing"
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					autoFocus={refocus === "save"}
 					onClick={() => onStart("save")}
 				>
 					<CheckIcon />
@@ -185,6 +193,8 @@ function ScratchpadCard({
 					className={styles.icon}
 					aria-label={`Discard ${name}`}
 					title="Discard"
+					// biome-ignore lint/a11y/noAutofocus: the focus comes back from the question the user just cancelled.
+					autoFocus={refocus === "discard"}
 					onClick={() => onStart("discard")}
 				>
 					<TrashIcon />
