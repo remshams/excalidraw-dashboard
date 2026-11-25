@@ -1,5 +1,5 @@
+import type { SavedDrawingSummary } from "#shared/drawings.ts";
 import type { Tag } from "#shared/tags.ts";
-import type { SavedDrawing } from "../../scratchpad.ts";
 import { searchByName } from "../../search.ts";
 
 /**
@@ -7,10 +7,10 @@ import { searchByName } from "../../search.ts";
  * tags means every drawing, and an empty query matches every name.
  */
 export function filterDrawings(
-	drawings: SavedDrawing[],
+	drawings: SavedDrawingSummary[],
 	tagIds: string[],
 	query: string,
-): SavedDrawing[] {
+): SavedDrawingSummary[] {
 	const tagged =
 		tagIds.length === 0
 			? drawings
