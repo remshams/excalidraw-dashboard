@@ -48,11 +48,16 @@ export function useAutosave(
 	latest.current = callbacks;
 	const saved = useRef<SavedScene>({ scene: drawing.scene, summary: drawing });
 	const stored = useRef(!isNew);
+	// Whether the first save of a new scratchpad is on its way.
+	const creating = useRef(false);
 
-	const write = (scene: string) =>
-		stored.current
-			? updateDrawing(drawing.id, { scene })
-			: createScratchpad(drawing.id, scene);
+	const write = (scene: string) => {
+		if (stored.current) return updateDrawing(drawing.id, { scene });
+		creating.current = true;
+		return createScratchpad(drawing.id, scene).finally(() => {
+			creating.current = false;
+		});
+	};
 
 	const [scheduler] = useState(() =>
 		createSaveScheduler(
@@ -81,10 +86,11 @@ export function useAutosave(
 
 	/**
 	 * Saves the scene after the next pause. `drawn` tells whether it shows
-	 * anything; Excalidraw reports an empty scene as soon as it opens.
+	 * anything; Excalidraw reports an empty scene as soon as it opens. Once the
+	 * first save is on its way, an erased scene is saved after it like any edit.
 	 */
 	const schedule = (scene: string, drawn: boolean) => {
-		if (drawn || stored.current) scheduler.schedule(scene);
+		if (drawn || stored.current || creating.current) scheduler.schedule(scene);
 		else scheduler.cancel();
 	};
 

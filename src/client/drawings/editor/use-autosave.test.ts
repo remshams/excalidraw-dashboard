@@ -186,6 +186,27 @@ describe("useAutosave", () => {
 			expect(api.createDrawing).not.toHaveBeenCalled();
 		});
 
+		it("saves a scene erased while the first save is on its way", async () => {
+			let answer = () => {};
+			vi.mocked(api.createDrawing).mockReturnValue(
+				new Promise((resolve) => {
+					answer = () => resolve({ ...createdSummary, scene: "first" });
+				}),
+			);
+			const { result } = render(true, scratchpad);
+			act(() => result.current.schedule("first", true));
+			const first = result.current.settle();
+
+			act(() => result.current.schedule("erased", false));
+			answer();
+			await first;
+			await result.current.settle();
+
+			expect(api.updateDrawing).toHaveBeenCalledExactlyOnceWith("1", {
+				scene: "erased",
+			});
+		});
+
 		it("saves an emptied scene once the scratchpad is stored", async () => {
 			const { result } = render(true, scratchpad);
 
