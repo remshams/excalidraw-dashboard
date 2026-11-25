@@ -28,7 +28,10 @@ scratchpad the server stores on its first stroke
   belongs to the drawing; setting a new one replaces it. `previewUpdatedAt`
   records when it was last set.
 - **Drawing summary**: a drawing without its scene or preview image, as a card
-  on the landing page shows it. It carries the drawing's tag IDs.
+  on the landing page shows it. It carries the drawing's tag IDs. Its type,
+  `DrawingSummary` in `src/shared/drawings.ts`, is either a
+  `SavedDrawingSummary` with a name or a `ScratchpadSummary` whose name is
+  `null`, so a check of `name` tells the two apart.
 - **Tag**: an entity with an ID, a label, a colour and a creation time, and the root of its own
   aggregate. Tags belong to the dashboard, not to one drawing; a drawing refers
   to them by ID. A label is trimmed, 1 to 30 characters long and unique when
