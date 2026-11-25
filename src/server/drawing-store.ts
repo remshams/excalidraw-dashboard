@@ -149,14 +149,17 @@ export function openDrawingStore(db: DatabaseSync) {
 
 		/**
 		 * Replaces the drawing's set of tags. Leaves `updatedAt` alone, as a new
-		 * preview does. Returns undefined for an unknown drawing and
-		 * "unknown-tag" if a tag ID names no tag; either way nothing changes.
+		 * preview does. Returns undefined for an unknown drawing, "unknown-tag"
+		 * if a tag ID names no tag and "scratchpad" for tags on a drawing without
+		 * a name; in each case nothing changes.
 		 */
 		setTags(
 			id: string,
 			tagIds: string[],
-		): DrawingSummary | undefined | "unknown-tag" {
-			if (!summary(id)) return undefined;
+		): DrawingSummary | undefined | "unknown-tag" | "scratchpad" {
+			const current = summary(id);
+			if (!current) return undefined;
+			if (current.name === null && tagIds.length > 0) return "scratchpad";
 			try {
 				inTransaction(db, () => {
 					clearTagsStmt.run(id);
